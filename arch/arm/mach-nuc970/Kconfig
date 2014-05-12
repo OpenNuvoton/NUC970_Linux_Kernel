@@ -1,0 +1,31 @@
+if ARCH_NUC970
+
+config CPU_NUC970
+	bool
+	default y
+	help
+	  Support for NUC970 of Nuvoton MCU
+
+
+
+menu "NUC970 Machines"
+
+config MACH_NUC970
+	bool "Nuvoton NUC970 Evaluation Board"
+	default y
+	select CPU_NUC970
+	help
+	   Say Y here if you are using the Nuvoton NUC970
+
+config NUC970_DATA_FLOW_TEST
+	bool "Nuvoton NUC970 Data Flow Test"
+	default n
+	select CPU_NUC970
+	help
+	   Say Y here if you want to do NUC970 Data Flow Test
+
+endmenu
+
+
+
+endif

@@ -28,6 +28,15 @@ menuconfig PWM
 
 if PWM
 
+config PWM_NUC970
+	tristate "NUC970 PWM support"
+	depends on ARCH_NUC970
+	help
+	  Generic PWM framework driver for Nuvoton NUC970 Series MCU.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-nuc970.	  
+
 config PWM_AB8500
 	tristate "AB8500 PWM support"
 	depends on AB8500_CORE && ARCH_U8500

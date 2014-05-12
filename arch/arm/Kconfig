@@ -584,6 +584,16 @@ config ARCH_W90X900
 	  <http://www.nuvoton.com/hq/enu/ProductAndSales/ProductLines/
 		ConsumerElectronicsIC/ARMMicrocontroller/ARMMicrocontroller>
 
+config ARCH_NUC970
+	bool "Nuvoton NUC970 CPU"
+	select ARCH_REQUIRE_GPIOLIB
+	select CLKDEV_LOOKUP
+	select CPU_ARM926T
+	select CLKSRC_MMIO
+	select GENERIC_CLOCKEVENTS
+	help
+	  Support for Nuvoton NUC970 Series MCUs.
+
 config ARCH_LPC32XX
 	bool "NXP LPC32XX"
 	select ARCH_REQUIRE_GPIOLIB
@@ -1025,6 +1035,8 @@ source "arch/arm/mach-virt/Kconfig"
 source "arch/arm/mach-vt8500/Kconfig"
 
 source "arch/arm/mach-w90x900/Kconfig"
+
+source "arch/arm/mach-nuc970/Kconfig"
 
 source "arch/arm/mach-zynq/Kconfig"
 
