@@ -28,12 +28,26 @@
 #include <linux/clocksource.h>
 #include <linux/clockchips.h>
 
+
+#include <linux/module.h>
+#include <linux/list.h>
+#include <linux/errno.h>
+#include <linux/err.h>
+#include <linux/string.h>
+#include <linux/spinlock.h>
+#include <linux/platform_device.h>
+#include <linux/io.h>
+#include <linux/clkdev.h>
+
 #include <asm/mach-types.h>
 #include <asm/mach/irq.h>
 #include <asm/mach/time.h>
 
+#include <mach/mfp.h>
 #include <mach/map.h>
 #include <mach/regs-timer.h>
+#include <mach/hardware.h>
+#include <mach/regs-clock.h>
 
 #define RESETINT	0x1f
 #define PERIOD		(0x01 << 27)
@@ -120,15 +134,16 @@ static struct irqaction nuc970_timer0_irq = {
 static void __init nuc970_clockevents_init(void)
 {
 	unsigned int rate;
-	struct clk *clk = clk_get(NULL, "nuc970-timer0");
+	struct clk *clk = clk_get(NULL, "timer0");
 
 	BUG_ON(IS_ERR(clk));
 	
+	clk_prepare(clk);
 	clk_enable(clk);
 	
 	__raw_writel(0x00, REG_TMR_TCSR0);
 
-	rate = /*clk_get_rate(clk)*/12000000 / (PRESCALE + 1);
+	rate = clk_get_rate(clk) / (PRESCALE + 1);
 
 	timer0_load = (rate / TICKS_PER_SEC);
 
@@ -164,16 +179,17 @@ static void __init nuc970_clocksource_init(void)
 {
 	unsigned int val;
 	unsigned int rate = 0;
-	struct clk *clk = clk_get(NULL, "nuc970-timer1");
+	struct clk *clk = clk_get(NULL, "timer1");
 
 	BUG_ON(IS_ERR(clk));
-
+	
+	clk_prepare(clk);
 	clk_enable(clk);
 
 	__raw_writel(0x00, REG_TMR_TCSR1);
 
 
-	rate = /*clk_get_rate(clk)*/12000000 / (PRESCALE + 1);
+	rate = clk_get_rate(clk) / (PRESCALE + 1);
 
 	__raw_writel(0xffffffff, REG_TMR_TICR1);
 
@@ -186,9 +202,25 @@ static void __init nuc970_clocksource_init(void)
 	clocksource_register(&clocksource_nuc970);
 }
 
-void __init nuc970_timer_init(void)
+void __init nuc970_setup_default_serial_console(void)
 {
-	nuc970_clocksource_init();
-	nuc970_clockevents_init();
+	struct clk *clk = clk_get(NULL, "uart0");	
+
+	BUG_ON(IS_ERR(clk));
+	
+	clk_prepare(clk);
+	clk_enable(clk);	
+	
+	/* GPE0, GPE1 */
+	nuc970_mfp_set_port_e(0, 0x9);
+	nuc970_mfp_set_port_e(1, 0x9);
 }
 
+extern int nuc970_init_clocks();
+void __init nuc970_timer_init(void)
+{	
+	nuc970_init_clocks();
+	nuc970_clocksource_init();
+	nuc970_clockevents_init();
+	nuc970_setup_default_serial_console();
+}

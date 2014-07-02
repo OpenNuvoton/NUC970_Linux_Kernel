@@ -77,26 +77,9 @@ static struct platform_device *nuc970_dev[] __initdata = {
 
 };
 
-void __init nuc970_setup_default_serial_console(void)
-{
-	struct clk *clk = clk_get(NULL, "nuc970-uart0");	
-
-	BUG_ON(IS_ERR(clk));	// hmmm, no chance to print error msg if enable clock failed...	
-
-	clk_enable(clk);	
-	
-	// TODO: configure pin function and enable engine clock
-	
-	/* GPE0, GPE1 */
-	nuc970_mfp_set_port_e(0, 0x9);
-	nuc970_mfp_set_port_e(1, 0x9);
-}
-
 static void __init nuc970_map_io(void)
 {
 	iotable_init(nuc970_iodesc, ARRAY_SIZE(nuc970_iodesc));
-	nuc970_init_clocks();
-	nuc970_setup_default_serial_console();
 }
 
 static void __init nuc970_init(void)

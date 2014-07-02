@@ -47,6 +47,10 @@
 #include <mach/regs-lcd.h>
 #include <mach/nuc970_spi.h>
 
+#include <linux/platform_data/i2c-nuc970.h>
+#include <linux/i2c.h>
+#include <linux/i2c/i2c-hid.h>
+
 #include "cpu.h"
 
 /* USB EHCI Host Controller */
@@ -149,7 +153,7 @@ static struct platform_device nuc970_serial_device = {
 
 /* LCD controller*/
 #ifdef CONFIG_FB_NUC970
-#define YUV422
+//#define YUV422
 
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
 	/* AUO A035QN02V0 320x240 TFT Panel */
@@ -174,7 +178,7 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 #ifndef YUV422
 		.dccs		= 0x0e00041a,
 #else
-		.dccs		= 0x0e00001a,
+		.dccs		= 0x0e00000a,
 #endif
 		.devctl		= 0x060800c0,
 		.fbctrl		= 0x00a000a0,
@@ -397,7 +401,7 @@ struct platform_device nuc970_device_videoin = {
 
 
 /* AUDIO controller*/
-#ifdef SND_SOC_NUC970
+#ifdef CONFIG_SND_SOC_NUC970
 static u64 nuc970_device_audio_dmamask = -1;
 static struct resource nuc970_i2s_resource[] = {
         [0] = {
@@ -423,6 +427,16 @@ struct platform_device nuc970_device_audio_i2s = {
                 .coherent_dma_mask      = -1,
         }
 };
+
+struct platform_device nuc970_device_audio = {
+	.name		= "nuc970-audio",
+	.id		= -1,
+};
+
+struct platform_device nuc970_device_audio_pcm = {
+	.name		= "nuc970-audio-pcm",
+	.id		= 0,
+};
 #endif
 
 /* I2C */
@@ -436,12 +450,15 @@ static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 		I2C_BOARD_INFO("ov7725", 0x21),
 	},
 #endif
+	{
+		I2C_BOARD_INFO("nau8822", 0x1a),
+	},
 };
 
-static struct resource nuc970_i2c_p0_resource[] = {
+static struct resource nuc970_i2c0_resource[] = {
         [0] = {
-                .start = NUC970_PA_I2C,
-                .end   = NUC970_PA_I2C + NUC970_SZ_I2C - 1,
+                .start = NUC970_PA_I2C0,
+                .end   = NUC970_PA_I2C0 + NUC970_SZ_I2C0 - 1,
                 .flags = IORESOURCE_MEM,
         },
         [1] = {
@@ -451,11 +468,19 @@ static struct resource nuc970_i2c_p0_resource[] = {
         }
 };
 
-struct platform_device nuc970_device_i2c_p0 = {
-        .name		  = "nuc970-i2c-p0",
+static struct nuc970_platform_i2c nuc970_i2c0_data = {
+	.bus_num = 0,
+	.bus_freq = 100000,
+};
+
+struct platform_device nuc970_device_i2c0 = {
+        .name		  = "nuc970-i2c0",
         .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_i2c_p0_resource),
-        .resource	  = nuc970_i2c_p0_resource,
+        .num_resources	  = ARRAY_SIZE(nuc970_i2c0_resource),
+        .resource	  = nuc970_i2c0_resource,
+		.dev = {
+        	.platform_data = &nuc970_i2c0_data,
+    	}
 };
 #endif
 #ifdef CONFIG_I2C_BUS_NUC970_P1
@@ -470,10 +495,15 @@ static struct i2c_board_info __initdata nuc970_i2c_clients1[] =
 };
 
 //port 1
+static struct nuc970_platform_i2c nuc970_i2c1_data = {
+	.bus_num = 1,
+	.bus_freq = 100000,
+};
+
 static struct resource nuc970_i2c_p1_resource[] = {
         [0] = {
-                .start = NUC970_PA_I2C,
-                .end   = NUC970_PA_I2C + NUC970_SZ_I2C - 1,
+                .start = NUC970_PA_I2C1,
+                .end   = NUC970_PA_I2C1+ NUC970_SZ_I2C1 - 1,
                 .flags = IORESOURCE_MEM,
         },
         [1] = {
@@ -484,21 +514,24 @@ static struct resource nuc970_i2c_p1_resource[] = {
 
 };
 
-struct platform_device nuc970_device_i2c_p1 = {
-        .name		  = "nuc970-i2c-p1",
+struct platform_device nuc970_device_i2c1 = {
+        .name		  = "nuc970-i2c1",
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_i2c_p1_resource),
         .resource	  = nuc970_i2c_p1_resource,
+        .dev = {
+        	.platform_data = &nuc970_i2c1_data,
+    	}
 };
 #endif
 
 /* SPI */
 /* spi device, spi flash info */
-#ifdef CONFIG_SPI0_NUC970
+#ifdef CONFIG_SPI_NUC970_P0
 static struct mtd_partition nuc970_spi_flash_partitions[] = {
         {
                 .name = "SPI flash",
-                .size = 0x0400000,
+                .size = 0x0200000,
                 .offset = 0,
         },
 };
@@ -507,13 +540,13 @@ static struct flash_platform_data nuc970_spi_flash_data = {
         .name = "m25p80",
         .parts =  nuc970_spi_flash_partitions,
         .nr_parts = ARRAY_SIZE(nuc970_spi_flash_partitions),
-        .type = "mx25l3205d",
+        .type = "en25qh16",
 };
 
 static struct spi_board_info nuc970_spi_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 20000000,
+                .max_speed_hz = 30000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi_flash_data,
@@ -557,7 +590,7 @@ struct platform_device nuc970_device_spi0 = {
 };
 #endif
 
-#ifdef CONFIG_SPI1_NUC970
+#ifdef CONFIG_SPI_NUC970_P1
 static struct resource nuc970_spi1_resource[] = {
         [0] = {
                 .start = NUC970_PA_SPI1,
@@ -662,10 +695,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970fb_device_lcd,
 #endif
 #ifdef CONFIG_I2C_BUS_NUC970_P0
-	&nuc970_device_i2c_p0,
+	&nuc970_device_i2c0,
 #endif
 #ifdef CONFIG_I2C_BUS_NUC970_P1
-        &nuc970_device_i2c_p1,
+        &nuc970_device_i2c1,
 #endif
 #ifdef CONFIG_MMC_NUC970_SD
 	&nuc970_device_sdh,
@@ -694,16 +727,18 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_NUC970_VCAP
 	&nuc970_device_videoin,
 #endif
-#ifdef SND_SOC_NUC900
+#ifdef CONFIG_SND_SOC_NUC970
+	&nuc970_device_audio_pcm,
+	&nuc970_device_audio,
 	&nuc970_device_audio_i2s,
 #endif
 #ifdef CONFIG_USBD_NUC970
 	&nuc970_device_usbgadget,
 #endif
-#ifdef CONFIG_SPI0_NUC970
+#ifdef CONFIG_SPI_NUC970_P0
 	&nuc970_device_spi0,
 #endif
-#ifdef CONFIG_SPI1_NUC970
+#ifdef CONFIG_SPI_NUC970_P1
 	&nuc970_device_spi1,
 #endif
 };
@@ -714,7 +749,7 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	platform_add_devices(device, size);
 	platform_add_devices(nuc970_public_dev, ARRAY_SIZE(nuc970_public_dev));
 
-#ifdef CONFIG_SPI0_NUC970
+#ifdef CONFIG_SPI_NUC970_P0
 	/* register spi devices */
 	spi_register_board_info(nuc970_spi_board_info, ARRAY_SIZE(nuc970_spi_board_info));
 #endif
