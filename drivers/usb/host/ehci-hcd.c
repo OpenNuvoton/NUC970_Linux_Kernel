@@ -1246,9 +1246,9 @@ MODULE_LICENSE ("GPL");
 #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
 #endif
 
-#ifdef CONFIG_USB_W90X900_EHCI
-#include "ehci-w90x900.c"
-#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+#ifdef CONFIG_USB_NUC970_EHCI
+#include "ehci-nuc970.c"
+#define PLATFORM_DRIVER         ehci_hcd_nuc970_driver
 #endif
 
 #ifdef CONFIG_USB_OCTEON_EHCI
