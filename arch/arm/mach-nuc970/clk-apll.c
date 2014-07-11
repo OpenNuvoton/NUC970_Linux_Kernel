@@ -26,76 +26,25 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
 	struct clk_apll *pll = to_clk_apll(hw);
-	void __iomem *pllbase;
+	u32 reg;
 	
-	double fTemp, Fvco, cal_out_pll;
-	int out_dv, in_dv, fb_dv;
-	int P, M, N, pll_ctl;
-	unsigned long input_clk = parent_rate, output_pll = rate;
-
-	pllbase = pll->base;	
-#if 0	
-	deviation = 0;
-	nItem = 0;
-	for (out_dv = 0; out_dv <= 0x7; out_dv++)
+	reg = readl(pll->base) & ~0x0FFFFFFF;
+	
+	printk("clk_apll_set_rate-->%ld\n", rate);
+	
+	switch(rate)
 	{
-		P = out_dv + 1;
-	
-		for (in_dv = 0; in_dv <= 0x3f; in_dv++)
-		{
-			M = in_dv + 1;
+		case 98400000:			//i2s
+			reg |= 0x8028;
+			break;
 		
-			for (fb_dv = 0; fb_dv <= 0x7f; fb_dv++)
-			{
-				N = fb_dv + 1;
-
-				Fvco = (input_clk * N) / M;
-
-				if ((Fvco <= 200) || (Fvco >= 500))
-					continue;
-					
-				fTemp = input_clk / M;
-
-				if (fTemp > 80)
-					continue;
-				
-				if ((N == 1) && (fTemp < 11))
-					continue;
-				if ((N == 2) && (fTemp < 7))
-					continue;
-				if ((N == 3) && (fTemp < 5))
-					continue;
-				if ((N == 4) && (fTemp < 4))
-					continue;
-				if ((N == 5) && (fTemp < 3.5))
-					continue;
-				if ((N == 6) && (fTemp < 3))
-					continue;
-				if (((N == 7) || (N == 8)) && (fTemp < 2.5))
-					continue;
-				if (((N == 9) || (N == 10)) && (fTemp < 3.5))
-					continue;
-				if (((N >= 11) && (N <= 40)) && (fTemp < 3))
-					continue;
-				if (((N >= 40) && (N <= 128)) && (fTemp < 2.5))
-					continue;
-
-				cal_out_pll = (input_clk * N) / (M * P);
-			
-				cal_dev = (cal_out_pll / output_pll) * 100;
-				if ((cal_dev <= 100 + deviation) && (cal_dev >= 100 - deviation))
-				{
-					pll_ctl = (out_dv << 13) + (in_dv << 7) + fb_dv;
-
-					if (cal_dev > 100)
-						cal_dev -= 100;
-					else
-						cal_dev = 100 - cal_dev;
-				}
-			}
-		}
+		case 16950000:			//i2s
+			reg |= 0x21f0;
+			break;
 	}
-#endif		
+	
+	writel(reg, pll->base);
+	
 	return 0;
 }
 
@@ -103,15 +52,42 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
 	struct clk_apll *pll = to_clk_apll(hw);
-	long long ll = 66000000;
-	u32 reg;
+	long long ll;
+	u32 reg = readl(pll->base) & 0x0FFFFFFF;
 	
-
+	if(parent_rate != 12000000)
+		return 0;
 	
-	reg = readl(pll->base);
+	switch(reg)
+	{
+		case 0x0015:
+			ll = 264000000;		//system default, 264MHz
+			break;
+			
+		case 0x8028:
+			ll = 98400000;		//i2s
+			break;
+		
+		case 0x21f0:
+			ll = 16950000;		//i2s
+			break;
+			
+		default:
+			ll = 264000000;
+			break;
+	}
 	
-
+	printk("clk_apll_recalc_rate-->%lld\n", ll);
+	
 	return ll;
+}
+
+static long clk_apll_round_rate(struct clk_hw *hw, unsigned long rate,
+		unsigned long *prate)
+{
+	printk("clk_apll_round_rate-->%ld\n", rate);
+	
+	return rate;
 }
 
 static int clk_apll_enable(struct clk_hw *hw)
@@ -119,8 +95,10 @@ static int clk_apll_enable(struct clk_hw *hw)
 	struct clk_apll *pll = to_clk_apll(hw);
 	u32 val;
 	
+	printk("clk_apll_enable-->\n");
 	val = readl(pll->base);
-	val &= ~0x10000000;			// power down mode disable
+	val &= ~0x10000000;			// PD = 0, power down mode disable
+	val |= 0x40000000;			// RESETN = 1
 	writel(val, pll->base);
 	
 	return 0;
@@ -130,9 +108,11 @@ static void clk_apll_disable(struct clk_hw *hw)
 {
 	struct clk_apll *pll = to_clk_apll(hw);
 	u32 val;
-
+	
+	printk("clk_apll_disable-->\n");
 	val = readl(pll->base);
-	val |= 0x10000000;			// power down mode enable
+	val |= 0x10000000;			// PD = 1, power down mode enable
+	val &= ~0x40000000;			// RESETN = 1
 	writel(val, pll->base);
 }
 
@@ -140,6 +120,8 @@ static struct clk_ops clk_apll_ops = {
 	.recalc_rate = clk_apll_recalc_rate,
 	.enable = clk_apll_enable,
 	.disable = clk_apll_disable,
+	.set_rate = clk_apll_set_rate,
+	.round_rate = clk_apll_round_rate,
 };
 
 struct clk *nuc970_clk_apll(const char *name, const char *parent,

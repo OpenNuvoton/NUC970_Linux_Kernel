@@ -429,13 +429,21 @@ struct platform_device nuc970_device_audio_i2s = {
 };
 
 struct platform_device nuc970_device_audio = {
-	.name		= "nuc970-audio",
+	.name	= "nuc970-audio",
 	.id		= -1,
+    .dev    = {
+                .dma_mask               = &nuc970_device_audio_dmamask,
+                .coherent_dma_mask      = -1,
+    }
 };
 
 struct platform_device nuc970_device_audio_pcm = {
-	.name		= "nuc970-audio-pcm",
+	.name	= "nuc970-audio-pcm",
 	.id		= 0,
+    .dev    = {
+                .dma_mask               = &nuc970_device_audio_dmamask,
+                .coherent_dma_mask      = -1,
+        }
 };
 #endif
 

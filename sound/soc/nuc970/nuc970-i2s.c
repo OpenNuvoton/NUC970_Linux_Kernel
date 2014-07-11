@@ -70,64 +70,70 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 {
         unsigned int val;
         struct nuc970_audio *nuc970_audio = nuc970_i2s_data;
-
+		struct clk *clkmux, *clkaplldiv, *clkapll, *clkaudio;
+		int ret;
+		unsigned int mclkdiv, bclkdiv, mclk;
+		
+		clkmux = clk_get(NULL, "audio_eclk_mux");
+        if (IS_ERR(clkmux)) {
+			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
+			ret = PTR_ERR(clkmux);
+			return ret;
+		}
+		
+		clkaplldiv = clk_get(NULL, "audio_aplldiv");
+        if (IS_ERR(clkaplldiv)) {
+			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
+			ret = PTR_ERR(clkaplldiv);
+			return ret;
+		}
+		
+		clkapll = clk_get(NULL, "apll");
+        if (IS_ERR(clkapll)) {
+			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
+			ret = PTR_ERR(clkapll);
+			return ret;
+		}
+		
+		clkaudio = clk_get(NULL, "audio_eclk");
+        if (IS_ERR(clkaudio)) {
+			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
+			ret = PTR_ERR(clkaudio);
+			return ret;
+		}
+				
         if (clk_id == NUC970_AUDIO_SAMPLECLK) {
                 val = AUDIO_READ(nuc970_audio->mmio + ACTL_I2SCON);
-
-                switch (freq) {
-                case 8000:							//8KHz (12.288/6)
-                        val |= FS_256 | BCLK_32 | SCALE_6;
-                        break;
-                case 11025:							//11.025KHz(16.934/6)
-                        val |= FS_256 | BCLK_32 | SCALE_6;
-                        break;
-                case 16000:							//16KHz(12.288/3)
-                        val |= FS_256 | BCLK_32 | SCALE_3;
-                        break;
-                case 22050:							//22.05KHz(16.934/3)
-                        val |= FS_256 | BCLK_32 | SCALE_3;
-                        break;
-                case 24000:							//24KHz(12.288/2)
-                        val |= FS_256 | BCLK_32 | SCALE_2;
-                        break;
-                case 32000:							//32KHz(16.934/2)
-                        val |= FS_256 | BCLK_32 | SCALE_2;
-                        break;
-                case 44100:							//44.1KHz(11.289/1)
-                        val |= FS_256 | BCLK_32 | SCALE_1;
-                        //val = FS_256 | BCLK_48 | SCALE_1;	//384fs
-                        break;
-                case 48000:							//48KHz(12.288/1)
-                        val |= FS_256 | BCLK_32 | SCALE_1;
-                        break;
-                default:
-                        break;
-                }
-
+		
+				mclk = (freq*256);		// 256fs
+				mclkdiv = clk_get_rate(clkaudio) / mclk;
+				val &= ~0x000F0000;
+				val |= (mclkdiv-1) << 16;
+				
+				bclkdiv = mclk / (freq*16*2);
+				bclkdiv = bclkdiv/2 - 1;
+				val &= ~0xf0;
+				val |= (bclkdiv << 5);
+ 
                 AUDIO_WRITE(nuc970_audio->mmio + ACTL_I2SCON, val);
         }
 
         if (clk_id == NUC970_AUDIO_CLKDIV) {
                 //use APLL to generate 12.288MHz ,16.934MHz or 11.285Mhz for I2S
-                //input source clock is 15Mhz
-
-#if 0
-                if (freq%8000 == 0  && (freq != 32000)) {
-                        //(PLL1=122.88MHz / ACKDIV=10) = 12.288MHz
-                        AUDIO_WRITE(REG_APLLCON,0x92E7);
-                        AUDIO_WRITE(REG_CLKDIV,(AUDIO_READ(REG_CLKDIV) & ~(0xF<<8)) | (9<<8)); //   /10
-                } else if (freq == 44100) {
-                        //(PLL1=169.34MHz / ACKDIV=15) = 11.289MHz
-                        AUDIO_WRITE(REG_PLLCON1, 0x4E25);
-                        AUDIO_WRITE(REG_CLKDIV,(AUDIO_READ(REG_CLKDIV) & ~(0xF<<8)) | (14<<8)); //   /15
+                //input source clock is XIN=12Mhz             
+				
+				clk_set_parent(clkmux, clkaplldiv);
+				
+				if (freq % 8000 == 0) {
+					//12.288MHz ==> APLL=98.4MHz / 8 = 12.3MHz
+					clk_set_rate(clkapll, 98400000);
+					clk_set_rate(clkaudio, 12300000);
                 } else {
-                        //(PLL1=169.34MHz / ACKDIV=10) = 16.934MHz
-                        AUDIO_WRITE(REG_PLLCON1,0x4E25);
-                        AUDIO_WRITE(REG_CLKDIV,(AUDIO_READ(REG_CLKDIV) & ~(0xF<<8)) | (9<<8));	// /10
-                }
-
-                AUDIO_WRITE(REG_CLKSEL,(AUDIO_READ(REG_CLKSEL)&~(3<<4)) | (1<<4));//ACLK from PLL1
-#endif
+                	//16.934MHz ==> APLL=169.5MHz / 10 = 16.95MHz
+                	
+                	clk_set_rate(clkapll, 169500000);
+					clk_set_rate(clkaudio, 16950000);
+            	}
         }
 
         return 0;
@@ -192,6 +198,9 @@ static int nuc970_i2s_probe(struct snd_soc_dai *dai)
 
         mutex_lock(&i2s_mutex);
 
+        clk_prepare(clk_get(NULL, "audio_hclk"));
+		clk_enable(clk_get(NULL, "audio_hclk"));
+	
         /* enable unit clock */
         clk_prepare(nuc970_audio->clk);
         clk_enable(nuc970_audio->clk);

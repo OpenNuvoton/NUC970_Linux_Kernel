@@ -26,13 +26,22 @@ static unsigned long clk_upll_recalc_rate(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
 	struct clk_upll *pll = to_clk_upll(hw);
-	long long ll = 66000000;
-	int mfn_abs;
-	unsigned int mfi, mfn, mfd, pd;
-	u32 reg;
-	unsigned long rate;
-
-	reg = readl(pll->base);
+	long long ll;
+	u32 reg = readl(pll->base) & 0x0FFFFFFF;
+	
+	if(parent_rate != 12000000)
+		return 0;
+	
+	switch(reg)
+	{
+		case 0x15:
+			ll = 264000000;
+			break;
+		
+		default:
+			ll = 264000000;
+			break;
+	}
 
 	return ll;
 }

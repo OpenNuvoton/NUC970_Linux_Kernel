@@ -28,32 +28,35 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
         struct snd_soc_pcm_runtime *rtd = substream->private_data;
         struct snd_soc_dai *codec_dai = rtd->codec_dai;
         struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-        unsigned int sample_rate = params_rate(params);
-        int ret;
-        unsigned int clk = 0, div = 0;
+         int ret;
 
 //slave mode		
-#ifdef CONFIG_NUC970_I2S_SLAVE_MODE
+#ifdef CONFIG_NUC970_I2S_SLAVE_MODE		
 		 /* set codec DAI configuration */
         ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
                                   SND_SOC_DAIFMT_NB_NF |
                                   SND_SOC_DAIFMT_CBM_CFM);
         if (ret < 0)
-                return ret;
+        	return ret;
 
 		/* set cpu DAI configuration */
         ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
                                   SND_SOC_DAIFMT_NB_NF |
                                   SND_SOC_DAIFMT_CBS_CFS);
         if (ret < 0)
-                return ret;
+        	return ret;
 	
 		ret = snd_soc_dai_set_sysclk(codec_dai, NAU8822_PLL, 12000000, SND_SOC_CLOCK_OUT);
         if (ret < 0)
-                return ret;
-
+        	return ret;
+       	       	
+		ret = snd_soc_dai_set_clkdiv(codec_dai, NAU8822_BCLKDIV, 0xC);		// divide 8 form MCLK to BCLK
+        if (ret < 0)
+        	return ret;
 #else		
 //master mode
+		unsigned int clk = 0;
+		unsigned int sample_rate = params_rate(params);
 		
         /* set codec DAI configuration */
         ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
@@ -69,35 +72,20 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
         if (ret < 0)
                 return ret;
 
-        switch (sample_rate) {
-        case 8000:
-        case 16000:
-        case 32000:
-        case 48000:
-        case 96000:
-                clk = 12288000;
-                break;
-        case 11025:
-        case 22050:
-        case 44100:
-        case 88200:
-                clk = 16934000;
-                break;
-        }
-
+		clk = 256 * sample_rate;
 
         /* set the codec system clock for DAC and ADC */
         ret = snd_soc_dai_set_sysclk(codec_dai, NAU8822_MCLK, clk, SND_SOC_CLOCK_OUT);
         if (ret < 0)
                 return ret;
-
-        /* set MCLK division for sample rate */
-        ret = snd_soc_dai_set_sysclk(cpu_dai, NUC970_AUDIO_SAMPLECLK, sample_rate, SND_SOC_CLOCK_OUT);
-        if (ret < 0)
-                return ret;
-
+        
         /* set prescaler division for sample rate */
         ret = snd_soc_dai_set_sysclk(cpu_dai, NUC970_AUDIO_CLKDIV, sample_rate, SND_SOC_CLOCK_OUT);
+        if (ret < 0)
+                return ret;
+        
+        /* set MCLK division for sample rate */
+        ret = snd_soc_dai_set_sysclk(cpu_dai, NUC970_AUDIO_SAMPLECLK, sample_rate, SND_SOC_CLOCK_OUT);
         if (ret < 0)
                 return ret;
 #endif
@@ -129,7 +117,7 @@ static int nuc970_audio_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = &nuc970evb_audio_machine;
 	int ret;
-printk("nuc970_audio_probe-->\n");
+
 	card->dev = &pdev->dev;
 
 	ret = snd_soc_register_card(card);

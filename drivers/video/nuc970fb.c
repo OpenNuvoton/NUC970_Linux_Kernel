@@ -594,9 +594,11 @@ static int nuc970fb_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto release_regs;
 	}
-	
+
+	clk_prepare(clk_get(NULL, "lcd_hclk"));
+	clk_enable(clk_get(NULL, "lcd_hclk"));
+
 	fbi->clk = clk_get(NULL, "lcd_eclk");
-	
 	// set lcd clock to 4MHz
 	clk_set_rate(fbi->clk, 4000000);
 	clk_prepare(fbi->clk);	
@@ -604,7 +606,7 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	fbi->clk_rate = clk_get_rate(fbi->clk);
 	
 	dev_dbg(&pdev->dev, "got and enabled clock\n");
-	
+
 	/* calutate the video buffer size */
 	for (i = 0; i < mach_info->num_displays; i++) {
 		unsigned long smem_len = mach_info->displays[i].xres;
