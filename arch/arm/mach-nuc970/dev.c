@@ -690,6 +690,7 @@ struct platform_device nuc970_device_wwdt = {
 #endif
 
 #ifdef CONFIG_GPIO_NUC970 
+#ifdef CONFIG_I2C_ALGOBIT
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
     .sda_pin = NUC970_PG1,   
     .scl_pin = NUC970_PG0,   
@@ -706,7 +707,7 @@ static struct platform_device i2c_gpio = {
         .platform_data = &i2c_gpio_adapter_data,   
         },   
 };
-
+#endif
 static struct resource nuc970_gpio_resource[] = {
 	[0] = {
 	       .start = NUC970_PA_GPIO,
