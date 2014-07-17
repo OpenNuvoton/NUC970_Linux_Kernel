@@ -49,7 +49,7 @@ static int nuc970_dma_hw_params(struct snd_pcm_substream *substream,
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long flags;
 	int ret = 0;
-printk("--> nuc970_dma_hw_params\n");
+
 	ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
 	if (ret < 0)
 		return ret;
@@ -57,7 +57,7 @@ printk("--> nuc970_dma_hw_params\n");
 	spin_lock_irqsave(&nuc970_audio->lock, flags);
 
 	nuc970_audio->substream = substream;
-	nuc970_audio->dma_addr[substream->stream] = runtime->dma_addr;
+	nuc970_audio->dma_addr[substream->stream] = runtime->dma_addr | 0x80000000;
 	nuc970_audio->buffersize[substream->stream] =
 						params_buffer_bytes(params);
 
@@ -162,7 +162,7 @@ static int nuc970_dma_prepare(struct snd_pcm_substream *substream)
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long flags, val;
 	int ret = 0;
-printk("--> nuc970_dma_prepare\n");
+
 	spin_lock_irqsave(&nuc970_audio->lock, flags);
 
 	nuc970_update_dma_register(substream,
@@ -206,7 +206,7 @@ printk("--> nuc970_dma_prepare\n");
 static int nuc970_dma_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	int ret = 0;
-printk("--> nuc970_dma_trigger\n");
+
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -261,7 +261,7 @@ static int nuc970_dma_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct nuc970_audio *nuc970_audio;
-printk("--> nuc970_dma_open\n");
+
 	snd_soc_set_runtime_hwparams(substream, &nuc970_pcm_hardware);
 
 	nuc970_audio = nuc970_i2s_data;
@@ -281,7 +281,7 @@ static int nuc970_dma_close(struct snd_pcm_substream *substream)
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 
 	free_irq(nuc970_audio->irq_num, substream);
-printk("--> nuc970_dma_close\n");
+
 	return 0;
 }
 

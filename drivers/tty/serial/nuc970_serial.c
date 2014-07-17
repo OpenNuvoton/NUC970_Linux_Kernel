@@ -27,7 +27,7 @@
 #include <linux/platform_device.h>
 #include <linux/tty.h>
 #include <linux/tty_flip.h>
-//#include <linux/serial_reg.h>
+#include <linux/clk.h>
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 #include <linux/nmi.h>
@@ -338,13 +338,15 @@ static int nuc970serial_startup(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	struct tty_struct *tty = port->state->port.tty;
-	//unsigned long flags;
-	//unsigned char lsr, iir;
 	int retval;
-
-	// TODO: configure pin function and enable engine clock
-	//__raw_writel(__raw_readl(REG_CLKEN) | 0x10000, REG_CLKEN);
 	
+	// enable clock
+	clk_prepare(clk_get(NULL, "uart0_eclk"));
+	clk_enable(clk_get(NULL, "uart0_eclk"));
+	
+	clk_prepare(clk_get(NULL, "uart0"));
+	clk_enable(clk_get(NULL, "uart0"));
+		
 	/* GPE0, GPE1 */
 	__raw_writel((__raw_readl(REG_MFP_GPE_L) & 0xffffff00) | 0x99, REG_MFP_GPE_L);
 	
@@ -372,12 +374,6 @@ static int nuc970serial_startup(struct uart_port *port)
 	
 	/* 12MHz reference clock input, 115200 */
 	serial_out(up, UART_REG_BAUD, 0x30000066);
-	
-	/* 24.576MHz reference clock input, 115200 */
-//	serial_out(up, UART_REG_BAUD, 0x300000D3);
-	
-	/* 4MHz reference clock input, 115200 */
-	//serial_out(up, UART_REG_BAUD, 0x30000020);
 	
 	return 0;
 }
@@ -621,9 +617,7 @@ static struct uart_port nuc970_default_serial_ports[UART_NR] = {
 		.iobase		= NUC970_VA_UART,
 		.iotype		= SERIAL_IO_MEM,
 		.irq		= IRQ_UART0,
-		.uartclk	= 12000000,					//modify cpu.h also
-//		.uartclk	= 4000000,
-//		.uartclk	= 24576000,
+		.uartclk	= 12000000,				
 		.fifosize	= 16,
 		.ops		= &nuc970serial_ops,
 		.flags		= ASYNC_BOOT_AUTOCONF,
@@ -734,10 +728,9 @@ static struct console nuc970serial_console = {
 
 static int __init nuc970serial_console_init(void)
 {
-printk("nuc970serial_console_init ->\n");
 	nuc970serial_init_ports();		
 	register_console(&nuc970serial_console);
-printk("<-nuc970serial_console_init\n");
+	
 	return 0;
 }
 console_initcall(nuc970serial_console_init);

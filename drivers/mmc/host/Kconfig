@@ -394,6 +394,23 @@ config MMC_SPI
 
 	  If unsure, or if your system has no SPI master driver, say N.
 
+config MMC_NUC970_SD
+	tristate "Nuvoton NUC970 SD Card support"
+	depends on MACH_NUC970
+
+	config NUC970_SD_SD0
+	  tristate "Enable SD0 port"
+	  depends on MMC_NUC970_SD
+	config NUC970_SD_SD1
+	  tristate "Enable SD1 port"
+	  depends on MMC_NUC970_SD
+
+	help
+	  Say Y here if to include support for the SD driver
+	  for the Nuvoton NUC970 series SoCs.
+	  To compile this driver as a module, choose M here: the
+	  module will be called nuc970_sd.
+
 config MMC_S3C
 	tristate "Samsung S3C SD/MMC Card Interface support"
 	depends on ARCH_S3C24XX
