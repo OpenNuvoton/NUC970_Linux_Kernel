@@ -28,6 +28,7 @@
 #include <linux/acpi.h>
 #include <linux/platform_device.h>
 #include <mach/gpio.h>
+#include <linux/clk.h>
 
 #include <mach/map.h>
 #include <mach/regs-gpio.h>
@@ -186,6 +187,19 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 {
 	int err;
 
+	struct clk *clk;
+
+	/* Enable GPIO clock */
+	clk = clk_get(NULL, "gpio");
+        if (IS_ERR(clk)) {
+		printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
+		err = PTR_ERR(clk);
+		return err;
+	}
+
+	clk_prepare(clk);
+	clk_enable(clk);
+
 	nuc970_gpio_port.dev = &pdev->dev;
 	err = gpiochip_add(&nuc970_gpio_port);
 	if (err < 0) {
@@ -202,6 +216,21 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 static int nuc970_gpio_remove(struct platform_device *pdev)
 {
 	struct resource *res;
+
+        struct clk *clk;
+
+        /* Disable GPIO clock */
+        clk = clk_get(NULL, "gpio");
+        if (IS_ERR(clk)) {
+                int err;
+
+		printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
+                err = PTR_ERR(clk);
+                return err;
+        }
+
+        clk_disable(clk);
+
 	if (gpio_ba) {
 		int err;
 
