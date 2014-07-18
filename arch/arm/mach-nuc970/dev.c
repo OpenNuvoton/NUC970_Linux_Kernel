@@ -378,11 +378,11 @@ struct platform_device nuc970_device_jpeg = {
 #endif
 
 /* VIDEOIN */
-#ifdef CONFIG_NUC970_VCAP
-static struct resource nuc970_videoin_resource[] = {
+#ifdef CONFIG_VIDEO_NUC970
+static struct resource nuc970_cap_resource[] = {
         [0] = {
-                .start = NUC970_PA_VIDEOIN,
-                .end   = NUC970_PA_VIDEOIN + NUC970_SZ_VIDEOIN - 1,
+                .start = NUC970_PA_CAP,
+                .end   = NUC970_PA_CAP + NUC970_SZ_CAP - 1,
                 .flags = IORESOURCE_MEM,
         },
         [1] = {
@@ -392,11 +392,11 @@ static struct resource nuc970_videoin_resource[] = {
         }
 };
 
-struct platform_device nuc970_device_videoin = {
+struct platform_device nuc970_device_cap = {
         .name		  = "nuc970-videoin",
         .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_videoin_resource),
-        .resource	  = nuc970_videoin_resource,
+        .num_resources	  = ARRAY_SIZE(nuc970_cap_resource),
+        .resource	  = nuc970_cap_resource,
 };
 
 #endif
@@ -455,9 +455,14 @@ struct platform_device nuc970_device_audio_pcm = {
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
-#if defined(CONFIG_SENSOR_OV7725) || defined(CONFIG_SENSOR_OV7725_DEV1)
+#ifdef CONFIG_SENSOR_OV7725
 	{
 		I2C_BOARD_INFO("ov7725", 0x21),
+	},
+#endif
+#ifdef CONFIG_SENSOR_OV5640
+	{
+		I2C_BOARD_INFO("ov5640",  0x3c),
 	},
 #endif
 #ifdef CONFIG_SND_SOC_NAU8822
@@ -766,8 +771,8 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_NUC970_WWDT
 	&nuc970_device_wwdt,
 #endif
-#ifdef CONFIG_NUC970_VCAP
-	&nuc970_device_videoin,
+#ifdef CONFIG_VIDEO_NUC970
+	&nuc970_device_cap,
 #endif
 #ifdef CONFIG_SND_SOC_NUC970
 	&nuc970_device_audio_pcm,
