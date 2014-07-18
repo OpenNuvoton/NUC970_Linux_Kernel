@@ -28,13 +28,17 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         u32  physical_map_ehci, physical_map_ohci;
         int retval;
 
-        if (IS_ERR(clk_get(&pdev->dev, NULL))) {
+        if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
                 return -1;
         }
 
-        /* enable USB Host clock */
-        clk_enable(clk_get(&pdev->dev, NULL));
+		/* Enable USB Host clock */
+        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_enable(clk_get(NULL, "usb_eclk"));
+        
+        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+        clk_enable(clk_get(NULL, "usbh_hclk"));
 
         if (pdev->resource[1].flags != IORESOURCE_IRQ) {
                 pr_debug("resource[1] is not IORESOURCE_IRQ");

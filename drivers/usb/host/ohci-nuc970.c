@@ -30,15 +30,56 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         struct usb_hcd *hcd;
         struct ohci_hcd *ohci ;
         u32  physical_map_ohci;
-
-        if (IS_ERR(clk_get(&pdev->dev, NULL))) {
+		struct clk *clkmux, *clkaplldiv, *clkapll, *clkusb;
+		int ret;
+		
+        if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
                 return -1;
         }
 
         /* enable USB Host clock */
-        clk_enable(clk_get(&pdev->dev, NULL));
-
+        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+        clk_enable(clk_get(NULL, "usbh_hclk"));
+		
+		
+		clkmux = clk_get(NULL, "usb_eclk_mux");
+        if (IS_ERR(clkmux)) {
+			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
+			ret = PTR_ERR(clkmux);
+			return ret;
+		}		
+		
+		/* Set APLL output 96 MHz, select 48 MHz for OHCI */
+		clkaplldiv = clk_get(NULL, "usb_aplldiv");
+        if (IS_ERR(clkaplldiv)) {
+			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
+			ret = PTR_ERR(clkaplldiv);
+			return ret;
+		}
+		
+		clkapll = clk_get(NULL, "apll");
+        if (IS_ERR(clkapll)) {
+			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
+			ret = PTR_ERR(clkapll);
+			return ret;
+		}
+		
+		clkusb = clk_get(NULL, "usb_eclk");
+        if (IS_ERR(clkusb)) {
+			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
+			ret = PTR_ERR(clkusb);
+			return ret;
+		}
+		
+		clk_prepare(clkusb);	
+        clk_enable(clkusb);
+        
+        clk_set_parent(clkmux, clkaplldiv);
+        
+        clk_set_rate(clkapll, 96000000);
+		clk_set_rate(clkusb, 48000000);
+		
         hcd = usb_create_hcd(driver, &pdev->dev, "nuc970-ohci");
         if (!hcd)
                 return -ENOMEM;
