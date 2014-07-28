@@ -340,6 +340,7 @@ config NUC900_WATCHDOG
 config NUC970_WDT
 	tristate "Nuvoton NUC970 Watchdog Timer"
 	depends on ARCH_NUC970
+	select WATCHDOG_CORE
 	help
 	  Say Y here if to include support for the watchdog timer
 	  for the Nuvoton NUC970 series MCU.
@@ -349,6 +350,7 @@ config NUC970_WDT
 config NUC970_WWDT
 	tristate "Nuvoton NUC970 Window Watchdog Timer"
 	depends on ARCH_NUC970
+	select WATCHDOG_CORE
 	help
 	  Say Y here if to include support for the window watchdog timer
 	  for the Nuvoton NUC970 series MCU.
