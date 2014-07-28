@@ -31,11 +31,7 @@
 /* Initial IO mappings */	//TODO: MAP ENABLED IP ONLY
 static struct map_desc nuc970_iodesc[] __initdata = {
 	IODESC_ENT(IRQ),
-//	IODESC_ENT(GCR),
-//	IODESC_ENT(CLK),
 	IODESC_ENT(GCR_CLK),
-//	IODESC_ENT(EBI),
-//        IODESC_ENT(SDIC),
 	IODESC_ENT(EBI_SDIC),
         IODESC_ENT(EMAC0),
         IODESC_ENT(EMAC1),
@@ -52,18 +48,11 @@ static struct map_desc nuc970_iodesc[] __initdata = {
         IODESC_ENT(VIDEOIN),
         IODESC_ENT(CRYPTO),
         IODESC_ENT(UART),
-//        IODESC_ENT(TIMER),
-//        IODESC_ENT(ETIMER),
-//        IODESC_ENT(WDT),
-//        IODESC_ENT(WWDT),
-		IODESC_ENT(TIMER_ETIMER_WDT_WWDT),
+	IODESC_ENT(TIMER_ETIMER_WDT_WWDT),
         IODESC_ENT(GPIO),
         IODESC_ENT(RTC),
         IODESC_ENT(SC),
-//        IODESC_ENT(I2C),
-//        IODESC_ENT(SPI0),
-//        IODESC_ENT(SPI1),
-		IODESC_ENT(I2C_SPI),
+	IODESC_ENT(I2C_SPI),
         IODESC_ENT(PWM),
         IODESC_ENT(KPI),
         IODESC_ENT(ADC),
@@ -79,14 +68,14 @@ static struct platform_device *nuc970_dev[] __initdata = {
 
 void __init nuc970_setup_default_serial_console(void)
 {
-	struct clk *clk = clk_get(NULL, "nuc970-uart0");	
+	struct clk *clk = clk_get(NULL, "nuc970-uart0");
 
-	BUG_ON(IS_ERR(clk));	// hmmm, no chance to print error msg if enable clock failed...	
+	BUG_ON(IS_ERR(clk));	// hmmm, no chance to print error msg if enable clock failed...
 
-	clk_enable(clk);	
-	
+	clk_enable(clk);
+
 	// TODO: configure pin function and enable engine clock
-	
+
 	/* GPE0, GPE1 */
 	nuc970_mfp_set_port_e(0, 0x9);
 	nuc970_mfp_set_port_e(1, 0x9);

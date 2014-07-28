@@ -140,7 +140,7 @@ static struct plat_nuc970serial_port nuc970_uart_data[] = {
 
 static struct platform_device nuc970_serial_device = {
         .name			= "nuc970-uart",
-        .id			= 1,
+        .id			= 0,
         .dev			= {
                 .platform_data	= nuc970_uart_data,
         },
@@ -581,9 +581,10 @@ struct platform_device nuc970_device_spi1 = {
 
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
-	PWM_LOOKUP("nuc970-pwm", 0, "pwm-backlight", NULL),
+	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
 };
 
+#if 0
 static struct resource nuc970_pwm_resource[] = {
         [0] = {
                 .start = NUC970_PA_PWM,
@@ -596,13 +597,23 @@ static struct resource nuc970_pwm_resource[] = {
                 .flags = IORESOURCE_IRQ,
         }
 };
+#endif
 
-//TODO: create mutiple instance for each channel
-struct platform_device nuc970_device_pwm = {
+struct platform_device nuc970_device_pwm0 = {
         .name		  = "nuc970-pwm",
-        .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_pwm_resource),
-        .resource	  = nuc970_pwm_resource,
+        .id		  = 0,
+};
+struct platform_device nuc970_device_pwm1 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 1,
+};
+struct platform_device nuc970_device_pwm2 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 2,
+};
+struct platform_device nuc970_device_pwm3 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 3,
 };
 #endif
 
@@ -650,6 +661,61 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
+#ifdef CONFIG_NUC970_ETIMER
+static struct resource nuc970_etimer_resource[] = {
+        [0] = {
+                .start = IRQ_ETIMER0,
+                .end   = IRQ_ETIMER0,
+                .flags = IORESOURCE_IRQ,
+        },
+        [1] = {
+                .start = IRQ_ETIMER1,
+                .end   = IRQ_ETIMER1,
+                .flags = IORESOURCE_IRQ,
+        },
+        [2] = {
+                .start = IRQ_ETIMER2,
+                .end   = IRQ_ETIMER2,
+                .flags = IORESOURCE_IRQ,
+        },
+        [3] = {
+                .start = IRQ_ETIMER3,
+                .end   = IRQ_ETIMER3,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_etimer0 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 0,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer1 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 1,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer2 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 2,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer3 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 3,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+#endif
+
+struct platform_device nuc970_device_pinctrl = {
+        .name		  = "pinctrl-nuc970",
+        .id		  = -1,
+};
+
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device,
 #ifdef CONFIG_USB_OHCI_HCD
@@ -683,7 +749,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_emac1,
 #endif
 #ifdef CONFIG_PWM_NUC970
-	&nuc970_device_pwm,
+	&nuc970_device_pwm0,
+	&nuc970_device_pwm1,
+	&nuc970_device_pwm2,
+	&nuc970_device_pwm3,
 #endif
 #ifdef CONFIG_NUC970_WDT
 	&nuc970_device_wdt,
@@ -705,6 +774,15 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_SPI1_NUC970
 	&nuc970_device_spi1,
+#endif
+#ifdef CONFIG_NUC970_ETIMER
+	&nuc970_device_etimer0,
+	&nuc970_device_etimer1,
+	&nuc970_device_etimer2,
+	&nuc970_device_etimer3,
+#endif
+#ifdef CONFIG_PINCTRL
+	&nuc970_device_pinctrl,
 #endif
 };
 
