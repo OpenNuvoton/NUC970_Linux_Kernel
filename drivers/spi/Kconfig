@@ -487,6 +487,20 @@ config SPI_NUC900
 	help
 	  SPI driver for Nuvoton NUC900 series ARM SoCs
 
+config SPI_NUC970_P0
+	tristate "Nuvoton NUC970 Series SPI Port 0"
+	depends on ARCH_NUC970
+	select SPI_BITBANG
+	help
+	  SPI driver for Nuvoton NUC970 Series ARM SoCs
+
+config SPI_NUC970_P1
+	tristate "Nuvoton NUC970 Series SPI Port 1"
+	depends on ARCH_NUC970
+	select SPI_BITBANG
+	help
+	  SPI driver for Nuvoton NUC970 Series ARM SoCs	  
+
 #
 # Add new SPI master controllers in alphabetical order above this line
 #

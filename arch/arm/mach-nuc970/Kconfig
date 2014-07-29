@@ -2,6 +2,9 @@ if ARCH_NUC970
 
 config CPU_NUC970
 	bool
+	select HAVE_CLK_PREPARE
+	select HAVE_MACH_CLKDEV
+    select COMMON_CLK
 	default y
 	help
 	  Support for NUC970 of Nuvoton MCU

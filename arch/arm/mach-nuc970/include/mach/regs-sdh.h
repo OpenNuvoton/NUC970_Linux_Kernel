@@ -39,7 +39,7 @@
 #define REG_SDRSP1          (SDH_BA+0x834)  /* SD receive response token register 1 */
 #define REG_SDBLEN          (SDH_BA+0x838)  /* SD block length register */
 #define REG_SDTMOUT         (SDH_BA+0x83C)  /* SD block length register */
-#define REG_SDECR           (SDH_BA+0x83C)  /* SD extended control register */
+#define REG_SDECR           (SDH_BA+0x840)  /* SD extended control register */
 
 
 /* Flash buffer 0 registers */
@@ -52,9 +52,6 @@
 /* FMI Global Control and Status Register(FMICSR) */
 #define FMICSR_SW_RST       (1)
 #define FMICSR_SD_EN        (1<<1)
-#define FMICSR_MS_EN        (1<<2)
-#define FMICSR_SM_EN        (1<<3)
-#define FMICSR_CF_EN        (1<<4)
 
 /* FMI Global Interrupt Control Register(FMIIER) */
 #define FMIIER_DTA_IE       (1)

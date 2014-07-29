@@ -525,3 +525,7 @@ config SND_SOC_ML26124
 
 config SND_SOC_TPA6130A2
 	tristate
+
+config SND_SOC_NAU8822
+	tristate
+	

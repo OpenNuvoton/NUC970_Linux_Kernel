@@ -108,6 +108,13 @@ config GPIO_MAX730X
 
 comment "Memory mapped GPIO drivers:"
 
+config GPIO_NUC970
+	tristate "NUC970 GPIO support"
+	depends on GPIOLIB
+	select NEED_MACH_GPIO_H
+	help
+	  Say yes here to support GPIO functionality of NUC970 chip
+
 config GPIO_CLPS711X
 	def_bool y
 	depends on ARCH_CLPS711X
