@@ -340,18 +340,11 @@ static int nuc970serial_startup(struct uart_port *port)
 	struct tty_struct *tty = port->state->port.tty;
 	int retval;
 	
-	// enable clock
-	clk_prepare(clk_get(NULL, "uart0_eclk"));
-	clk_enable(clk_get(NULL, "uart0_eclk"));
-	
-	clk_prepare(clk_get(NULL, "uart0"));
-	clk_enable(clk_get(NULL, "uart0"));
-		
 	/* GPE0, GPE1 */
 	__raw_writel((__raw_readl(REG_MFP_GPE_L) & 0xffffff00) | 0x99, REG_MFP_GPE_L);
 	
 	/* Reset FIFO */
-	serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
+//	serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
 
 	/* Clear pending interrupts (not every bit are write 1 clear though...) */
 	serial_out(up, UART_REG_ISR, 0xFFFFFFFF);
@@ -629,7 +622,14 @@ static void __init nuc970serial_init_ports(void)
 {
 	static int first = 1;
 	int i;
-
+	
+	// enable clock
+	clk_prepare(clk_get(NULL, "uart0_eclk"));
+	clk_enable(clk_get(NULL, "uart0_eclk"));
+	
+	clk_prepare(clk_get(NULL, "uart0"));
+	clk_enable(clk_get(NULL, "uart0"));
+	
 	if (!first)
 		return;
 	first = 0;

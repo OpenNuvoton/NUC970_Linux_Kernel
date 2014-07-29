@@ -45,7 +45,7 @@ static struct map_desc nuc970_iodesc[] __initdata = {
         IODESC_ENT(GE),
         IODESC_ENT(SDH),
         IODESC_ENT(FMI),
-        IODESC_ENT(VIDEOIN),
+        IODESC_ENT(CAP),
         IODESC_ENT(CRYPTO),
         IODESC_ENT(UART),
 	IODESC_ENT(TIMER_ETIMER_WDT_WWDT),

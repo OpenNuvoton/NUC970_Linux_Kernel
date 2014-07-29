@@ -95,7 +95,7 @@ enum nuc970_clks {
 	hclk_gate, hclk1_div, gdma_gate, ebi_gate, tic_gate, sram_gate, 
 	hclkn_div, dram_gate, hclk234_div, 
 	usbh_gate, emac1_gate, usbd_gate, fmi_gate, nand_gate, emmc_gate, crypto_gate, jpeg_gate, jpeg_eclk_div, jpeg_eclk_gate,
-	emac0_gate, sdh_gate, audio_gate, lcd_gate, cap_gate,
+	emac0_gate, sdh_gate, audio_gate, lcd_gate, cap_gate, sensor_gate,
 	
 	// pclk
 	pclk_div, pclk4096_div, 
@@ -147,7 +147,7 @@ int __init nuc970_init_clocks(void)
 	
 	// HCLK & HCLK234
 	clk[hclkn_div]  = nuc970_clk_fixed_factor("hclkn_div", "sys_div", 1, 2);			//  /2		
-	clk[dram_gate] = nuc970_clk_gate("dram_gate", "hclkn_div", REG_CLK_HCLKEN, 1);
+	clk[dram_gate] = nuc970_clk_gate("dram_gate", "hclkn_div", REG_CLK_HCLKEN, 10);
 	clk[hclk_gate] = nuc970_clk_gate("hclk_gate", "hclkn_div", REG_CLK_HCLKEN, 1);
 	clk[sram_gate] = nuc970_clk_gate("sram_gate", "hclk_gate", REG_CLK_HCLKEN, 8);
 	clk[hclk234_div] = nuc970_clk_divider("hclk234_div", "hclkn_div", REG_CLK_DIV0, 20, 4);
@@ -161,9 +161,9 @@ int __init nuc970_init_clocks(void)
 	clk[emmc_gate] = nuc970_clk_gate("emmc_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 22);
 	clk[crypto_gate] = nuc970_clk_gate("crypto_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 23);
 	
-	clk[jpeg_gate] = nuc970_clk_gate("jpeg_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 18);
+	clk[jpeg_gate] = nuc970_clk_gate("jpeg_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 29);
 	clk[jpeg_eclk_div] = nuc970_clk_divider("jpeg_eclk_div", "hclk234_div", REG_CLK_DIV3, 28, 3);
-	clk[jpeg_eclk_gate] = nuc970_clk_gate("jpeg_eclk_gate", "jpeg_eclk_div", REG_CLK_HCLKEN, 18);
+	clk[jpeg_eclk_gate] = nuc970_clk_gate("jpeg_eclk_gate", "jpeg_eclk_div", REG_CLK_HCLKEN, 29);
 	
 	// HCLK4
 	clk[emac0_gate] = nuc970_clk_gate("emac0_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 16);
@@ -171,6 +171,7 @@ int __init nuc970_init_clocks(void)
 	clk[audio_gate] = nuc970_clk_gate("audio_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 24);
 	clk[lcd_gate] = nuc970_clk_gate("lcd_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 25);
 	clk[cap_gate] = nuc970_clk_gate("cap_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 26);
+	clk[sensor_gate] = nuc970_clk_gate("sensor_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 27);
 	
 			
 	// ECLK
@@ -414,6 +415,7 @@ int __init nuc970_init_clocks(void)
 	
 	// CPU
 	clk_register_clkdev(clk[cpu_div], "cpudiv", NULL);
+	clk_register_clkdev(clk[cpu_gate], "cpu", NULL);
 
 	// HCLK1
 	clk_register_clkdev(clk[hclk_gate], "hclk", NULL);
@@ -426,7 +428,7 @@ int __init nuc970_init_clocks(void)
 	
 	// HCLK234
 	clk_register_clkdev(clk[hclkn_div], "hclkndiv", NULL);
-	clk_register_clkdev(clk[dram_gate], "dram_hclk", NULL);
+	clk_register_clkdev(clk[dram_gate], "dram", NULL);
 	clk_register_clkdev(clk[hclk234_div], "hclk234div", NULL);
 		
 	//HCLK3
@@ -445,7 +447,7 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[sdh_gate], "sdh_hclk", NULL);
 	clk_register_clkdev(clk[audio_gate], "audio_hclk", NULL);
 	clk_register_clkdev(clk[lcd_gate], "lcd_hclk", NULL);
-	
+	clk_register_clkdev(clk[sensor_gate], "sensor_hclk", NULL);
 	clk_register_clkdev(clk[cap_gate], "cap_hclk", NULL);
 	
 	// ECLK
@@ -616,11 +618,28 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[can1_gate], "can1", NULL);
 	
 	// enable some important clocks
+	clk_prepare(clk_get(NULL, "cpu"));
+	clk_enable(clk_get(NULL, "cpu"));
+	
 	clk_prepare(clk_get(NULL, "hclk"));
 	clk_enable(clk_get(NULL, "hclk"));
 	
-	clk_prepare(clk_get(NULL, "ddr_hclk"));
-	clk_enable(clk_get(NULL, "ddr_hclk"));	
+	clk_prepare(clk_get(NULL, "sram"));
+	clk_enable(clk_get(NULL, "sram"));
 	
+	clk_prepare(clk_get(NULL, "dram"));
+	clk_enable(clk_get(NULL, "dram"));
+	
+	clk_prepare(clk_get(NULL, "ddr_hclk"));
+	clk_enable(clk_get(NULL, "ddr_hclk"));		
+	
+	// ******** bug, need to fix ******
+	// enable USBD PHY to enable USBH
+	clk_prepare(clk_get(NULL, "usbd_hclk"));
+	clk_enable(clk_get(NULL, "usbd_hclk"));
+	
+	__raw_writel((__raw_readl(0xf0006704) | 0x200), 0xf0006704);	
+	// ********************************
+		
 	return 0;
 }

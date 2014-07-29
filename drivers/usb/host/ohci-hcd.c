@@ -1196,6 +1196,10 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ohci_platform_driver
 #endif
 
+#ifdef CONFIG_USB_NUC970_OHCI
+#include "ohci-nuc970.c"
+#endif
+
 #if	!defined(PCI_DRIVER) &&		\
 	!defined(PLATFORM_DRIVER) &&	\
 	!defined(OMAP1_PLATFORM_DRIVER) &&	\
@@ -1211,7 +1215,8 @@ MODULE_LICENSE ("GPL");
 	!defined(AT91_PLATFORM_DRIVER) && \
 	!defined(NXP_PLATFORM_DRIVER) && \
 	!defined(DAVINCI_PLATFORM_DRIVER) && \
-	!defined(SPEAR_PLATFORM_DRIVER)
+	!defined(SPEAR_PLATFORM_DRIVER) && \
+	!defined(CONFIG_USB_NUC970_OHCI)
 #error "missing bus glue for ohci-hcd"
 #endif
 
