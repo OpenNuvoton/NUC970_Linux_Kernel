@@ -12,6 +12,7 @@
 
 #include <linux/export.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/err.h>
@@ -21,6 +22,9 @@
 
 #include <mach/map.h>
 #include <mach/regs-pwm.h>
+#include <mach/regs-clock.h>
+
+//#define DEBIG_PWM
 
 struct nuc970_chip {
 	struct platform_device	*pdev;
@@ -30,13 +34,34 @@ struct nuc970_chip {
 
 #define to_nuc970_chip(chip)	container_of(chip, struct nuc970_chip, chip)
 
+#ifdef DEBUG_PWM
+static void pwm_dbg(void)
+{
+
+	printk("%08x\n", __raw_readl(REG_PWM_PPR));
+	printk("%08x\n", __raw_readl(REG_PWM_CSR));
+	printk("%08x\n", __raw_readl(REG_PWM_PCR));
+	printk("%08x\n", __raw_readl(REG_PWM_CNR0));
+	printk("%08x\n", __raw_readl(REG_PWM_CMR0));
+	printk("%08x\n", __raw_readl(REG_PWM_CNR1));
+	printk("%08x\n", __raw_readl(REG_PWM_CMR1));
+	printk("%08x\n", __raw_readl(REG_PWM_CNR2));
+	printk("%08x\n", __raw_readl(REG_PWM_CMR2));
+	printk("%08x\n", __raw_readl(REG_PWM_CNR3));
+	printk("%08x\n", __raw_readl(REG_PWM_CMR3));
+	printk("%08x\n", __raw_readl(REG_PWM_PIER));
+	printk("%08x\n", __raw_readl(REG_PWM_PIIR));
+
+}
+#endif
 
 static int nuc970_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	//struct nuc970_chip *nuc970 = to_nuc970_chip(chip);
-	int ch = pwm->hwpwm;
+	int ch = pwm->hwpwm + chip->base;
 	unsigned long flags;
 
+	printk("enable ch %d\n", ch);
 	local_irq_save(flags);
 
 	if(ch == 0)
@@ -50,16 +75,19 @@ static int nuc970_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 
 
 	local_irq_restore(flags);
-
+#ifdef DEBUG_PWM
+	pwm_dbg();
+#endif
 	return 0;
 }
 
 static void nuc970_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	//struct nuc970_chip *nuc970 = to_nuc970_chip(chip);
-	int ch = pwm->hwpwm;
+	int ch = pwm->hwpwm + chip->base;
 	unsigned long flags;
 
+	printk("disable ch %d\n", ch);
 	local_irq_save(flags);
 	if(ch == 0)
 		__raw_writel(__raw_readl(REG_PWM_PCR) & ~(1), REG_PWM_PCR);
@@ -71,6 +99,9 @@ static void nuc970_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 		__raw_writel(__raw_readl(REG_PWM_PCR) & ~(1 << 16), REG_PWM_PCR);
 
 	local_irq_restore(flags);
+#ifdef DEBUG_PWM
+	pwm_dbg();
+#endif
 }
 
 
@@ -81,10 +112,13 @@ static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	//struct nuc970_chip *nuc9790 = to_nuc970_chip(chip);
 	unsigned long period, duty, prescale;
 	unsigned long flags;
-	int ch = pwm->hwpwm;
+	int ch = pwm->hwpwm + chip->base;
+
+	printk("channel number is %d period %d duty %d\n", ch, period_ns, duty_ns);
 
 	/* PWM clock comes from PCLK (75MHz) */
 	// TODO: get PCLK, calculate valid parameter range.
+	// TODO: Might need to adjust prescaler to support lower frequency
 	prescale = 75 - 1;
 	// now pwm time unit is 1000ns.
 	period = (period_ns + 500) / 1000;
@@ -95,20 +129,24 @@ static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	__raw_writel(prescale | (prescale << 8), REG_PWM_PPR);
 
 	if(ch == 0) {
-		__raw_writel(period, REG_PWM_CNR0);
-		__raw_writel(duty, REG_PWM_CMR0);
+		__raw_writel(period - 1, REG_PWM_CNR0);
+		__raw_writel(duty - 1, REG_PWM_CMR0);
 	} else if(ch == 1) {
-		__raw_writel(period, REG_PWM_CNR1);
-		__raw_writel(duty, REG_PWM_CMR1);
+		__raw_writel(period - 1, REG_PWM_CNR1);
+		__raw_writel(duty - 1, REG_PWM_CMR1);
 	} else if (ch == 2) {
-		__raw_writel(period, REG_PWM_CNR2);
-		__raw_writel(duty, REG_PWM_CMR2);
+		__raw_writel(period - 1, REG_PWM_CNR2);
+		__raw_writel(duty - 1, REG_PWM_CMR2);
 	} else {/* ch 3 */
-		__raw_writel(period, REG_PWM_CNR3);
-		__raw_writel(duty, REG_PWM_CMR3);
+		__raw_writel(period - 1, REG_PWM_CNR3);
+		__raw_writel(duty - 1, REG_PWM_CMR3);
 	}
 
 	local_irq_restore(flags);
+
+#ifdef DEBUG_PWM
+	pwm_dbg();
+#endif
 
 	return 0;
 }
@@ -122,48 +160,114 @@ static struct pwm_ops nuc970_pwm_ops = {
 
 static int nuc970_pwm_probe(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev;
+	//struct device *dev = &pdev->dev;
 	struct nuc970_chip *nuc970;
-	unsigned long flags;
-	//unsigned int id = pdev->id;
+	struct pinctrl *p;
+	//struct pinctrl_state *s;
+	//unsigned long flags;
 	int ret;
 
 	nuc970 = devm_kzalloc(&pdev->dev, sizeof(*nuc970), GFP_KERNEL);
 	if (nuc970 == NULL) {
-		dev_err(dev, "failed to allocate memory for pwm_device\n");
+		dev_err(&pdev->dev, "failed to allocate memory for pwm_device\n");
 		return -ENOMEM;
 	}
-
 	/* calculate base of control bits in TCON */
-	//nuc970->pwm_id = id; //?
+
 	nuc970->chip.dev = &pdev->dev;
 	nuc970->chip.ops = &nuc970_pwm_ops;
-	nuc970->chip.base = -1;  //?
-	nuc970->chip.npwm = 4;
+	//nuc970->chip.of_xlate = of_pwm_xlate_with_flags;
+	//nuc970->chip.of_pwm_n_cells = 3;
+	printk("pwm pdev->id: %d\n", pdev->id);
+	nuc970->chip.base = pdev->id;
+	nuc970->chip.npwm = 1;
 
-	nuc970->clk = devm_clk_get(dev, NULL);
-	if (IS_ERR(nuc970->clk)) {
-		dev_err(dev, "failed to get pwm clk\n");
-		return PTR_ERR(nuc970->clk);
+	//nuc970->clk = devm_clk_get(dev, NULL);
+	//if (IS_ERR(nuc970->clk)) {
+	//	dev_err(dev, "failed to get pwm clk\n");
+	//	return PTR_ERR(nuc970->clk);
+	//}
+
+	//clk_enable(nuc970->clk);
+	__raw_writel((__raw_readl(REG_CLK_PCLKEN1) | (1 << 27)),  REG_CLK_PCLKEN1);
+
+
+	if(pdev->id == 0) {
+#if defined (CONFIG_NUC970_PWM0_PA12)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PA");
+#elif defined (CONFIG_NUC970_PWM0_PB2)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PB");
+#elif defined (CONFIG_NUC970_PWM0_PC14)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PC");
+#elif defined (CONFIG_NUC970_PWM0_PD12)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PD");
+#endif
+
+#ifndef CONFIG_NUC970_PWM0_NONE
+		if(IS_ERR(p)) {
+			dev_err(&pdev->dev, "unable to reserve output pin\n");
+
+		}
+#endif
 	}
+	if(pdev->id == 1) {
+#if defined (CONFIG_NUC970_PWM1_PA13)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm1-PA");
+#elif defined (CONFIG_NUC970_PWM1_PB3)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm1-PB");
+#elif defined (CONFIG_NUC970_PWM1_PD13)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm1-PD");
+#endif
 
-	clk_enable(nuc970->clk);
+#ifndef CONFIG_NUC970_PWM1_NONE
+		if(IS_ERR(p)) {
+			dev_err(&pdev->dev, "unable to reserve output pin\n");
+		}
+#endif
+	}
+	if(pdev->id == 2) {
+#if defined (CONFIG_NUC970_PWM2_PA14)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm2-PA");
+#elif defined (CONFIG_NUC970_PWM2_PH2)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm2-PH");
+#elif defined (CONFIG_NUC970_PWM2_PD14)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm2-PD");
+#endif
 
-	local_irq_save(flags);
+#ifndef CONFIG_NUC970_PWM2_NONE
+		if(IS_ERR(p)) {
+			dev_err(&pdev->dev, "unable to reserve output pin\n");
+		}
+#endif
+	}
+	if(pdev->id == 3) {
+#if defined (CONFIG_NUC970_PWM3_PA15)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm3-PA");
+#elif defined (CONFIG_NUC970_PWM3_PH3)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm3-PH");
+#elif defined (CONFIG_NUC970_PWM3_PD15)
+		p = devm_pinctrl_get_select(&pdev->dev, "pwm3-PD");
+#endif
 
-	local_irq_restore(flags);
+#ifndef CONFIG_NUC970_PWM3_NONE
+		if(IS_ERR(p)) {
+			dev_err(&pdev->dev, "unable to reserve output pin\n");
+		}
+#endif
+	}
 
 	ret = pwmchip_add(&nuc970->chip);
 	if (ret < 0) {
-		dev_err(dev, "failed to register pwm\n");
+		dev_err(&pdev->dev, "failed to register pwm\n");
 		goto err;
 	}
 
 	platform_set_drvdata(pdev, nuc970);
+
 	return 0;
 
 err:
-	clk_disable(nuc970->clk);
+	//clk_disable(nuc970->clk);
 	return ret;
 }
 
@@ -178,7 +282,7 @@ static int nuc970_pwm_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_SLEEP
 static int nuc970_pwm_suspend(struct device *dev)
 {
-	struct nuc970_chip *chip = dev_get_drvdata(dev);
+	//struct nuc970_chip *chip = dev_get_drvdata(dev);
 
 	__raw_writel(0, REG_PWM_CNR0);
 	__raw_writel(0, REG_PWM_CNR1);
@@ -188,17 +292,27 @@ static int nuc970_pwm_suspend(struct device *dev)
 	return 0;
 }
 
-static int nu970_pwm_resume(struct device *dev)
+static int nuc970_pwm_resume(struct device *dev)
 {
-	struct nuc970_chip *chip = dev_get_drvdata(dev);
+	//struct nuc970_chip *chip = dev_get_drvdata(dev);
 
 
 	return 0;
 }
+#else
+static int nuc970_pwm_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int nuc970_pwm_resume(struct device *dev)
+{
+	return 0;
+}
+
 #endif
 
-static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend,
-			nuc970_pwm_resume);
+static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend, nuc970_pwm_resume);
 
 static struct platform_driver nuc970_pwm_driver = {
 	.driver		= {
@@ -211,16 +325,9 @@ static struct platform_driver nuc970_pwm_driver = {
 };
 
 
-static int __init pwm_init(void)
-{
-	return platform_driver_register(&nuc970_pwm_driver);
-}
-arch_initcall(pwm_init);
 
-static void __exit pwm_exit(void)
-{
-	platform_driver_unregister(&nuc970_pwm_driver);
-}
-module_exit(pwm_exit);
+module_platform_driver(nuc970_pwm_driver);
 
-
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Nuvoton Technology Corp.");
+MODULE_ALIAS("platform:nuc970-pwm");

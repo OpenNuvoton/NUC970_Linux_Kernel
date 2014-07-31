@@ -28,6 +28,12 @@ menuconfig PWM
 
 if PWM
 
+config PWM_SYSFS
+	bool
+	default y if SYSFS
+
+
+
 config PWM_NUC970
 	tristate "NUC970 PWM support"
 	depends on ARCH_NUC970
@@ -35,7 +41,93 @@ config PWM_NUC970
 	  Generic PWM framework driver for Nuvoton NUC970 Series MCU.
 
 	  To compile this driver as a module, choose M here: the module
-	  will be called pwm-nuc970.	  
+	  will be called pwm-nuc970.
+
+choice
+	prompt "NUC970 PWM channel 0 output pin"
+	default NUC970_PWM0_NONE
+	depends on PWM_NUC970
+	help
+	  Select PWM channel 0 output pin.
+
+	config NUC970_PWM0_NONE
+		bool "No output"
+
+	config NUC970_PWM0_PA12
+		bool "Output from PA12"
+
+	config NUC970_PWM0_PB2
+		bool "Output from PB2"
+
+	config NUC970_PWM0_PC14
+		bool "Output from PC14"
+
+	config NUC970_PWM0_PD12
+		bool "Output from PD12"
+
+endchoice
+
+choice
+	prompt "NUC970 PWM channel 1 output pin"
+	default NUC970_PWM1_NONE
+	depends on PWM_NUC970
+	help
+	  Select PWM channel 1 output pin.
+
+	config NUC970_PWM1_NONE
+		bool "No output"
+
+	config NUC970_PWM1_PA13
+		bool "Output from PA13"
+
+	config NUC970_PWM1_PB3
+		bool "Output from PB3"
+
+	config NUC970_PWM1_PD13
+		bool "Output from PD13"
+endchoice
+
+choice
+	prompt "NUC970 PWM channel 2 output pin"
+	default NUC970_PWM2_NONE
+	depends on PWM_NUC970
+	help
+	  Select PWM channel 2 output pin.
+
+	config NUC970_PWM2_NONE
+		bool "No output"
+
+	config NUC970_PWM2_PA14
+		bool "Output from PA14"
+
+	config NUC970_PWM2_PD14
+		bool "Output from PD14"
+
+	config NUC970_PWM2_PH2
+		bool "Output from PH2"
+
+endchoice
+
+choice
+	prompt "NUC970 PWM channel 3 output pin"
+	default NUC970_PWM3_NONE
+	depends on PWM_NUC970
+	help
+	  Select PWM channel 3 output pin.
+
+	config NUC970_PWM3_NONE
+		bool "No output"
+
+	config NUC970_PWM3_PA15
+		bool "Output from PA15"
+
+	config NUC970_PWM3_PD15
+		bool "Output from PD15"
+
+	config NUC970_PWM3_PH3
+		bool "Output from PH3"
+
+endchoice
 
 config PWM_AB8500
 	tristate "AB8500 PWM support"
@@ -106,6 +198,15 @@ config PWM_MXS
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-mxs.
 
+config PWM_PCA9685
+	tristate "NXP PCA9685 PWM driver"
+	depends on OF && REGMAP_I2C
+	help
+	  Generic PWM framework driver for NXP PCA9685 LED controller.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-pca9685.
+
 config PWM_PUV3
 	tristate "PKUnity NetBook-0916 PWM support"
 	depends on ARCH_PUV3
@@ -123,6 +224,16 @@ config PWM_PXA
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-pxa.
+
+config PWM_RENESAS_TPU
+	tristate "Renesas TPU PWM support"
+	depends on ARCH_SHMOBILE
+	help
+	  This driver exposes the Timer Pulse Unit (TPU) PWM controller found
+	  in Renesas chips through the PWM API.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-renesas-tpu.
 
 config PWM_SAMSUNG
 	tristate "Samsung PWM support"

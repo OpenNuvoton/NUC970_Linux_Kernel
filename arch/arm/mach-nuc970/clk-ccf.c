@@ -97,6 +97,7 @@ enum nuc970_clks {
 	usbh_gate, emac1_gate, emac1_eclk_div, emac1_eclk_gate, usbd_gate, fmi_gate, nand_gate, emmc_gate, crypto_gate, jpeg_gate, jpeg_eclk_div, jpeg_eclk_gate,
 	emac0_gate, emac0_eclk_div, emac0_eclk_gate, sdh_gate, audio_gate, lcd_gate, cap_gate,
 	
+	
 	// pclk
 	pclk_div, pclk4096_div, 
 	i2c0_gate, i2c1_gate,
@@ -173,6 +174,7 @@ int __init nuc970_init_clocks(void)
 	clk[audio_gate] = nuc970_clk_gate("audio_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 24);
 	clk[lcd_gate] = nuc970_clk_gate("lcd_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 25);
 	clk[cap_gate] = nuc970_clk_gate("cap_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 26);
+	clk[sensor_gate] = nuc970_clk_gate("sensor_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 27);
 	
 	clk[emac0_gate] = nuc970_clk_gate("emac0_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 16);
 	clk[emac0_eclk_div] = nuc970_clk_divider("emac0_eclk_div", "hclk234_div", REG_CLK_DIV8, 0, 8);
@@ -455,7 +457,7 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[sdh_gate], "sdh_hclk", NULL);
 	clk_register_clkdev(clk[audio_gate], "audio_hclk", NULL);
 	clk_register_clkdev(clk[lcd_gate], "lcd_hclk", NULL);
-	
+	clk_register_clkdev(clk[sensor_gate], "sensor_hclk", NULL);
 	clk_register_clkdev(clk[cap_gate], "cap_hclk", NULL);
 	
 	// ECLK
