@@ -95,7 +95,7 @@ enum nuc970_clks {
 	hclk_gate, hclk1_div, gdma_gate, ebi_gate, tic_gate, sram_gate, 
 	hclkn_div, dram_gate, hclk234_div, 
 	usbh_gate, emac1_gate, emac1_eclk_div, emac1_eclk_gate, usbd_gate, fmi_gate, nand_gate, emmc_gate, crypto_gate, jpeg_gate, jpeg_eclk_div, jpeg_eclk_gate,
-	emac0_gate, emac0_eclk_div, emac0_eclk_gate, sdh_gate, audio_gate, lcd_gate, cap_gate,
+	emac0_gate, emac0_eclk_div, emac0_eclk_gate, sdh_gate, audio_gate, lcd_gate, cap_gate, sensor_gate,
 	
 	
 	// pclk
