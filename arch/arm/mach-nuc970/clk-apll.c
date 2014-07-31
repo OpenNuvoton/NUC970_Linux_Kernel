@@ -43,6 +43,18 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 		case 16950000:			//i2s
 			reg |= 0x21f0;
 			break;
+		
+		case 26400000:			//system default, 264MHz
+			reg |= 0x15;
+			break;
+		
+		case 30000000:		
+			reg |= 0x18;
+			break;
+		
+		default:
+			reg |= 0x15;
+			break;
 	}
 	
 	writel(reg, pll->base);
@@ -62,10 +74,14 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 	
 	switch(reg)
 	{
-		case 0x0015:
+		case 0x15:
 			ll = 264000000;		//system default, 264MHz
 			break;
-			
+		
+		case 0x18:
+			ll = 300000000;
+			break;
+				
 		case 0x8027:
 			ll = 96000000;		//usbh
 			break;
