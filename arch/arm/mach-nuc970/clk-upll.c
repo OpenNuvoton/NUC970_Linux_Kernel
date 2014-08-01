@@ -38,6 +38,10 @@ static unsigned long clk_upll_recalc_rate(struct clk_hw *hw,
 			ll = 264000000;
 			break;
 		
+		case 0x18:
+			ll = 300000000;
+			break;
+		
 		default:
 			ll = 264000000;
 			break;

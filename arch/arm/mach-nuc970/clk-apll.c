@@ -30,16 +30,30 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 	
 	reg = readl(pll->base) & ~0x0FFFFFFF;
 	
-	printk("clk_apll_set_rate-->%ld\n", rate);
-	
 	switch(rate)
 	{
+		case 96000000:			//usbh
+			reg |= 0x8027;
+			break;
+			
 		case 98400000:			//i2s
 			reg |= 0x8028;
 			break;
 		
 		case 16950000:			//i2s
 			reg |= 0x21f0;
+			break;
+		
+		case 26400000:			//system default, 264MHz
+			reg |= 0x15;
+			break;
+		
+		case 30000000:		
+			reg |= 0x18;
+			break;
+		
+		default:
+			reg |= 0x15;
 			break;
 	}
 	
@@ -60,8 +74,16 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 	
 	switch(reg)
 	{
-		case 0x0015:
+		case 0x15:
 			ll = 264000000;		//system default, 264MHz
+			break;
+		
+		case 0x18:
+			ll = 300000000;
+			break;
+				
+		case 0x8027:
+			ll = 96000000;		//usbh
 			break;
 			
 		case 0x8028:
@@ -77,16 +99,12 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 			break;
 	}
 	
-	printk("clk_apll_recalc_rate-->%lld\n", ll);
-	
 	return ll;
 }
 
 static long clk_apll_round_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long *prate)
 {
-	printk("clk_apll_round_rate-->%ld\n", rate);
-	
 	return rate;
 }
 
@@ -95,7 +113,6 @@ static int clk_apll_enable(struct clk_hw *hw)
 	struct clk_apll *pll = to_clk_apll(hw);
 	u32 val;
 	
-	printk("clk_apll_enable-->\n");
 	val = readl(pll->base);
 	val &= ~0x10000000;			// PD = 0, power down mode disable
 	val |= 0x40000000;			// RESETN = 1
@@ -109,7 +126,6 @@ static void clk_apll_disable(struct clk_hw *hw)
 	struct clk_apll *pll = to_clk_apll(hw);
 	u32 val;
 	
-	printk("clk_apll_disable-->\n");
 	val = readl(pll->base);
 	val |= 0x10000000;			// PD = 1, power down mode enable
 	val &= ~0x40000000;			// RESETN = 1

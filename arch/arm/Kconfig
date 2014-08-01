@@ -591,6 +591,7 @@ config ARCH_NUC970
 	select CPU_ARM926T
 	select CLKSRC_MMIO
 	select GENERIC_CLOCKEVENTS
+	select PINCTRL
 	help
 	  Support for Nuvoton NUC970 Series MCUs.
 

@@ -146,7 +146,7 @@ static struct plat_nuc970serial_port nuc970_uart_data[] = {
 
 static struct platform_device nuc970_serial_device = {
         .name			= "nuc970-uart",
-        .id			= 1,
+        .id			= 0,
         .dev			= {
                 .platform_data	= nuc970_uart_data,
         },
@@ -378,11 +378,11 @@ struct platform_device nuc970_device_jpeg = {
 #endif
 
 /* VIDEOIN */
-#ifdef CONFIG_NUC970_VCAP
-static struct resource nuc970_videoin_resource[] = {
+#ifdef CONFIG_VIDEO_NUC970
+static struct resource nuc970_cap_resource[] = {
         [0] = {
-                .start = NUC970_PA_VIDEOIN,
-                .end   = NUC970_PA_VIDEOIN + NUC970_SZ_VIDEOIN - 1,
+                .start = NUC970_PA_CAP,
+                .end   = NUC970_PA_CAP + NUC970_SZ_CAP - 1,
                 .flags = IORESOURCE_MEM,
         },
         [1] = {
@@ -392,11 +392,11 @@ static struct resource nuc970_videoin_resource[] = {
         }
 };
 
-struct platform_device nuc970_device_videoin = {
+struct platform_device nuc970_device_cap = {
         .name		  = "nuc970-videoin",
         .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_videoin_resource),
-        .resource	  = nuc970_videoin_resource,
+        .num_resources	  = ARRAY_SIZE(nuc970_cap_resource),
+        .resource	  = nuc970_cap_resource,
 };
 
 #endif
@@ -455,9 +455,14 @@ struct platform_device nuc970_device_audio_pcm = {
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
-#if defined(CONFIG_SENSOR_OV7725) || defined(CONFIG_SENSOR_OV7725_DEV1)
+#ifdef CONFIG_SENSOR_OV7725
 	{
 		I2C_BOARD_INFO("ov7725", 0x21),
+	},
+#endif
+#ifdef CONFIG_SENSOR_OV5640
+	{
+		I2C_BOARD_INFO("ov5640",  0x3c),
 	},
 #endif
 #ifdef CONFIG_SND_SOC_NAU8822
@@ -620,9 +625,10 @@ struct platform_device nuc970_device_spi1 = {
 
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
-	PWM_LOOKUP("nuc970-pwm", 0, "pwm-backlight", NULL),
+	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
 };
 
+#if 0
 static struct resource nuc970_pwm_resource[] = {
         [0] = {
                 .start = NUC970_PA_PWM,
@@ -635,13 +641,23 @@ static struct resource nuc970_pwm_resource[] = {
                 .flags = IORESOURCE_IRQ,
         }
 };
+#endif
 
-//TODO: create mutiple instance for each channel
-struct platform_device nuc970_device_pwm = {
+struct platform_device nuc970_device_pwm0 = {
         .name		  = "nuc970-pwm",
-        .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_pwm_resource),
-        .resource	  = nuc970_pwm_resource,
+        .id		  = 0,
+};
+struct platform_device nuc970_device_pwm1 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 1,
+};
+struct platform_device nuc970_device_pwm2 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 2,
+};
+struct platform_device nuc970_device_pwm3 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 3,
 };
 #endif
 
@@ -689,6 +705,61 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
+#ifdef CONFIG_NUC970_ETIMER
+static struct resource nuc970_etimer_resource[] = {
+        [0] = {
+                .start = IRQ_ETIMER0,
+                .end   = IRQ_ETIMER0,
+                .flags = IORESOURCE_IRQ,
+        },
+        [1] = {
+                .start = IRQ_ETIMER1,
+                .end   = IRQ_ETIMER1,
+                .flags = IORESOURCE_IRQ,
+        },
+        [2] = {
+                .start = IRQ_ETIMER2,
+                .end   = IRQ_ETIMER2,
+                .flags = IORESOURCE_IRQ,
+        },
+        [3] = {
+                .start = IRQ_ETIMER3,
+                .end   = IRQ_ETIMER3,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_etimer0 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 0,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer1 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 1,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer2 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 2,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer3 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 3,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+#endif
+#ifdef CONFIG_PINCTRL
+struct platform_device nuc970_device_pinctrl = {
+        .name		  = "pinctrl-nuc970",
+        .id		  = -1,
+};
+#endif
 #ifdef CONFIG_GPIO_NUC970 
 #ifdef CONFIG_I2C_ALGOBIT
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
@@ -725,6 +796,7 @@ struct platform_device nuc970_device_gpio = {
    
 #endif
 
+
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device,
 #ifdef CONFIG_USB_OHCI_HCD
@@ -758,7 +830,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_emac1,
 #endif
 #ifdef CONFIG_PWM_NUC970
-	&nuc970_device_pwm,
+	&nuc970_device_pwm0,
+	&nuc970_device_pwm1,
+	&nuc970_device_pwm2,
+	&nuc970_device_pwm3,
 #endif
 #ifdef CONFIG_NUC970_WDT
 	&nuc970_device_wdt,
@@ -766,8 +841,8 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_NUC970_WWDT
 	&nuc970_device_wwdt,
 #endif
-#ifdef CONFIG_NUC970_VCAP
-	&nuc970_device_videoin,
+#ifdef CONFIG_VIDEO_NUC970
+	&nuc970_device_cap,
 #endif
 #ifdef CONFIG_SND_SOC_NUC970
 	&nuc970_device_audio_pcm,
@@ -783,11 +858,20 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_SPI_NUC970_P1
 	&nuc970_device_spi1,
 #endif
+#ifdef CONFIG_NUC970_ETIMER
+	&nuc970_device_etimer0,
+	&nuc970_device_etimer1,
+	&nuc970_device_etimer2,
+	&nuc970_device_etimer3,
+#endif
+#ifdef CONFIG_PINCTRL
+	&nuc970_device_pinctrl,
+#endif
 #ifdef CONFIG_GPIO_NUC970
 	&nuc970_device_gpio,
- #ifdef CONFIG_I2C_ALGOBIT
+#ifdef CONFIG_I2C_ALGOBIT
 	&i2c_gpio,
- #endif
+#endif
 #endif
 };
 
