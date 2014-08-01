@@ -111,7 +111,7 @@ static struct platform_device nuc970_device_ohci = {
 };
 #endif
 /* USB Device (Gadget)*/
-#ifdef CONFIG_USBD_NUC970
+#ifdef CONFIG_USB_NUC970
 static struct resource nuc970_usbgadget_resource[] = {
         [0] = {
                 .start = NUC970_PA_USBDEV,
@@ -127,7 +127,7 @@ static struct resource nuc970_usbgadget_resource[] = {
 
 static u64 nuc970_device_udc_dmamask = 0xffffffffUL;
 static struct platform_device nuc970_device_usbgadget = {
-	.name		= "nuc970-usbgadget",
+	.name		= "nuc970-usbdev",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(nuc970_usbgadget_resource),
 	.resource	= nuc970_usbgadget_resource,
@@ -255,7 +255,7 @@ struct platform_device nuc970_device_sdh = {
 #endif
 
 /* NAND, eMMC Controller */
-#ifdef CONFIG_MMC_NUC970_FMI
+#ifdef CONFIG_MTD_NAND_NUC970
 static struct resource nuc970_fmi_resource[] = {
         [0] = {
                 .start = NUC970_PA_FMI,
@@ -270,7 +270,7 @@ static struct resource nuc970_fmi_resource[] = {
 };
 
 static u64 nuc970_device_fmi_dmamask = 0xffffffffUL;
-struct platform_device nuc970_device_sdh = {
+struct platform_device nuc970_device_fmi = {
         .name		  = "nuc970-fmi",
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_fmi_resource),
@@ -745,7 +745,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_MMC_NUC970_SD
 	&nuc970_device_sdh,
 #endif
-#ifdef CONFIG_MMC_NUC970_FMI
+#ifdef CONFIG_MTD_NAND_NUC970
 	&nuc970_device_fmi,
 #endif
 #ifdef CONFIG_JPEG_CODEC
@@ -774,7 +774,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_audio,
 	&nuc970_device_audio_i2s,
 #endif
-#ifdef CONFIG_USBD_NUC970
+#ifdef CONFIG_USB_NUC970
 	&nuc970_device_usbgadget,
 #endif
 #ifdef CONFIG_SPI_NUC970_P0
