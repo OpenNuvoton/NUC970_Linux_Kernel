@@ -1,18 +1,17 @@
 /*
- *  Copyright (C) 2008 Sascha Hauer <s.hauer@pengutronix.de>, Pengutronix
+ * linux/arch/arm/mach-nuc970/clk-ccf.c
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
+ * Copyright (c) 2014 Nuvoton Technology Corporation.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
  *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
  */
 
 #include <linux/kernel.h>
@@ -389,15 +388,14 @@ int __init nuc970_init_clocks(void)
 	clk[etimer2_gate] = nuc970_clk_gate("etimer2_gate", "pclk_div", REG_CLK_PCLKEN0, 6);
 	clk[etimer3_gate] = nuc970_clk_gate("etimer3_gate", "pclk_div", REG_CLK_PCLKEN0, 7);
 	
-	clk[timer0_gate] = nuc970_clk_gate("timer0_gate", "pclk_div", REG_CLK_PCLKEN0, 8);
-	clk[timer1_gate] = nuc970_clk_gate("timer1_gate", "pclk_div", REG_CLK_PCLKEN0, 9);
-	clk[timer2_gate] = nuc970_clk_gate("timer2_gate", "pclk_div", REG_CLK_PCLKEN0, 10);
-	clk[timer3_gate] = nuc970_clk_gate("timer3_gate", "pclk_div", REG_CLK_PCLKEN0, 11);
-	clk[timer4_gate] = nuc970_clk_gate("timer4_gate", "pclk_div", REG_CLK_PCLKEN0, 12);
-	
 	clk[can0_gate] = nuc970_clk_gate("can0_gate", "pclk_div", REG_CLK_PCLKEN1, 8);
 	clk[can1_gate] = nuc970_clk_gate("can1_gate", "pclk_div", REG_CLK_PCLKEN1, 9);
-	
+
+	clk[timer0_gate] = nuc970_clk_gate("timer0_gate", "xin", REG_CLK_PCLKEN0, 8);
+	clk[timer1_gate] = nuc970_clk_gate("timer1_gate", "xin", REG_CLK_PCLKEN0, 9);
+	clk[timer2_gate] = nuc970_clk_gate("timer2_gate", "xin", REG_CLK_PCLKEN0, 10);
+	clk[timer3_gate] = nuc970_clk_gate("timer3_gate", "xin", REG_CLK_PCLKEN0, 11);
+	clk[timer4_gate] = nuc970_clk_gate("timer4_gate", "xin", REG_CLK_PCLKEN0, 12);	
 	
 	for (i = 0; i < ARRAY_SIZE(clk); i++)
 		if (IS_ERR(clk[i]))
