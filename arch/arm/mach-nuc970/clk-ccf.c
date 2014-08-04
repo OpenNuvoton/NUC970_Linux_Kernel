@@ -50,8 +50,8 @@ static const char *uart10_sel_clks[] = { "xin", "dummy", "uart10_aplldiv", "uart
 static const char *system_sel_clks[] = { "xin", "dummy", "system_aplldiv", "system_uplldiv", };
 static const char *gpio_sel_clks[] = { "xin", "xin32k"};
 static const char *kpi_sel_clks[] = { "xin", "xin32k"};
-static const char *etimer_sel_clks[] = { "xin", "pclk_div", "pclk4096_div", "xin32k"};
-static const char *wwdt_sel_clks[] = { "xin", "xin128_div", "pclk4096_div", "xin32k"};
+static const char *etimer_sel_clks[] = { "xin", "pclk_div", "pclk4096_div", "xin32k",};
+static const char *wwdt_sel_clks[] = { "xin", "xin128_div", "pclk4096_div", "xin32k",};
 
 enum nuc970_clks {
 	// source
@@ -407,6 +407,8 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[timer0_gate], "timer0", NULL);		// limitation of name size is xxxxxxxxxxxxxxxx
 	clk_register_clkdev(clk[timer1_gate], "timer1", NULL);	
 	
+	clk_register_clkdev(clk[pclk4096_div], "pclk4096_div", NULL);
+	
 	clk_register_clkdev(clk[xin], "xin", NULL);
 	clk_register_clkdev(clk[xin32k], "xin32k", NULL);
 	clk_register_clkdev(clk[apll], "apll", NULL);
@@ -575,14 +577,14 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[kpi_eclk_div], "kpi_eclk_div", NULL);
 	clk_register_clkdev(clk[kpi_eclk_gate], "kpi_eclk", NULL);
 	
-	clk_register_clkdev(clk[etimer0_eclk_mux], "etimer0_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer0_eclk_gate], "etimer0_eclk", NULL);
-	clk_register_clkdev(clk[etimer1_eclk_mux], "etimer1_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer1_eclk_gate], "etimer1_eclk", NULL);
-	clk_register_clkdev(clk[etimer2_eclk_mux], "etimer2_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer2_eclk_gate], "etimer2_eclk", NULL);
-	clk_register_clkdev(clk[etimer3_eclk_mux], "etimer3_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer3_eclk_gate], "etimer3_eclk", NULL);
+	clk_register_clkdev(clk[etimer0_eclk_mux], "etmr0_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer0_eclk_gate], "etmr0_eclk", NULL);
+	clk_register_clkdev(clk[etimer1_eclk_mux], "etmr1_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer1_eclk_gate], "etmr1_eclk", NULL);
+	clk_register_clkdev(clk[etimer2_eclk_mux], "etmr2_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer2_eclk_gate], "etmr2_eclk", NULL);
+	clk_register_clkdev(clk[etimer3_eclk_mux], "etmr3_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer3_eclk_gate], "etmr3_eclk", NULL);
 	
 	clk_register_clkdev(clk[wwdt_eclk_mux], "wwdt_eclk_mux", NULL);
 	clk_register_clkdev(clk[wwdt_eclk_gate], "wwdt_eclk", NULL);
