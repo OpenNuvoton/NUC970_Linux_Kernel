@@ -61,7 +61,6 @@ static int nuc970_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 	int ch = pwm->hwpwm + chip->base;
 	unsigned long flags;
 
-	printk("enable ch %d\n", ch);
 	local_irq_save(flags);
 
 	if(ch == 0)
@@ -87,7 +86,6 @@ static void nuc970_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 	int ch = pwm->hwpwm + chip->base;
 	unsigned long flags;
 
-	printk("disable ch %d\n", ch);
 	local_irq_save(flags);
 	if(ch == 0)
 		__raw_writel(__raw_readl(REG_PWM_PCR) & ~(1), REG_PWM_PCR);
@@ -109,17 +107,14 @@ static void nuc970_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 		int duty_ns, int period_ns)
 {
-	//struct nuc970_chip *nuc9790 = to_nuc970_chip(chip);
+	struct nuc970_chip *nuc970 = to_nuc970_chip(chip);
 	unsigned long period, duty, prescale;
 	unsigned long flags;
 	int ch = pwm->hwpwm + chip->base;
 
-	printk("channel number is %d period %d duty %d\n", ch, period_ns, duty_ns);
+	// Get PCLK, calculate valid parameter range.
+	prescale = clk_get_rate(nuc970->clk) / 1000000 - 1;
 
-	/* PWM clock comes from PCLK (75MHz) */
-	// TODO: get PCLK, calculate valid parameter range.
-	// TODO: Might need to adjust prescaler to support lower frequency
-	prescale = 75 - 1;
 	// now pwm time unit is 1000ns.
 	period = (period_ns + 500) / 1000;
 	duty = (duty_ns + 500) / 1000;
@@ -160,11 +155,9 @@ static struct pwm_ops nuc970_pwm_ops = {
 
 static int nuc970_pwm_probe(struct platform_device *pdev)
 {
-	//struct device *dev = &pdev->dev;
+
 	struct nuc970_chip *nuc970;
 	struct pinctrl *p;
-	//struct pinctrl_state *s;
-	//unsigned long flags;
 	int ret;
 
 	nuc970 = devm_kzalloc(&pdev->dev, sizeof(*nuc970), GFP_KERNEL);
@@ -178,19 +171,20 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	nuc970->chip.ops = &nuc970_pwm_ops;
 	//nuc970->chip.of_xlate = of_pwm_xlate_with_flags;
 	//nuc970->chip.of_pwm_n_cells = 3;
-	printk("pwm pdev->id: %d\n", pdev->id);
 	nuc970->chip.base = pdev->id;
 	nuc970->chip.npwm = 1;
 
-	//nuc970->clk = devm_clk_get(dev, NULL);
-	//if (IS_ERR(nuc970->clk)) {
-	//	dev_err(dev, "failed to get pwm clk\n");
-	//	return PTR_ERR(nuc970->clk);
-	//}
+	nuc970->clk = clk_get(NULL, "pwm");
+	if (IS_ERR(nuc970->clk)) {
+		dev_err(&pdev->dev, "failed to get pwm clock\n");
+		ret = PTR_ERR(nuc970->clk);
+		return ret;
+	}
 
-	//clk_enable(nuc970->clk);
-	__raw_writel((__raw_readl(REG_CLK_PCLKEN1) | (1 << 27)),  REG_CLK_PCLKEN1);
-
+	clk_prepare(nuc970->clk);
+	clk_enable(nuc970->clk);
+	// all channel prescale output div by 1
+	__raw_writel(0x4444, REG_PWM_CSR);
 
 	if(pdev->id == 0) {
 #if defined (CONFIG_NUC970_PWM0_PA12)
@@ -275,7 +269,7 @@ static int nuc970_pwm_remove(struct platform_device *pdev)
 {
 	struct nuc970_chip *nuc970 = platform_get_drvdata(pdev);
 
-	// TODO: Disable clock
+	clk_disable(nuc970->clk);
 	return pwmchip_remove(&nuc970->chip);
 }
 
