@@ -38,7 +38,6 @@
 
 struct nuc970_wwdt {
 	struct resource		*res;
-	struct clk		*clock;
 	struct platform_device	*pdev;
 };
 
@@ -99,6 +98,7 @@ static struct watchdog_device nuc970_wdd = {
 static int nuc970wwdt_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	struct clk *clk, *eclk, *clkmux, *clklxt;
 
 	nuc970_wwdt = devm_kzalloc(&pdev->dev, sizeof(struct nuc970_wwdt), GFP_KERNEL);
 	if (!nuc970_wwdt)
@@ -118,21 +118,46 @@ static int nuc970wwdt_probe(struct platform_device *pdev)
 		return -ENOENT;
 	}
 
-	nuc970_wwdt->clock = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(nuc970_wwdt->clock)) {
-		dev_err(&pdev->dev, "failed to find window watchdog clock source\n");
-		ret = PTR_ERR(nuc970_wwdt->clock);
+
+	clkmux = clk_get(NULL, "wwdt_eclk_mux");
+	if (IS_ERR(clkmux)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock mux\n");
+		ret = PTR_ERR(clkmux);
 		return ret;
 	}
 
-	clk_enable(nuc970_wwdt->clock);
+	clklxt = clk_get(NULL, "xin32k");
+	if (IS_ERR(clklxt)) {
+		dev_err(&pdev->dev, "failed to get 32k clk\n");
+		ret = PTR_ERR(clklxt);
+		return ret;
+	}
 
-	__raw_writel(__raw_readl(REG_CLK_DIV8) | 0xC00, REG_CLK_DIV8);
+
+	clk_set_parent(clkmux, clklxt);
+
+	clk = clk_get(NULL, "wwdt");
+	if (IS_ERR(clk)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock\n");
+		ret = PTR_ERR(clk);
+		return ret;
+	}
+
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	eclk = clk_get(NULL, "wwdt_eclk");
+	if (IS_ERR(eclk)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock\n");
+		ret = PTR_ERR(eclk);
+		return ret;
+	}
+
+	clk_prepare(eclk);
+	clk_enable(eclk);
 
 	ret = watchdog_register_device(&nuc970_wdd);
 	if (ret) {
-		clk_disable(nuc970_wwdt->clock);
-		clk_put(nuc970_wwdt->clock);
 		dev_err(&pdev->dev, "err register window watchdog device\n");
 		return ret;
 	}
@@ -145,9 +170,7 @@ static int nuc970wwdt_remove(struct platform_device *pdev)
 {
 
 	watchdog_unregister_device(&nuc970_wdd);
-
-	clk_disable(nuc970_wwdt->clock);
-	clk_put(nuc970_wwdt->clock);
+	// There's no way out~~~~
 
 
 	return 0;

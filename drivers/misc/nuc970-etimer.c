@@ -22,10 +22,12 @@
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
+#include <linux/clk.h>
 #include <linux/platform_device.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <mach/map.h>
+#include <mach/regs-gcr.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-etimer.h>
 #include <mach/nuc970-etimer.h>
@@ -59,11 +61,13 @@
 					ETIMER_CTL_PERIODIC |\
 					ETIMER_CTL_ETMR_EN)
 
-#define ETIMER_TOGGLE			(ETIMER_CTL_PERIODIC | ETIMER_CTL_ETMR_EN)
+#define ETIMER_TOGGLE			(ETIMER_CTL_TOGGLE | ETIMER_CTL_ETMR_EN)
 
 struct nuc970_etimer {
 	spinlock_t lock;
 	struct pinctrl *pinctrl;
+	struct clk *clk;
+	struct clk *eclk;
 	wait_queue_head_t wq;
 	int minor;	// dynamic minor num, so we need this to distinguish between channels
 	u32 cap;	// latest capture data
@@ -160,8 +164,10 @@ static int etimer_release(struct inode *inode, struct file *filp)
 	// free irq
 	free_irq(etmr[ch]->irq, etmr[ch]);
 	// disable clk
-	__raw_writel(__raw_readl(REG_CLK_PCLKEN0) & ~(0x10 << ch), REG_CLK_PCLKEN0);
-
+	clk_disable(etmr[ch]->clk);
+	clk_disable(etmr[ch]->eclk);
+	clk_put(etmr[ch]->clk);
+	clk_put(etmr[ch]->eclk);
 
 	spin_lock_irqsave(&etmr[ch]->lock, flag);
 	etmr[ch]->occupied = 0;
@@ -173,8 +179,9 @@ static int etimer_release(struct inode *inode, struct file *filp)
 
 static int etimer_open(struct inode *inode, struct file *filp)
 {
-	int i, ch = 0;
+	int i, ret, ch = 0;
 	unsigned long flag;
+	struct clk *clkmux, *clkhxt;
 
 	for(i = 0; i < ETIMER_CH; i++)
 		if(MINOR(inode->i_rdev) == etmr[i]->minor) {
@@ -193,16 +200,81 @@ static int etimer_open(struct inode *inode, struct file *filp)
 
 	if (request_irq(etmr[ch]->irq, nuc970_etimer_interrupt,
 						0x0, "nuc970-etimer", etmr[ch])) {
-		printk("register irq failed %d\n", etmr[ch]->irq);
-		return -EAGAIN;
+		pr_debug("register irq failed %d\n", etmr[ch]->irq);
+		ret = -EAGAIN;
+		goto out2;
 	}
 
 	filp->private_data = etmr[ch];
 
-	__raw_writel(__raw_readl(REG_CLK_PCLKEN0) | (0x10 << ch), REG_CLK_PCLKEN0);
+	// configure engine clock
+	clkhxt = clk_get(NULL, "xin");
+	if (IS_ERR(clkhxt)) {
+		pr_debug("failed to get xin clk\n");
+		ret = PTR_ERR(clkhxt);
+		goto out1;
+	}
+	if(ch == 0) {
+		clkmux = clk_get(NULL, "etmr0_eclk_mux");
+	} else if (ch == 1) {
+		clkmux = clk_get(NULL, "etmr1_eclk_mux");
+	} else if (ch == 2) {
+		clkmux = clk_get(NULL, "etmr2_eclk_mux");
+	} else {
+		clkmux = clk_get(NULL, "etmr3_eclk_mux");
+	}
+	if (IS_ERR(clkmux)) {
+		pr_debug("failed to get etimer clock mux\n");
+		ret = PTR_ERR(clkmux);
+		goto out1;
+	}
+	clk_set_parent(clkmux, clkhxt);
 
-	return(0);
+	if(ch == 0) {
+		etmr[ch]->clk = clk_get(NULL, "etimer0");
+		etmr[ch]->eclk = clk_get(NULL, "etmr0_eclk");
+	} else if(ch == 1) {
+		etmr[ch]->clk = clk_get(NULL, "etimer1");
+		etmr[ch]->eclk = clk_get(NULL, "etmr1_eclk");
+	} else if(ch == 2) {
+		etmr[ch]->clk = clk_get(NULL, "etimer2");
+		etmr[ch]->eclk = clk_get(NULL, "etmr2_eclk");
+	} else {
+		etmr[ch]->clk = clk_get(NULL, "etimer3");
+		etmr[ch]->eclk = clk_get(NULL, "etmr3_eclk");
+	}
 
+
+	if (IS_ERR(etmr[ch]->clk)) {
+		pr_debug("failed to get etmr clock\n");
+		ret = PTR_ERR(etmr[ch]->clk);
+		goto out1;
+	}
+
+
+	if (IS_ERR(etmr[ch]->eclk)) {
+		pr_debug("failed to get etmr eclock\n");
+		ret = PTR_ERR(etmr[ch]->eclk);
+		goto out1;
+	}
+
+	clk_prepare(etmr[ch]->clk);
+	clk_enable(etmr[ch]->clk);
+	clk_prepare(etmr[ch]->eclk);
+	clk_enable(etmr[ch]->eclk);
+
+	return 0;
+
+
+out1:
+
+	free_irq(etmr[ch]->irq, etmr[ch]);
+out2:
+	spin_lock_irqsave(&etmr[ch]->lock, flag);
+	etmr[ch]->occupied = 0;
+	spin_unlock_irqrestore(&etmr[ch]->lock, flag);
+
+	return ret;
 
 }
 
@@ -268,12 +340,12 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			}
 
 			if (IS_ERR(s)) {
-				printk("pinctrl_lookup_state err\n");
+				pr_debug("pinctrl_lookup_state err\n");
 				return -EPERM;
 			}
 
 			if((ret = pinctrl_select_state(t->pinctrl, s)) < 0) {
-				printk("pinctrl_select_state err\n");
+				pr_debug("pinctrl_select_state err\n");
 				return ret;
 			}
 
@@ -329,11 +401,11 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			}
 
 			if (IS_ERR(s)) {
-				printk("pinctrl_lookup_state err\n");
+				pr_debug("pinctrl_lookup_state err\n");
 				return -EPERM;
 			}
 			if((ret = pinctrl_select_state(t->pinctrl, s)) < 0) {
-				printk("pinctrl_select_state err\n");
+				pr_debug("pinctrl_select_state err\n");
 				return ret;
 			}
 
@@ -390,11 +462,11 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			}
 
 			if (IS_ERR(s)) {
-				printk("pinctrl_lookup_state err\n");
+				pr_debug("pinctrl_lookup_state err\n");
 				return -EPERM;
 			}
 			if((ret = pinctrl_select_state(t->pinctrl, s)) < 0) {
-				printk("pinctrl_select_state err\n");
+				pr_debug("pinctrl_select_state err\n");
 				return ret;
 			}
 

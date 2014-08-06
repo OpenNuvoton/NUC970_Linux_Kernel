@@ -166,7 +166,7 @@ struct  nuc970_ether {
 	struct resource *res;
 	//struct sk_buff *skb;
 	struct clk *clk;
-	//struct clk *rmiiclk;
+	struct clk *eclk;
 	unsigned int msg_enable;
 	struct mii_bus *mii_bus;
 	struct phy_device *phy_dev;
@@ -568,10 +568,6 @@ static int nuc970_ether_close(struct net_device *dev)
 	if (ether->phy_dev)
 		phy_stop(ether->phy_dev);
 
-	//del_timer_sync(&ether->check_timer);
-	//clk_disable(ether->rmiiclk);
-	clk_disable(ether->clk);
-
 	return 0;
 }
 
@@ -677,8 +673,6 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 	unsigned int length, status, val, entry;
 	int rx_cnt = 0;
 
-	//printk("enter\n");
-
 	rxbd = (ether->rdesc + ether->cur_rx);
 
 	while(rx_cnt < budget) {
@@ -715,7 +709,6 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
 							1518, DMA_FROM_DEVICE);
-			//printk("=>mmap %08x %08x\n", skb->data, rxbd->buffer);
 			rx_skb[ether->cur_rx] = skb;
 
 		} else {
@@ -763,7 +756,6 @@ static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 
 	if (unlikely(status & MISTA_RXBERR)) {
 		struct platform_device *pdev = ether->pdev;
-
 		dev_err(&pdev->dev, "emc rx bus error\n");
 		nuc970_reset_mac(dev, 1);
 
@@ -934,14 +926,13 @@ static int nuc970_mii_setup(struct net_device *dev)
 	struct phy_device *phydev;
 	int i, err = 0;
 
-
 	ether->mii_bus = mdiobus_alloc();
 	if (!ether->mii_bus) {
 		err = -ENOMEM;
 		goto out0;
 	}
 
-	ether->mii_bus->name = "nuc970_mii_bus";
+	ether->mii_bus->name = "nuc970_mii0";
 	ether->mii_bus->read = &nuc970_mdio_read;
 	ether->mii_bus->write = &nuc970_mdio_write;
 	ether->mii_bus->reset = &nuc970_mdio_reset;
@@ -967,9 +958,13 @@ static int nuc970_mii_setup(struct net_device *dev)
 		goto out2;
 
 	phydev = phy_find_first(ether->mii_bus);
+	if(phydev == NULL)
+		goto out2;
+
 	phydev = phy_connect(dev, dev_name(&phydev->dev),
 			     &adjust_link,
 			     PHY_INTERFACE_MODE_RMII);
+
 	if(IS_ERR(phydev)) {
 		err = PTR_ERR(phydev);
 		goto out3;
@@ -996,7 +991,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 {
 	struct nuc970_ether *ether;
 	struct net_device *dev;
-	struct pinctrl* p;
+	struct pinctrl *p = NULL;
 	int error;
 
 	dev = alloc_etherdev(sizeof(struct nuc970_ether));
@@ -1009,44 +1004,58 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	if (ether->res == NULL) {
 		dev_err(&pdev->dev, "failed to get I/O memory\n");
 		error = -ENXIO;
-		goto failed_free;
+		goto err0;
 	}
 
 	ether->txirq = platform_get_irq(pdev, 0);
 	if (ether->txirq < 0) {
 		dev_err(&pdev->dev, "failed to get ether tx irq\n");
 		error = -ENXIO;
-		goto failed_free;
+		goto err0;
 	}
 
 	ether->rxirq = platform_get_irq(pdev, 1);
 	if (ether->rxirq < 0) {
 		dev_err(&pdev->dev, "failed to get ether rx irq\n");
 		error = -ENXIO;
-		goto failed_free_txirq;
+		goto err0;
 	}
 
 	SET_NETDEV_DEV(dev, &pdev->dev);
 	platform_set_drvdata(pdev, dev);
 	ether->ndev = dev;
 
-	__raw_writel((__raw_readl(REG_CLK_HCLKEN) | (1 << 16)),  REG_CLK_HCLKEN);
-	__raw_writel((__raw_readl(REG_CLK_DIV8) | 0x10),  REG_CLK_DIV8);
+	ether->eclk = clk_get(NULL, "emac0_eclk");
+	if (IS_ERR(ether->eclk)) {
+		dev_err(&pdev->dev, "failed to get emac0_eclk clock\n");
+		error = PTR_ERR(ether->eclk);
+		goto err1;
+	}
 
-	//ether->clk = clk_get(&pdev->dev, NULL);
-	//if (IS_ERR(ether->clk)) {
-	//	dev_err(&pdev->dev, "failed to get ether clock\n");
-	//	error = PTR_ERR(ether->clk);
-	//	goto failed_free_rxirq;
-	//}
+	// Set MCLK to 1M
+	clk_set_rate(ether->eclk, 1000000);
+	clk_prepare(ether->eclk);
+	clk_enable(ether->eclk);
 
-#if defined (NUC970_ETH0_PA)
-	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PF");
-#elif defined (NUC970_ETH0_PF)
+	ether->clk = clk_get(NULL, "emac0_hclk");
+	if (IS_ERR(ether->clk)) {
+		dev_err(&pdev->dev, "failed to get emac0_hclk clock\n");
+		error = PTR_ERR(ether->clk);
+		goto err1;
+	}
+
+	clk_prepare(ether->clk);
+	clk_enable(ether->clk);
+
+#if defined (CONFIG_NUC970_ETH0_PA)
 	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PA");
+#elif defined (CONFIG_NUC970_ETH0_PF)
+	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PF");
 #endif
 	if(IS_ERR(p)) {
 		dev_err(&pdev->dev, "unable to reserve pin\n");
+		error = PTR_ERR(p);
+		goto err2;
 	}
 
 	ether->pdev = pdev;
@@ -1073,29 +1082,25 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	ether_setup(dev);
 
 	if((error = nuc970_mii_setup(dev)) < 0) {
-		//error = -ENOMEM;
-		printk("nuc970_mii_setup err\n");
-		goto failed_put_clk;
+		dev_err(&pdev->dev, "nuc970_mii_setup err\n");
+		goto err2;
 	}
 
 	error = register_netdev(dev);
 	if (error != 0) {
 		dev_err(&pdev->dev, "Regiter EMC nuc970 FAILED\n");
 		error = -ENODEV;
-		goto failed_put_rmiiclk;
+		goto err2;
 	}
 
 	return 0;
-failed_put_rmiiclk:
-	//clk_put(ether->rmiiclk);
-failed_put_clk:
-	//clk_put(ether->clk);
-failed_free_rxirq:
-	//free_irq(ether->rxirq, pdev);
+
+err2:
+	clk_disable(ether->clk);
+	clk_put(ether->clk);
+err1:
 	platform_set_drvdata(pdev, NULL);
-failed_free_txirq:
-	//free_irq(ether->txirq, pdev);
-failed_free:
+err0:
 	free_netdev(dev);
 	return error;
 }
@@ -1107,14 +1112,15 @@ static int nuc970_ether_remove(struct platform_device *pdev)
 
 	unregister_netdev(dev);
 
-	//clk_put(ether->rmiiclk);
+	clk_disable(ether->clk);
 	clk_put(ether->clk);
+
+	clk_disable(ether->eclk);
+	clk_put(ether->eclk);
 
 	free_irq(ether->txirq, dev);
 	free_irq(ether->rxirq, dev);
 	phy_disconnect(ether->phy_dev);
-
-	//del_timer_sync(&ether->check_timer);
 
 	mdiobus_unregister(ether->mii_bus);
 	kfree(ether->mii_bus->irq);
