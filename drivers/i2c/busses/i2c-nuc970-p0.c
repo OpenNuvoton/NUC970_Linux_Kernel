@@ -1,7 +1,7 @@
 /*
- * linux/drivers/i2c/busses/i2c-nuc970.c
+ * linux/drivers/i2c/busses/i2c-nuc970-p0.c
  *
- * Copyright (c) 2010 Nuvoton technology corporation.
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This driver based on S3C2410 I2C driver of Ben Dooks <ben-Y5A6D6n0/KfQXOPxS62xeg@public.gmane.org>.
  * Written by Wan ZongShun <mcuos.com-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
@@ -11,7 +11,7 @@
  * the Free Software Foundation;version 2 of the License.
  *
  */
-//#define DEBUG
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 
@@ -603,9 +603,6 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 	i2c->adap.algo_data = i2c;
 	i2c->adap.dev.parent = &pdev->dev;
 
-	nuc970_mfp_set_port_g(0, 8);
-	nuc970_mfp_set_port_g(1, 8);
-	
 	ret = clk_get_rate(i2c->clk)/(pdata->bus_freq * 5) - 1;
 	writel(ret & 0xffff, i2c->regs + DIVIDER);
 

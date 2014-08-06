@@ -158,7 +158,7 @@ static struct platform_device nuc970_serial_device = {
 //#define YUV422
 
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
-	/* AUO A035QN02V0 320x240 TFT Panel */
+	/* AUO A035QN02V0 320x240 TFT Panel , 18bits*/
 	[0] = {
 #ifndef YUV422
 		.type		= LCM_DCCS_VA_SRC_RGB565,
@@ -557,7 +557,7 @@ static struct flash_platform_data nuc970_spi_flash_data = {
 static struct spi_board_info nuc970_spi_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 30000000,
+                .max_speed_hz = 100000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi_flash_data,

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009 Nuvoton technology corporation
+ * Copyright (c) 2014 Nuvoton technology corporation
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -14,7 +14,6 @@
  *    Wang Qiang (rurality.linux@gmail.com) 2009/12/11
  */
  
-#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
@@ -513,6 +512,7 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	int irq;
 	int i;
 	int size;
+	struct pinctrl *p;
 	
 	dev_dbg(&pdev->dev, "devinit\n");
 	
@@ -647,31 +647,17 @@ static int nuc970fb_probe(struct platform_device *pdev)
 		goto free_cpufreq;
 	}
 	
-	nuc970_mfp_set_port_g(6, 2);
-	nuc970_mfp_set_port_g(7, 2);
-	nuc970_mfp_set_port_g(8, 2);
-	nuc970_mfp_set_port_g(9, 2);
-	
-	nuc970_mfp_set_port_a(0, 2);
-	nuc970_mfp_set_port_a(1, 2);
-	nuc970_mfp_set_port_a(2, 2);
-	nuc970_mfp_set_port_a(3, 2);
-	nuc970_mfp_set_port_a(4, 2);
-	nuc970_mfp_set_port_a(5, 2);
-	nuc970_mfp_set_port_a(6, 2);
-	nuc970_mfp_set_port_a(7, 2);
-	nuc970_mfp_set_port_a(8, 2);
-	nuc970_mfp_set_port_a(9, 2);
-	nuc970_mfp_set_port_a(10, 2);
-	nuc970_mfp_set_port_a(11, 2);
-	nuc970_mfp_set_port_a(12, 2);
-	nuc970_mfp_set_port_a(13, 2);
-	nuc970_mfp_set_port_a(14, 2);
-	nuc970_mfp_set_port_a(15, 2);
-	
-	nuc970_mfp_set_port_d(8, 2);
-	nuc970_mfp_set_port_d(9, 2);	
-	
+#if defined(CONFIG_FB_NUC970_16BIT_PIN)
+	p = devm_pinctrl_get_select(&pdev->dev, "lcd-16bit");
+#elif defined(CONFIG_FB_NUC970_18BIT_PIN)
+	p = devm_pinctrl_get_select(&pdev->dev, "lcd-18bit");	
+#else
+	p = devm_pinctrl_get_select(&pdev->dev, "lcd-24bit");
+#endif
+    if(IS_ERR(p)) {
+        dev_err(&pdev->dev, "unable to reserve pin\n");
+        ret = PTR_ERR(p);
+    }	
 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
 		fbinfo->node, fbinfo->fix.id);
 
