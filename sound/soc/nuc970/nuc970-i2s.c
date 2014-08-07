@@ -116,7 +116,6 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 				val |= (bclkdiv << 5);
  
                 AUDIO_WRITE(nuc970_audio->mmio + ACTL_I2SCON, val);
-                printk("==>%d,mclk_div=%d, bclk_div=%d\n", clk_get_rate(clkaudio), mclkdiv, bclkdiv);
         }
 
         if (clk_id == NUC970_AUDIO_CLKDIV) {
@@ -138,8 +137,6 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
                 	clk_set_rate(clkapll, 169500000);
 					clk_set_rate(clkaudio, 16950000);
             	}
-            	printk("==>freq=%d,reg=0x%08x\n", freq, AUDIO_READ(REG_CLK_DIV1));
-            	printk("==>apll reg=0x%08x\n", AUDIO_READ(REG_CLK_APLLCON));
         }
 
         return 0;

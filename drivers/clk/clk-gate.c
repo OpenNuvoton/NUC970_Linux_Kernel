@@ -59,7 +59,7 @@ static void clk_gate_endisable(struct clk_hw *hw, int enable)
 		reg |= BIT(gate->bit_idx);
 	else
 		reg &= ~BIT(gate->bit_idx);
-printk(" [clk] gate %s -->0x%08x,%d,0x%08x\n",enable==1?"enable":"disable",(int)gate->reg, gate->bit_idx, reg);
+
 	writel(reg, gate->reg);
 
 	if (gate->lock)

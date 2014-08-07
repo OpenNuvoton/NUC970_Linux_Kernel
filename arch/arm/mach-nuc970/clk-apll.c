@@ -74,7 +74,7 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 	}
 	
 	writel(reg, pll->base);
-printk("set apll=%d, reg=0x%08x\n", rate, reg);		
+
 	return 0;
 }
 
@@ -114,7 +114,7 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 			ll = 264000000;
 			break;
 	}
-printk("get apll=%d\n", ll);		
+
 	return ll;
 }
 
