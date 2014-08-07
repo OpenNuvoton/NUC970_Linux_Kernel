@@ -7,15 +7,6 @@
  *
  */
 
-#if defined(CONFIG_NUVOTON_NUC970_SM)
-    #error "Sorry, the driver is conflict with CONFIG_NUVOTON_NUC970_SM."
-#endif
-
-#if defined(CONFIG_MTD_NAND_VERIFY_WRITE)
-    #error "Sorry, the driver doesn't support VERIFY"
-#endif
-
-
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -62,8 +53,6 @@
 #define NUC970_DRV_VERSION "20140801"
 #define DEF_RESERVER_OOB_SIZE_FOR_MARKER 4
 
-#define NUC970_NAND_PORTC   1
-
 //#define NUC970_NAND_DEBUG
 #ifndef NUC970_NAND_DEBUG
 #define DBG(fmt, arg...)
@@ -109,7 +98,7 @@ static struct mtd_partition partitions[] = {
         .ecclayout = (struct nand_ecclayout*)&nuc970_nand_EXECUTE_oob
     },
     {
-        .name = "root",
+        .name = "user",
         .offset = MTDPART_OFS_APPEND,
         .size = MTDPART_SIZ_FULL
     }
@@ -256,14 +245,6 @@ static void nuc970_nand_initialize ( void )
 {
     ENTER() ;
 
-#if NUC970_NAND_PORTC
-    writel( 0x55555555, REG_MFP_GPC_L);
-    writel( 0x05555555, REG_MFP_GPC_H);
-#else
-
-    writel( 0x55555550, REG_MFP_GPI_L);
-    writel( 0x55555555, REG_MFP_GPI_H);
-#endif
     // Enable SM_EN
     writel( NAND_EN, REG_NAND_FMICSR );
 
@@ -299,13 +280,14 @@ static int nuc970_wait_sem (struct mtd_info *mtd)
     if ( readl(REG_NAND_FMICSR) != 0x8 )
         writel(0x08, REG_NAND_FMICSR);
 
-#if NUC970_NAND_PORTC
+#if 0
+#if defined (CONFIG_NUC970_NAND_PC)
     writel( 0x55555555, REG_MFP_GPC_L);
     writel( 0x05555555, REG_MFP_GPC_H);
-#else
-
+#elif defined (CONFIG_NUC970_NAND_PI)
     writel( 0x55555550, REG_MFP_GPI_L);
     writel( 0x55555555, REG_MFP_GPI_H);
+#endif
 #endif
     writel(readl(REG_SMCSR) & ~0x02000000, REG_SMCSR);
     writel(readl(REG_SMCSR) |  0x04000000, REG_SMCSR);
@@ -1338,6 +1320,7 @@ static int nuc970_nand_probe(struct platform_device *pdev)
     struct nand_chip *chip;
     struct nuc970_nand_info *nuc970_nand;
     struct mtd_info *mtd;
+    struct pinctrl *p;
 
     int retval=0;
     E_PAGESIZE ePageSize;
@@ -1415,6 +1398,17 @@ static int nuc970_nand_probe(struct platform_device *pdev)
     chip->ecc.read_oob  = nuc970_nand_read_oob_hwecc;
     chip->ecc.layout    = &nuc970_nand_oob;
 
+#if defined (CONFIG_NUC970_NAND_PC)
+    p = devm_pinctrl_get_select(&pdev->dev, "nand-PC");
+
+#elif defined (CONFIG_NUC970_NAND_PI)
+    p = devm_pinctrl_get_select(&pdev->dev, "nand-PI");
+#endif
+    if (IS_ERR(p))
+    {
+        dev_err(&pdev->dev, "unable to reserve pin\n");
+        retval = PTR_ERR(p);
+    }
     nuc970_nand_initialize( );
 
     nuc970_nand->m_i32MyShowTime = 0;
