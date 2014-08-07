@@ -187,7 +187,8 @@ static const unsigned pps1_pin[] = {0x4D};
 static const unsigned lcd_0_pins[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 								0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
 								0x66, 0x67, 0x68, 0x69}; // 16 bit mode
-static const unsigned lcd_1_pins[] = {0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F}; // 24 bit mode
+static const unsigned lcd_1_pins[] = {0x38, 0x39}; // 18 bit mode
+static const unsigned lcd_2_pins[] = {0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F}; // 24 bit mode
 
 static const unsigned vcap_pins[] = {0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F};
 
@@ -227,7 +228,7 @@ static const unsigned i2c1_1_pins[] = {0x62, 0x63};
 static const unsigned i2c1_2_pins[] = {0x72, 0x73};
 static const unsigned i2c1_3_pins[] = {0x83, 0x84};
 
-static const unsigned i2s_pins[] = {0x6A, 0x6B, 0x6C, 0x5D, 0x6E};
+static const unsigned i2s_pins[] = {0x6A, 0x6B, 0x6C, 0x6D, 0x6E};
 
 static const unsigned uart0_pins[] = {0x40, 0x41};
 static const unsigned uart1_0_pins[] = {0x42, 0x43}; // tx, rx
@@ -274,12 +275,12 @@ static const unsigned sc0_3_pins[] = {0x87, 0x88};  // scuart
 static const unsigned sc1_0_pins[] = {0x66, 0x67, 0x68, 0x69, 0x6A};
 static const unsigned sc1_1_pins[] = {0x67, 0x68};  // scuart
 
-static const unsigned spi0_0_pins[] = {0x26, 0x27, 0x28, 0x29};
-static const unsigned spi0_1_pins[] = {0x2A, 0x2B}; // quad
-static const unsigned spi0_2_pins[] = {0x20}; // ss1
+static const unsigned spi0_0_pins[] = {0x16, 0x17, 0x18, 0x19};
+static const unsigned spi0_1_pins[] = {0x1A, 0x1B}; // quad
+static const unsigned spi0_2_pins[] = {0x10}; // ss1
 static const unsigned spi0_3_pins[] = {0x7C}; // ss1
-static const unsigned spi1_0_pins[] = {0x2C, 0x2D, 0x2E, 0x2F};
-static const unsigned spi1_1_pins[] = {0x21}; // ss1
+static const unsigned spi1_0_pins[] = {0x1C, 0x1D, 0x1E, 0x1F};
+static const unsigned spi1_1_pins[] = {0x11}; // ss1
 static const unsigned spi1_2_pins[] = {0x64, 0x65}; // quad
 static const unsigned spi1_3_pins[] = {0x7D}; // ss1
 static const unsigned spi1_4_pins[] = {0x85, 0x86, 0x87, 0x88};
@@ -388,15 +389,21 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0x1,
 	},
 	{
-		.name = "lcd_0_grp",
+		.name = "lcd0_grp",
 		.pins = lcd_0_pins,
 		.num_pins = ARRAY_SIZE(lcd_0_pins),
 		.func = 0x2,
 	},
 	{
-		.name = "lcd_1_grp",
+		.name = "lcd1_grp",
 		.pins = lcd_1_pins,
 		.num_pins = ARRAY_SIZE(lcd_1_pins),
+		.func = 0x2,
+	},
+	{
+		.name = "lcd2_grp",
+		.pins = lcd_2_pins,
+		.num_pins = ARRAY_SIZE(lcd_2_pins),
 		.func = 0x2,
 	},
 	{
@@ -863,9 +870,9 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0xB,
 	},
 	{
-		.name = "spi0_3_grp",
-		.pins = spi0_3_pins,
-		.num_pins = ARRAY_SIZE(spi0_3_pins),
+		.name = "spi1_0_grp",
+		.pins = spi1_0_pins,
+		.num_pins = ARRAY_SIZE(spi1_0_pins),
 		.func = 0xB,
 	},
 	{
@@ -1292,6 +1299,7 @@ static const char * const pps0_groups[] = {"pps0_grp"};
 static const char * const pps1_groups[] = {"pps1_grp"};
 static const char * const lcd0_groups[] = {"lcd0_grp"};
 static const char * const lcd1_groups[] = {"lcd1_grp"};
+static const char * const lcd2_groups[] = {"lcd2_grp"};
 static const char * const vcap_groups[] = {"vcap_grp"};
 static const char * const kpi_row_groups[] = {"kpi_0_grp", "kpi_4_grp"};
 static const char * const kpi_2col_groups[] = {"kpi_1_grp", "kpi_5_grp"};
@@ -1400,6 +1408,11 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "lcd1",
 		.groups = lcd1_groups,
 		.num_groups = ARRAY_SIZE(lcd1_groups),
+	},
+	{
+		.name = "lcd2",
+		.groups = lcd2_groups,
+		.num_groups = ARRAY_SIZE(lcd2_groups),
 	},
 	{
 		.name = "vcap",
@@ -1916,24 +1929,48 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "lcd-16bit",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "lcd",
+		.data.mux.function = "lcd0",
 		.data.mux.group = "lcd0_grp",
 	},
 	{
 		.dev_name = "nuc970-lcd",
-		.name = "lcd-24bit",
+		.name = "lcd-18bit",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "lcd",
+		.data.mux.function = "lcd0",
 		.data.mux.group = "lcd0_grp",
 	},
 	{
 		.dev_name = "nuc970-lcd",
-		.name = "lcd-24bit",
+		.name = "lcd-18bit",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "lcd",
+		.data.mux.function = "lcd1",
 		.data.mux.group = "lcd1_grp",
+	},
+		{
+		.dev_name = "nuc970-lcd",
+		.name = "lcd-24bit",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "lcd0",
+		.data.mux.group = "lcd0_grp",
+	},
+	{
+		.dev_name = "nuc970-lcd",
+		.name = "lcd-24bit",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "lcd1",
+		.data.mux.group = "lcd1_grp",
+	},
+	{
+		.dev_name = "nuc970-lcd",
+		.name = "lcd-24bit",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "lcd2",
+		.data.mux.group = "lcd2_grp",
 	},
 	{
 		.dev_name = "nuc970-videoin",
@@ -2192,7 +2229,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "usbd_grp",
 	},
 	{
-		.dev_name = "nuc970-i2c-p0",
+		.dev_name = "nuc970-i2c0",
 		.name = PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2200,7 +2237,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "i2c0_grp",
 	},
 	{
-		.dev_name = "nuc970-i2c-p1",
+		.dev_name = "nuc970-i2c1",
 		.name = "i2c1-PB",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2208,7 +2245,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "i2c1_0_grp",
 	},
 	{
-		.dev_name = "nuc970-i2c-p1",
+		.dev_name = "nuc970-i2c1",
 		.name = "i2c1-PG",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2216,7 +2253,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "i2c1_1_grp",
 	},
 	{
-		.dev_name = "nuc970-i2c-p1",
+		.dev_name = "nuc970-i2c1",
 		.name = "i2c1-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2224,7 +2261,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "i2c1_2_grp",
 	},
 	{
-		.dev_name = "nuc970-i2c-p1",
+		.dev_name = "nuc970-i2c1",
 		.name = "i2c1-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2677,12 +2714,12 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "spi0-quad",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "spi0",
+		.data.mux.function = "spi0_quad",
 		.data.mux.group = "spi0_1_grp",
 	},
 	{
 		.dev_name = "nuc970-spi1",
-		.name = "spi1-PC",
+		.name = "spi1-PB",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "spi1",
@@ -2690,7 +2727,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-spi1",
-		.name = "spi1-quad-PC",
+		.name = "spi1-quad-PB",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "spi1",
@@ -2698,10 +2735,10 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-spi1",
-		.name = "spi1-quad-PC",
+		.name = "spi1-quad-PB",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "spi1",
+		.data.mux.function = "spi1_quad",
 		.data.mux.group = "spi1_2_grp",
 	},
 	{
@@ -2725,7 +2762,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "spi1-quad-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "spi1",
+		.data.mux.function = "spi1_quad",
 		.data.mux.group = "spi1_2_grp",
 	},
 	{

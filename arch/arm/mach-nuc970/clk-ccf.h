@@ -26,7 +26,7 @@ static inline struct clk *nuc970_clk_mux(const char *name, void __iomem *reg,
 static inline struct clk *nuc970_clk_divider(const char *name, const char *parent,
 		void __iomem *reg, u8 shift, u8 width)
 {
-	return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
+	return clk_register_divider(NULL, name, parent, 0,
 			reg, shift, width, 0, &nuc970_lock);
 }
 

@@ -56,7 +56,8 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
 
 struct nuc970_wdt {
 	struct resource		*res;
-	struct clk		*clock;
+	struct clk		*clk;
+	struct clk		*eclk;
 	struct platform_device	*pdev;
 };
 
@@ -142,6 +143,7 @@ static struct watchdog_device nuc970_wdd = {
 static int nuc970wdt_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	struct clk *clkmux, *clklxt;
 
 	nuc970_wdt = devm_kzalloc(&pdev->dev, sizeof(struct nuc970_wdt), GFP_KERNEL);
 	if (!nuc970_wdt)
@@ -161,17 +163,42 @@ static int nuc970wdt_probe(struct platform_device *pdev)
 		return -ENOENT;
 	}
 
-
-	nuc970_wdt->clock = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(nuc970_wdt->clock)) {
-		dev_err(&pdev->dev, "failed to find watchdog clock source\n");
-		ret = PTR_ERR(nuc970_wdt->clock);
+	clkmux = clk_get(NULL, "wdt_eclk_mux");
+	if (IS_ERR(clkmux)) {
+		dev_err(&pdev->dev, "failed to get watchdog clock mux\n");
+		ret = PTR_ERR(clkmux);
 		return ret;
 	}
 
-	clk_enable(nuc970_wdt->clock);
+	clklxt = clk_get(NULL, "xin32k");
+	if (IS_ERR(clklxt)) {
+		dev_err(&pdev->dev, "failed to get 32k clk\n");
+		ret = PTR_ERR(clklxt);
+		return ret;
+	}
 
-	__raw_writel(__raw_readl(REG_CLK_DIV8) | 0x300, REG_CLK_DIV8);
+
+	clk_set_parent(clkmux, clklxt);
+
+	nuc970_wdt->clk = clk_get(NULL, "wdt");
+	if (IS_ERR(nuc970_wdt->clk)) {
+		dev_err(&pdev->dev, "failed to get watchdog clock\n");
+		ret = PTR_ERR(nuc970_wdt->clk);
+		return ret;
+	}
+
+	clk_prepare(nuc970_wdt->clk);
+	clk_enable(nuc970_wdt->clk);
+
+	nuc970_wdt->eclk = clk_get(NULL, "wdt_eclk");
+	if (IS_ERR(nuc970_wdt->eclk)) {
+		dev_err(&pdev->dev, "failed to get watchdog eclock\n");
+		ret = PTR_ERR(nuc970_wdt->eclk);
+		return ret;
+	}
+
+	clk_prepare(nuc970_wdt->eclk);
+	clk_enable(nuc970_wdt->eclk);
 
 	nuc970_wdd.timeout = 2;		// default time out = 2 sec (2.03)
 	nuc970_wdd.min_timeout = 1;	// min time out = 1 sec (0.53)
@@ -182,8 +209,8 @@ static int nuc970wdt_probe(struct platform_device *pdev)
 	ret = watchdog_register_device(&nuc970_wdd);
 	if (ret) {
 		dev_err(&pdev->dev, "err register watchdog device\n");
-		clk_disable(nuc970_wdt->clock);
-		clk_put(nuc970_wdt->clock);
+		clk_disable(nuc970_wdt->clk);
+		clk_put(nuc970_wdt->clk);
 		return ret;
 	}
 
@@ -194,8 +221,10 @@ static int nuc970wdt_remove(struct platform_device *pdev)
 {
 	watchdog_unregister_device(&nuc970_wdd);
 
-	clk_disable(nuc970_wdt->clock);
-	clk_put(nuc970_wdt->clock);
+	clk_disable(nuc970_wdt->eclk);
+	clk_put(nuc970_wdt->eclk);
+	clk_disable(nuc970_wdt->clk);
+	clk_put(nuc970_wdt->clk);
 
 	return 0;
 }

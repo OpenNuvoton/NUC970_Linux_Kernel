@@ -1,18 +1,17 @@
 /*
- *  Copyright (C) 2008 Sascha Hauer <s.hauer@pengutronix.de>, Pengutronix
+ * linux/arch/arm/mach-nuc970/clk-ccf.c
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
+ * Copyright (c) 2014 Nuvoton Technology Corporation.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
  *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
  */
 
 #include <linux/kernel.h>
@@ -51,8 +50,8 @@ static const char *uart10_sel_clks[] = { "xin", "dummy", "uart10_aplldiv", "uart
 static const char *system_sel_clks[] = { "xin", "dummy", "system_aplldiv", "system_uplldiv", };
 static const char *gpio_sel_clks[] = { "xin", "xin32k"};
 static const char *kpi_sel_clks[] = { "xin", "xin32k"};
-static const char *etimer_sel_clks[] = { "xin", "pclk_div", "pclk4096_div", "xin32k"};
-static const char *wwdt_sel_clks[] = { "xin", "xin128_div", "pclk4096_div", "xin32k"};
+static const char *etimer_sel_clks[] = { "xin", "pclk_div", "pclk4096_div", "xin32k",};
+static const char *wwdt_sel_clks[] = { "xin", "xin128_div", "pclk4096_div", "xin32k",};
 
 enum nuc970_clks {
 	// source
@@ -389,15 +388,14 @@ int __init nuc970_init_clocks(void)
 	clk[etimer2_gate] = nuc970_clk_gate("etimer2_gate", "pclk_div", REG_CLK_PCLKEN0, 6);
 	clk[etimer3_gate] = nuc970_clk_gate("etimer3_gate", "pclk_div", REG_CLK_PCLKEN0, 7);
 	
-	clk[timer0_gate] = nuc970_clk_gate("timer0_gate", "pclk_div", REG_CLK_PCLKEN0, 8);
-	clk[timer1_gate] = nuc970_clk_gate("timer1_gate", "pclk_div", REG_CLK_PCLKEN0, 9);
-	clk[timer2_gate] = nuc970_clk_gate("timer2_gate", "pclk_div", REG_CLK_PCLKEN0, 10);
-	clk[timer3_gate] = nuc970_clk_gate("timer3_gate", "pclk_div", REG_CLK_PCLKEN0, 11);
-	clk[timer4_gate] = nuc970_clk_gate("timer4_gate", "pclk_div", REG_CLK_PCLKEN0, 12);
-	
 	clk[can0_gate] = nuc970_clk_gate("can0_gate", "pclk_div", REG_CLK_PCLKEN1, 8);
 	clk[can1_gate] = nuc970_clk_gate("can1_gate", "pclk_div", REG_CLK_PCLKEN1, 9);
-	
+
+	clk[timer0_gate] = nuc970_clk_gate("timer0_gate", "xin", REG_CLK_PCLKEN0, 8);
+	clk[timer1_gate] = nuc970_clk_gate("timer1_gate", "xin", REG_CLK_PCLKEN0, 9);
+	clk[timer2_gate] = nuc970_clk_gate("timer2_gate", "xin", REG_CLK_PCLKEN0, 10);
+	clk[timer3_gate] = nuc970_clk_gate("timer3_gate", "xin", REG_CLK_PCLKEN0, 11);
+	clk[timer4_gate] = nuc970_clk_gate("timer4_gate", "xin", REG_CLK_PCLKEN0, 12);	
 	
 	for (i = 0; i < ARRAY_SIZE(clk); i++)
 		if (IS_ERR(clk[i]))
@@ -408,6 +406,8 @@ int __init nuc970_init_clocks(void)
 	// register clock device	
 	clk_register_clkdev(clk[timer0_gate], "timer0", NULL);		// limitation of name size is xxxxxxxxxxxxxxxx
 	clk_register_clkdev(clk[timer1_gate], "timer1", NULL);	
+	
+	clk_register_clkdev(clk[pclk4096_div], "pclk4096_div", NULL);
 	
 	clk_register_clkdev(clk[xin], "xin", NULL);
 	clk_register_clkdev(clk[xin32k], "xin32k", NULL);
@@ -577,14 +577,14 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[kpi_eclk_div], "kpi_eclk_div", NULL);
 	clk_register_clkdev(clk[kpi_eclk_gate], "kpi_eclk", NULL);
 	
-	clk_register_clkdev(clk[etimer0_eclk_mux], "etimer0_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer0_eclk_gate], "etimer0_eclk", NULL);
-	clk_register_clkdev(clk[etimer1_eclk_mux], "etimer1_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer1_eclk_gate], "etimer1_eclk", NULL);
-	clk_register_clkdev(clk[etimer2_eclk_mux], "etimer2_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer2_eclk_gate], "etimer2_eclk", NULL);
-	clk_register_clkdev(clk[etimer3_eclk_mux], "etimer3_eclk_mux", NULL);
-	clk_register_clkdev(clk[etimer3_eclk_gate], "etimer3_eclk", NULL);
+	clk_register_clkdev(clk[etimer0_eclk_mux], "etmr0_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer0_eclk_gate], "etmr0_eclk", NULL);
+	clk_register_clkdev(clk[etimer1_eclk_mux], "etmr1_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer1_eclk_gate], "etmr1_eclk", NULL);
+	clk_register_clkdev(clk[etimer2_eclk_mux], "etmr2_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer2_eclk_gate], "etmr2_eclk", NULL);
+	clk_register_clkdev(clk[etimer3_eclk_mux], "etmr3_eclk_mux", NULL);
+	clk_register_clkdev(clk[etimer3_eclk_gate], "etmr3_eclk", NULL);
 	
 	clk_register_clkdev(clk[wwdt_eclk_mux], "wwdt_eclk_mux", NULL);
 	clk_register_clkdev(clk[wwdt_eclk_gate], "wwdt_eclk", NULL);

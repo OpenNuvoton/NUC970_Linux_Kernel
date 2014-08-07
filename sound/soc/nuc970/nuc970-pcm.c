@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2010 Nuvoton technology corporation.
- *
- * Wan ZongShun <mcuos.com@gmail.com>
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -360,6 +358,5 @@ static struct platform_driver nuc970_pcm_driver = {
 
 module_platform_driver(nuc970_pcm_driver);
 
-MODULE_AUTHOR("Wan ZongShun, <mcuos.com@gmail.com>");
 MODULE_DESCRIPTION("nuc970 Audio DMA module");
 MODULE_LICENSE("GPL");

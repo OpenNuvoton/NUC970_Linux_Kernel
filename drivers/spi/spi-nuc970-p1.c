@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 Nuvoton technology.
- * Wan ZongShun <mcuos.com@gmail.com>
+ * Copyright (c) 2014 Nuvoton technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  */
+ 
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
@@ -352,7 +352,8 @@ static int nuc970_spi1_probe(struct platform_device *pdev)
 	struct nuc970_spi *hw;
 	struct spi_master *master;
 	int err = 0;
-
+	struct pinctrl *p;
+		
 	master = spi_alloc_master(&pdev->dev, sizeof(struct nuc970_spi));
 	if (master == NULL) {
 		dev_err(&pdev->dev, "No memory for spi_master\n");
@@ -426,12 +427,21 @@ static int nuc970_spi1_probe(struct platform_device *pdev)
 		err = PTR_ERR(hw->clk);
 		goto err_clk;
 	}
-	
-	//SPI1: B12, B13, B14, B15
-	nuc970_mfp_set_port_b(12, 0xb);
-	nuc970_mfp_set_port_b(13, 0xb);
-	nuc970_mfp_set_port_b(14, 0xb);
-	nuc970_mfp_set_port_b(15, 0xb);
+
+#if defined(CONFIG_SPI_NUC970_P1_PB)	
+	p = devm_pinctrl_get_select(&pdev->dev, "spi1-PB");
+#elif defined(CONFIG_SPI_NUC970_P1_PI)	
+	p = devm_pinctrl_get_select(&pdev->dev, "spi1-PI");
+#elif defined(CONFIG_SPI_NUC970_P1_QUAD_PB)
+	p = devm_pinctrl_get_select(&pdev->dev, "spi1-quad-PB");
+#elif defined(CONFIG_SPI_NUC970_P1_QUAD_PI)	
+	p = devm_pinctrl_get_select(&pdev->dev, "spi1-quad-PI");
+#endif
+
+    if(IS_ERR(p)) { 
+        dev_err(&pdev->dev, "unable to reserve pin\n");
+        err = PTR_ERR(p);
+    }
 	
 	nuc970_init_spi(hw);
 
