@@ -134,7 +134,7 @@ struct nuc970_adc {
 };
 
 static void enable_menu(void)
-{	
+{			
 	__raw_writel(__raw_readl(REG_ADC_CTL) | ADC_CTL_MST, REG_ADC_CTL); /* ADC menu convert */
 }
 static void nuc970_detect2touch(void)
@@ -176,7 +176,8 @@ static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc,u32 isr,u32 conf)
 				__raw_writel(ADC_ISR_KPCF,REG_ADC_ISR);
 				nuc970_adc->kp_state= KP_CONVERSION;
 				val=__raw_readl(REG_ADC_KPDATA);
-				ADEBUG("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));		
+				ADEBUG("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));				
+				//printk("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));
 				for(i=0;i<ARRAY_SIZE(nuc970_keycode);i++)	
 				{	
 				 if(val>nuc970_th[i].thl && val<nuc970_th[i].thh)
@@ -209,7 +210,10 @@ static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc,u32 isr,u32 ie
 		{
 			nuc970_adc->kp_state = KP_DOWN;		
 			if(nuc970_adc->used_state & TS_USED)
-				nuc970_detect2touch();		
+			{
+				nuc970_detect2touch();			
+			}			
+			mdelay(1);
 			enable_menu();
 			return true;		
 		}
@@ -340,7 +344,9 @@ static int nuc970ts_open(struct input_dev *dev)
 	
 	/* Clear interrupt before enable pendown */		
 	nuc970_touch2detect();	
-	
+	__raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */		
+	__raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */				
+	__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */	
 	nuc970_adc->used_state |= TS_USED;
 	LEAVE();
 	return 0;
@@ -519,19 +525,6 @@ static enum power_supply_property nuc970adc_battery_props[] = {
 	POWER_SUPPLY_PROP_PRESENT,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,	
 };
-
-static int nuc970bt_open(struct nuc970_adc* nuc970_adc)
-{
-	ENTRY();	
-//	__raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN | ADC_CTL_VBGEN), REG_ADC_CTL);
-//	__raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_VBATEN), REG_ADC_CONF);	
-//	__raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_MIEN), REG_ADC_IER);
-//	__raw_writel(__raw_readl(REG_ADC_ISR) | (ADC_ISR_VBF), REG_ADC_ISR);
-		
-	nuc970_adc->used_state |= BT_USED;
-	LEAVE();
-	return 0;		
-}
 #endif
 
 static int nuc970adc_probe(struct platform_device *pdev)
@@ -629,8 +622,8 @@ static int nuc970adc_probe(struct platform_device *pdev)
 		goto fail4;
 	}
 	
-	#ifdef CONFIG_BATTREY_NUC970ADC
-	nuc970bt_open(nuc970_adc);
+	#ifdef CONFIG_BATTREY_NUC970ADC	
+	nuc970_adc->used_state |= BT_USED;
 	nuc970_adc->bat.name = "NUC970 Bettery(ADC)";
 	nuc970_adc->bat.type = POWER_SUPPLY_TYPE_BATTERY;
 	nuc970_adc->bat.properties = nuc970adc_battery_props;
@@ -639,7 +632,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	if ( power_supply_register(nuc970_adc->dev, &nuc970_adc->bat)) {
 		printk("----------------------------------------------------power failed\n");		
 		goto fail5;
-	}	
+	}		
 	#endif	
 	
 	platform_set_drvdata(pdev, nuc970_adc);
