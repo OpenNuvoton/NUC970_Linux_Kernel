@@ -14,6 +14,7 @@
 #include <linux/signal.h>
 #include <linux/clk.h>
 
+#include <mach/map.h>
 
 /**
  * usb_hcd_ppc_soc_probe - initialize On-Chip HCDs
@@ -103,11 +104,8 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         ohci = hcd_to_ohci(hcd);
         ohci_hcd_init(ohci);
 
-        physical_map_ohci = (u32)hcd->regs;
-        __raw_writel(0x160, physical_map_ohci+0xC4);	/* enable PHY 0 */
-        __raw_writel(0x520, physical_map_ohci+0xC8);	/* enable PHY 1 */
-        __raw_writel(0x0, physical_map_ohci+0x204);		/* over-current setting */
-        __raw_writel(0x10000, physical_map_ohci+0x50);		// HC_RH_STATUS, set OHCI global power
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
 
         retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
 
