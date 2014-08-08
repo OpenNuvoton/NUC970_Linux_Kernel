@@ -1067,10 +1067,10 @@ int capture_init(struct nuvoton_vin_device* cam)
 	/* Muti-pin setting */	
 
 	/* MFP_GPI_L : 3=SEN_CLK0, 4=SEN_PCLK, 5=SEN_HSYNC, 6=SEN_VSYNC, 7=SEN_FIFLD */
-	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xFFFF000) | 0x33333000,REG_MFP_GPI_L);
+	//__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xFFFF000) | 0x33333000,REG_MFP_GPI_L);
 
 	/* MFP_GPI_H : SEN_PDATA[0~7] */	
-	__raw_writel(0x33333333,REG_MFP_GPI_H);		
+	//__raw_writel(0x33333333,REG_MFP_GPI_H);		
 	
 	// To-Do
 	//__raw_writel((__raw_readl(REG_CLK_DIV3) & ~0x000f0000 ) | 3<<16,REG_CLK_DIV3); /* Sensor Clock Source Select UCLKOut */
