@@ -931,6 +931,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_GPIO_NUC970
 	&nuc970_device_gpio,
+#endif
 #ifdef CONFIG_I2C_ALGOBIT
 	&i2c_gpio,
 #endif
