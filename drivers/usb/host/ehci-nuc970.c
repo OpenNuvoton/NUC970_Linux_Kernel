@@ -13,9 +13,12 @@
 
 #include <linux/platform_device.h>
 #include <linux/signal.h>
+#include <linux/gfp.h>
 
 #include <linux/clk.h>
 #include <mach/irqs.h>
+#include <mach/map.h>
+#include <mach/regs-gcr.h>
 #include <mach/regs-aic.h>
 #include <mach/regs-timer.h>
 
@@ -25,13 +28,32 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 {
         struct usb_hcd *hcd;
         struct ehci_hcd *ehci;
-        u32  physical_map_ehci, physical_map_ohci;
+        u32  physical_map_ehci;
+        struct pinctrl *p;
         int retval;
 
         if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
                 return -1;
         }
+
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+        
+		/* multi-function pin select */
+#if defined (CONFIG_NUC970_USBH_PWR_PE)
+    	/* initial USBH_PPWR0 & USBH_PPWR1 pin -> PE.14 & PE.15 */
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pe");
+
+#elif defined (CONFIG_NUC970_USBH_PWR_PF)
+    	/* initial USBH_PPWR pin -> PF.10 */
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
+#endif
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
 
 		/* Enable USB Host clock */
         clk_prepare(clk_get(NULL, "usb_eclk"));	
@@ -76,7 +98,6 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         __raw_writel(0x160, physical_map_ehci+0xC4);
         __raw_writel(0x520, physical_map_ehci+0xC8);
 
-
         /* cache this readonly data; minimize chip reads */
         ehci->hcs_params = readl(&ehci->caps->hcs_params);
         ehci->sbrn = 0x20;
@@ -85,10 +106,6 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 
         if (retval != 0)
             goto err4;
-
-        /* enable EHCI */
-        //ehci->regs->configured_flag = 1;
-        __raw_writel(1, &ehci->regs->configured_flag);
 
         return retval;
 

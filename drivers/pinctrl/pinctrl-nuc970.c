@@ -216,10 +216,8 @@ static const unsigned nand_3_pins[] = {0x64, 0x65};  // ncs1, rdy1
 static const unsigned emmc_0_pins[] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25};  // Port C
 static const unsigned emmc_1_pins[] = {0x85, 0x86, 0x87, 0x88, 0x89, 0x9A};  // Port I
 
-static const unsigned usbh_0_pin[] = {0x4E}; // ppwr0
-static const unsigned usbh_1_pin[] = {0x4F}; // ppwr1
-static const unsigned usbh_2_pin[] = {0x5A}; // ppwr
-static const unsigned usbh_3_pin[] = {0x71}; // oc
+static const unsigned usbh_pe_pins[] = {0x4E, 0x4F, 0x71}; // ppwr0 & ppwr1
+static const unsigned usbh_pf_pin[] = {0x5A, 0x71}; // ppwr
 static const unsigned usbd_pin[] = {0x70};  // vbvld
 
 static const unsigned i2c0_pins[] = {0x60, 0x61};
@@ -521,27 +519,15 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0x6,
 	},
 	{
-		.name = "usbh_0_grp",
-		.pins = usbh_0_pin,
-		.num_pins = ARRAY_SIZE(usbh_0_pin),
+		.name = "usbh_pe_grp",
+		.pins = usbh_pe_pins,
+		.num_pins = ARRAY_SIZE(usbh_pe_pins),
 		.func = 0x7,
 	},
 	{
-		.name = "usbh_1_grp",
-		.pins = usbh_1_pin,
-		.num_pins = ARRAY_SIZE(usbh_1_pin),
-		.func = 0x7,
-	},
-	{
-		.name = "usbh_2_grp",
-		.pins = usbh_2_pin,
-		.num_pins = ARRAY_SIZE(usbh_2_pin),
-		.func = 0x7,
-	},
-	{
-		.name = "usbh_3_grp",
-		.pins = usbh_3_pin,
-		.num_pins = ARRAY_SIZE(usbh_3_pin),
+		.name = "usbh_pf_grp",
+		.pins = usbh_pf_pin,
+		.num_pins = ARRAY_SIZE(usbh_pf_pin),
 		.func = 0x7,
 	},
 	{
@@ -1310,8 +1296,7 @@ static const char * const sd1_groups[] = {"sd1_0_grp", "sd1_1_grp", "sd1_2_grp"}
 static const char * const nand_groups[] = {"nand_0_grp", "nand_1_grp"};
 static const char * const nand_ctl1_groups[] = {"nand_2_grp", "nand_3_grp"};
 static const char * const emmc_groups[] = {"emmc_0_grp", "emmc_1_grp"};
-static const char * const usbh_ppwr_groups[] = {"usbh_0_grp", "usbh_1_grp", "usbh_2_grp"};
-static const char * const usbh_oc_groups[] = {"usbh_3_grp"};
+static const char * const usbh_ppwr_groups[] = {"usbh_pe_grp", "usbh_pf_grp" };
 static const char * const usbd_groups[] = {"usbd_grp"};
 static const char * const i2c0_groups[] = {"i2c0_grp"};
 static const char * const i2c1_groups[] = {"i2c1_0_grp", "i2c1_1_grp", "i2c1_2_grp", "i2c1_3_grp"};
@@ -1468,11 +1453,6 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "usbh_ppwr",
 		.groups = usbh_ppwr_groups,
 		.num_groups = ARRAY_SIZE(usbh_ppwr_groups),
-	},
-	{
-		.name = "usbh_oc",
-		.groups = usbh_oc_groups,
-		.num_groups = ARRAY_SIZE(usbh_oc_groups),
 	},
 	{
 		.name = "usbd",
@@ -2189,36 +2169,20 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "emmc_1_grp",
 	},
 	{
-		.dev_name = "nuc970-ohci",
-		.name = "usbh-ppwr0",
+		.dev_name = "nuc970-ehci",
+		.name = "usbh-ppwr-pe",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "usbh",
-		.data.mux.group = "usbh_0_grp",
+		.data.mux.function = "usbh_ppwr",
+		.data.mux.group = "usbh_pe_grp",
 	},
 	{
-		.dev_name = "nuc970-ohci",
-		.name = "usbh-ppwr1",
+		.dev_name = "nuc970-ehci",
+		.name = "usbh-ppwr-pf",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "usbh",
-		.data.mux.group = "usbh_1_grp",
-	},
-	{
-		.dev_name = "nuc970-ohci",
-		.name = "usbh-ppwr",
-		.type = PIN_MAP_TYPE_MUX_GROUP,
-		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "usbh",
-		.data.mux.group = "usbh_2_grp",
-	},
-	{
-		.dev_name = "nuc970-ohci",
-		.name = "usbh-oc",
-		.type = PIN_MAP_TYPE_MUX_GROUP,
-		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "usbh",
-		.data.mux.group = "usbh_3_grp",
+		.data.mux.function = "usbh_ppwr",
+		.data.mux.group = "usbh_pf_grp",
 	},
 	{
 		.dev_name = "nuc970-usbgadget",

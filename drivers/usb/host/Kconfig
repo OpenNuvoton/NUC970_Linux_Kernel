@@ -106,6 +106,18 @@ config USB_NUC970_EHCI
 	---help---
 		Enables support for NUC970 USB EHCI controller
 
+choice
+    prompt "NUC970 USB Host port power pin select"
+    default NUC970_USBH_PWR_PE
+    depends on USB_NUC970_EHCI
+	
+    config NUC970_USBH_PWR_PE
+	bool "PE.14 and PE.15 for USBH_PPWR0 and USBH_PPWR1"
+    config NUC970_USBH_PWR_PF
+	bool "PF.10 for USBH_PPWR"
+endchoice
+
+
 config USB_EHCI_PCI
 	tristate
 	depends on PCI
