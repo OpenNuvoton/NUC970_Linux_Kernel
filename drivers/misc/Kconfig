@@ -4,6 +4,136 @@
 
 menu "Misc devices"
 
+config NUC970_ETIMER
+	tristate "NUC970 Enhance Timer (ETIMER) support"
+	depends on ARCH_NUC970
+	help
+	  Enhance timer dirver Nuvoton NUC970 Series MCU. This timer also supports capture function.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called nuc970-etimer.
+
+choice
+	prompt "NUC970 ETIMER channel 0 toggle output pin"
+	default NUC970_ETIMER0_TGL_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 0 toggle output pin.
+
+	config NUC970_ETIMER0_TGL_NONE
+		bool "No output"
+	config NUC970_ETIMER0_TGL_PC6
+		bool "Output to PC6"
+	config NUC970_ETIMER0_TGL_PB2
+		bool "Output to PB2"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 0 capture input pin"
+	default NUC970_ETIMER0_CAP_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 0 capture input pin.
+
+	config NUC970_ETIMER0_CAP_NONE
+		bool "No input"
+	config NUC970_ETIMER0_CAP_PC7
+		bool "Input from PC7"
+	config NUC970_ETIMER0_TGL_PB3
+		bool "Input from PB3"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 1 toggle output pin"
+	default NUC970_ETIMER1_TGL_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 1 toggle output pin.
+
+	config NUC970_ETIMER1_TGL_NONE
+		bool "No output"
+	config NUC970_ETIMER1_TGL_PC8
+		bool "Output to PC8"
+	config NUC970_ETIMER1_TGL_PB0
+		bool "Output to PB0"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 1 capture input pin"
+	default NUC970_ETIMER1_CAP_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 1 capture input pin.
+
+	config NUC970_ETIMER1_CAP_NONE
+		bool "No input"
+	config NUC970_ETIMER1_CAP_PC9
+		bool "Input from PC9"
+	config NUC970_ETIMER1_TGL_PB1
+		bool "Input from PB1"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 2 toggle output pin"
+	default NUC970_ETIMER2_TGL_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 2 toggle output pin.
+
+	config NUC970_ETIMER2_TGL_NONE
+		bool "No output"
+	config NUC970_ETIMER2_TGL_PC10
+		bool "Output to PC10"
+	config NUC970_ETIMER2_TGL_PF11
+		bool "Output to PF11"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 2 capture input pin"
+	default NUC970_ETIMER2_CAP_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 2 capture input pin.
+
+	config NUC970_ETIMER2_CAP_NONE
+		bool "No input"
+	config NUC970_ETIMER2_CAP_PC11
+		bool "Input from PC11"
+	config NUC970_ETIMER2_TGL_PF12
+		bool "Input from PBF12"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 3 toggle output pin"
+	default NUC970_ETIMER3_TGL_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 3 toggle output pin.
+
+	config NUC970_ETIMER3_TGL_NONE
+		bool "No output"
+	config NUC970_ETIMER3_TGL_PC12
+		bool "Output to PC12"
+	config NUC970_ETIMER3_TGL_PF13
+		bool "Output to PF13"
+endchoice
+
+choice
+	prompt "NUC970 ETIMER channel 3 capture input pin"
+	default NUC970_ETIMER3_CAP_NONE
+	depends on NUC970_ETIMER
+	help
+	  Select ETIMER channel 3 capture input pin.
+
+	config NUC970_ETIMER3_CAP_NONE
+		bool "No input"
+	config NUC970_ETIMER3_CAP_PC13
+		bool "Input from PC13"
+	config NUC970_ETIMER3_TGL_PF14
+		bool "Input from PF14"
+endchoice
+
+
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT

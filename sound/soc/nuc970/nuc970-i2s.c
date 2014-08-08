@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010 Nuvoton technology corporation.
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * Wan ZongShun <mcuos.com@gmail.com>
  *
@@ -124,13 +124,16 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 				
 				clk_set_parent(clkmux, clkaplldiv);
 				
-				if (freq % 8000 == 0) {
+				if ((freq % 8000 == 0)  && (freq != 32000)) {
 					//12.288MHz ==> APLL=98.4MHz / 8 = 12.3MHz
 					clk_set_rate(clkapll, 98400000);
 					clk_set_rate(clkaudio, 12300000);
-                } else {
-                	//16.934MHz ==> APLL=169.5MHz / 10 = 16.95MHz
-                	
+                } else if(freq == 44100) {
+                	//16.934MHz ==> APLL=169.5MHz / 15 = 11.30MHz                	
+                	clk_set_rate(clkapll, 169500000);
+					clk_set_rate(clkaudio, 11300000);
+            	} else {
+                	//16.934MHz ==> APLL=169.5MHz / 10 = 16.95MHz                	
                 	clk_set_rate(clkapll, 169500000);
 					clk_set_rate(clkaudio, 16950000);
             	}
@@ -303,12 +306,6 @@ static int nuc970_i2s_drvprobe(struct platform_device *pdev)
 	if (ret)
 		goto out3;
 
-	/* enbale i2s multifunction pin */
-	nuc970_mfp_set_port_g(10, 8);
-	nuc970_mfp_set_port_g(11, 8);
-	nuc970_mfp_set_port_g(12, 8);
-	nuc970_mfp_set_port_g(13, 8);
-	nuc970_mfp_set_port_g(14, 8);
 	return 0;
 
 out3:
@@ -361,7 +358,6 @@ static void __exit nuc970_i2s_exit(void)
 module_init(nuc970_i2s_init);
 module_exit(nuc970_i2s_exit);
 
-MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
 MODULE_DESCRIPTION("NUC970 IIS SoC driver!");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-i2s");

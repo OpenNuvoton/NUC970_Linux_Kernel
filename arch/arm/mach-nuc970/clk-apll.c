@@ -1,3 +1,19 @@
+/*
+ * linux/arch/arm/mach-nuc970/clk-apll.c
+ *
+ * Copyright (c) 2014 Nuvoton Technology Corporation.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ */
+ 
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/io.h>
@@ -29,7 +45,7 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 	u32 reg;
 	
 	reg = readl(pll->base) & ~0x0FFFFFFF;
-	
+
 	switch(rate)
 	{
 		case 96000000:			//usbh
@@ -40,13 +56,25 @@ static int clk_apll_set_rate(struct clk_hw *hw, unsigned long rate,
 			reg |= 0x8028;
 			break;
 		
-		case 16950000:			//i2s
+		case 169500000:			//i2s
 			reg |= 0x21f0;
+			break;
+		
+		case 264000000:			//system default, 264MHz
+			reg |= 0x15;
+			break;
+		
+		case 300000000:		
+			reg |= 0x18;
+			break;
+		
+		default:
+			reg |= 0x15;
 			break;
 	}
 	
 	writel(reg, pll->base);
-	
+
 	return 0;
 }
 
@@ -62,10 +90,14 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 	
 	switch(reg)
 	{
-		case 0x0015:
+		case 0x15:
 			ll = 264000000;		//system default, 264MHz
 			break;
-			
+		
+		case 0x18:
+			ll = 300000000;
+			break;
+				
 		case 0x8027:
 			ll = 96000000;		//usbh
 			break;
@@ -75,14 +107,14 @@ static unsigned long clk_apll_recalc_rate(struct clk_hw *hw,
 			break;
 		
 		case 0x21f0:
-			ll = 16950000;		//i2s
+			ll = 169500000;		//i2s
 			break;
 			
 		default:
 			ll = 264000000;
 			break;
 	}
-	
+
 	return ll;
 }
 

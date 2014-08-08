@@ -1,3 +1,19 @@
+/*
+ * linux/arch/arm/mach-nuc970/clk-upll.c
+ *
+ * Copyright (c) 2014 Nuvoton Technology Corporation.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ */
+ 
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/io.h>
@@ -36,6 +52,10 @@ static unsigned long clk_upll_recalc_rate(struct clk_hw *hw,
 	{
 		case 0x15:
 			ll = 264000000;
+			break;
+		
+		case 0x18:
+			ll = 300000000;
 			break;
 		
 		default:

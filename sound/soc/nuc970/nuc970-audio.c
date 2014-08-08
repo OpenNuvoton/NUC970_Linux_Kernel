@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2010 Nuvoton technology corporation.
- *
- * Wan ZongShun <mcuos.com@gmail.com>
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +26,7 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
         struct snd_soc_pcm_runtime *rtd = substream->private_data;
         struct snd_soc_dai *codec_dai = rtd->codec_dai;
         struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-         int ret;
+        int ret;
 
 //slave mode		
 #ifdef CONFIG_NUC970_I2S_SLAVE_MODE		
@@ -148,4 +146,3 @@ module_platform_driver(nuc970_audio_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("NUC970 Series ASoC audio support");
-MODULE_AUTHOR("Wan ZongShun");

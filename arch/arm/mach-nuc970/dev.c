@@ -112,7 +112,7 @@ static struct platform_device nuc970_device_ohci = {
 };
 #endif
 /* USB Device (Gadget)*/
-#ifdef CONFIG_USBD_NUC970
+#ifdef CONFIG_USB_NUC970
 static struct resource nuc970_usbgadget_resource[] = {
         [0] = {
                 .start = NUC970_PA_USBDEV,
@@ -128,7 +128,7 @@ static struct resource nuc970_usbgadget_resource[] = {
 
 static u64 nuc970_device_udc_dmamask = 0xffffffffUL;
 static struct platform_device nuc970_device_usbgadget = {
-	.name		= "nuc970-usbgadget",
+	.name		= "nuc970-usbdev",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(nuc970_usbgadget_resource),
 	.resource	= nuc970_usbgadget_resource,
@@ -147,7 +147,7 @@ static struct plat_nuc970serial_port nuc970_uart_data[] = {
 
 static struct platform_device nuc970_serial_device = {
         .name			= "nuc970-uart",
-        .id			= 1,
+        .id			= 0,
         .dev			= {
                 .platform_data	= nuc970_uart_data,
         },
@@ -159,7 +159,7 @@ static struct platform_device nuc970_serial_device = {
 //#define YUV422
 
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
-	/* AUO A035QN02V0 320x240 TFT Panel */
+	/* AUO A035QN02V0 320x240 TFT Panel , 18bits*/
 	[0] = {
 #ifndef YUV422
 		.type		= LCM_DCCS_VA_SRC_RGB565,
@@ -256,7 +256,7 @@ struct platform_device nuc970_device_sdh = {
 #endif
 
 /* NAND, eMMC Controller */
-#ifdef CONFIG_MMC_NUC970_FMI
+#ifdef CONFIG_MTD_NAND_NUC970
 static struct resource nuc970_fmi_resource[] = {
         [0] = {
                 .start = NUC970_PA_FMI,
@@ -271,7 +271,7 @@ static struct resource nuc970_fmi_resource[] = {
 };
 
 static u64 nuc970_device_fmi_dmamask = 0xffffffffUL;
-struct platform_device nuc970_device_sdh = {
+struct platform_device nuc970_device_fmi = {
         .name		  = "nuc970-fmi",
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_fmi_resource),
@@ -612,7 +612,7 @@ static struct flash_platform_data nuc970_spi_flash_data = {
 static struct spi_board_info nuc970_spi_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 30000000,
+                .max_speed_hz = 100000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi_flash_data,
@@ -680,9 +680,10 @@ struct platform_device nuc970_device_spi1 = {
 
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
-	PWM_LOOKUP("nuc970-pwm", 0, "pwm-backlight", NULL),
+	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
 };
 
+#if 0
 static struct resource nuc970_pwm_resource[] = {
         [0] = {
                 .start = NUC970_PA_PWM,
@@ -695,13 +696,23 @@ static struct resource nuc970_pwm_resource[] = {
                 .flags = IORESOURCE_IRQ,
         }
 };
+#endif
 
-//TODO: create mutiple instance for each channel
-struct platform_device nuc970_device_pwm = {
+struct platform_device nuc970_device_pwm0 = {
         .name		  = "nuc970-pwm",
-        .id		  = -1,
-        .num_resources	  = ARRAY_SIZE(nuc970_pwm_resource),
-        .resource	  = nuc970_pwm_resource,
+        .id		  = 0,
+};
+struct platform_device nuc970_device_pwm1 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 1,
+};
+struct platform_device nuc970_device_pwm2 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 2,
+};
+struct platform_device nuc970_device_pwm3 = {
+        .name		  = "nuc970-pwm",
+        .id		  = 3,
 };
 #endif
 
@@ -749,6 +760,97 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
+#ifdef CONFIG_NUC970_ETIMER
+static struct resource nuc970_etimer_resource[] = {
+        [0] = {
+                .start = IRQ_ETIMER0,
+                .end   = IRQ_ETIMER0,
+                .flags = IORESOURCE_IRQ,
+        },
+        [1] = {
+                .start = IRQ_ETIMER1,
+                .end   = IRQ_ETIMER1,
+                .flags = IORESOURCE_IRQ,
+        },
+        [2] = {
+                .start = IRQ_ETIMER2,
+                .end   = IRQ_ETIMER2,
+                .flags = IORESOURCE_IRQ,
+        },
+        [3] = {
+                .start = IRQ_ETIMER3,
+                .end   = IRQ_ETIMER3,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_etimer0 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 0,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer1 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 1,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer2 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 2,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+struct platform_device nuc970_device_etimer3 = {
+        .name		  = "nuc970-etimer",
+        .id		  = 3,
+        .num_resources	  = ARRAY_SIZE(nuc970_etimer_resource),
+        .resource	  = nuc970_etimer_resource,
+};
+#endif
+#ifdef CONFIG_PINCTRL
+struct platform_device nuc970_device_pinctrl = {
+        .name		  = "pinctrl-nuc970",
+        .id		  = -1,
+};
+#endif
+#ifdef CONFIG_GPIO_NUC970 
+#ifdef CONFIG_I2C_ALGOBIT
+static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
+    .sda_pin = NUC970_PG1,   
+    .scl_pin = NUC970_PG0,   
+    .udelay = 1, 
+    .timeout = 100,   
+    .sda_is_open_drain = 0,   //not support open drain mode
+    .scl_is_open_drain = 0,   //not support open drain mode
+};   
+  
+static struct platform_device i2c_gpio = {   
+    .name = "i2c-gpio",   
+    .id = 0,   
+    .dev = {   
+        .platform_data = &i2c_gpio_adapter_data,   
+        },   
+};
+#endif
+static struct resource nuc970_gpio_resource[] = {
+	[0] = {
+	       .start = NUC970_PA_GPIO,
+	       .end = NUC970_PA_GPIO + NUC970_SZ_GPIO - 1,
+	       .flags = IORESOURCE_MEM,
+	       },
+};
+
+struct platform_device nuc970_device_gpio = {
+	.name = "nuc970-gpio",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(nuc970_gpio_resource),
+	.resource = nuc970_gpio_resource,
+};
+   
+#endif
+
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device,
 #ifdef CONFIG_USB_OHCI_HCD
@@ -773,7 +875,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_MMC_NUC970_SD
 	&nuc970_device_sdh,
 #endif
-#ifdef CONFIG_MMC_NUC970_FMI
+#ifdef CONFIG_MTD_NAND_NUC970
 	&nuc970_device_fmi,
 #endif
 #ifdef CONFIG_JPEG_CODEC
@@ -786,7 +888,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_emac1,
 #endif
 #ifdef CONFIG_PWM_NUC970
-	&nuc970_device_pwm,
+	&nuc970_device_pwm0,
+	&nuc970_device_pwm1,
+	&nuc970_device_pwm2,
+	&nuc970_device_pwm3,
 #endif
 #ifdef CONFIG_NUC970_WDT
 	&nuc970_device_wdt,
@@ -802,7 +907,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_audio,
 	&nuc970_device_audio_i2s,
 #endif
-#ifdef CONFIG_USBD_NUC970
+#ifdef CONFIG_USB_NUC970
 	&nuc970_device_usbgadget,
 #endif
 #ifdef CONFIG_SPI_NUC970_P0
@@ -815,7 +920,20 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_NUC970_ADC
 	&nuc970_device_adc,
 #endif
-
+#ifdef CONFIG_NUC970_ETIMER
+	&nuc970_device_etimer0,
+	&nuc970_device_etimer1,
+	&nuc970_device_etimer2,
+	&nuc970_device_etimer3,
+#endif
+#ifdef CONFIG_PINCTRL
+	&nuc970_device_pinctrl,
+#endif
+#ifdef CONFIG_GPIO_NUC970
+	&nuc970_device_gpio,
+#ifdef CONFIG_I2C_ALGOBIT
+	&i2c_gpio,
+#endif
 };
 
 

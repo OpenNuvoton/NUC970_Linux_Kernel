@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/mii.h>
+#include <linux/phy.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/skbuff.h>
@@ -20,9 +21,10 @@
 #include <linux/gfp.h>
 #include <linux/kthread.h>
 #include <linux/interrupt.h>
+#include <linux/spinlock.h>
 
-//#include <mach/regs-gcr.h>
-//#include <mach/regs-clock.h>
+#include <mach/map.h>
+#include <mach/regs-clock.h>
 
 #define DRV_MODULE_NAME		"nuc970-emc0"
 #define DRV_MODULE_VERSION	"1.0"
@@ -54,7 +56,7 @@
 #define MCMDR_SPCRC		(0x01 << 5)
 #define MCMDR_TXON		(0x01 << 8)
 #define MCMDR_FDUP		(0x01 << 18)
-#define MCMDR_ENMDC		(0x01 << 19)
+//#define MCMDR_ENMDC		(0x01 << 19)
 #define MCMDR_OPMOD		(0x01 << 20)
 #define SWR				(0x01 << 24)
 
@@ -67,11 +69,10 @@
 #define CAM0EN			0x01
 
 /* mac mii controller bit */
-#define MDCCR			(0x0a << 20)
-#define PHYAD			(0x01 << 8)
+#define MDCON			(0x01 << 19)
+//#define PHYAD			(0x01 << 8)
 #define PHYWR			(0x01 << 16)
 #define PHYBUSY			(0x01 << 17)
-#define PHYPRESP		(0x01 << 18)
 #define CAM_ENTRY_SIZE		0x08
 
 /* rx and tx status */
@@ -97,9 +98,9 @@
 #define ENTXCP			(0x01 << 18)
 #define ENTXABT			(0x01 << 21)
 #define ENTXBERR		(0x01 << 24)
-#define ENMDC			(0x01 << 19)
+//#define ENMDC			(0x01 << 19)
 #define PHYBUSY			(0x01 << 17)
-#define MDCCR_VAL		0xa00000
+//#define MDCCR_VAL		0xa00000
 
 /* rx and tx owner bit */
 #define RX_OWEN_DMA		(0x01 << 31)
@@ -121,12 +122,18 @@
 #define TX_DESC_SIZE	16
 #define MAX_RBUFF_SZ	0x600
 #define MAX_TBUFF_SZ	0x600
-#define TX_TIMEOUT		50
-#define DELAY			1000
-#define CAM0			0x0
+#define TX_TIMEOUT	50
+#define DELAY		1000
+#define CAM0		0x0
 
-static int nuc970_mdio_read(struct net_device *dev, int phy_id, int reg);
-extern void mfp_set_groupf(struct device *dev);
+#define MII_TIMEOUT	100
+
+#define ETH_TRIGGER_RX	do{__raw_writel(ENSTART, REG_RSDR);}while(0)
+#define ETH_TRIGGER_TX	do{__raw_writel(ENSTART, REG_TSDR);}while(0)
+#define ETH_ENABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_TXON, REG_MCMDR);}while(0)
+#define ETH_ENABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_RXON, REG_MCMDR);}while(0)
+#define ETH_DISABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_TXON, REG_MCMDR);}while(0)
+#define ETH_DISABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_RXON, REG_MCMDR);}while(0)
 
 struct nuc970_rxbd {
 	unsigned int sl;
@@ -144,131 +151,95 @@ struct nuc970_txbd {
 
 u8 nuc970_mac0[6] = { 0x08, 0x00, 0x27, 0x00, 0x01, 0x92 };
 
-struct recv_pdesc {
-	struct nuc970_rxbd desclist[RX_DESC_SIZE];
-	char recv_buf[RX_DESC_SIZE][MAX_RBUFF_SZ];
-};
-
-struct tran_pdesc {
-	struct nuc970_txbd desclist[TX_DESC_SIZE];
-	char tran_buf[TX_DESC_SIZE][MAX_TBUFF_SZ];
-};
+static struct sk_buff *rx_skb[RX_DESC_SIZE];
+static struct sk_buff *tx_skb[TX_DESC_SIZE];
 
 struct  nuc970_ether {
-	struct recv_pdesc *rdesc;
-	struct tran_pdesc *tdesc;
+	spinlock_t lock;
+	struct nuc970_rxbd *rdesc;
+	struct nuc970_txbd *tdesc;
 	dma_addr_t rdesc_phys;
 	dma_addr_t tdesc_phys;
 	struct net_device_stats stats;
 	struct platform_device *pdev;
+	struct net_device *ndev;
 	struct resource *res;
-	struct sk_buff *skb;
+	//struct sk_buff *skb;
 	struct clk *clk;
-	struct clk *rmiiclk;
-	struct mii_if_info mii;
-	struct timer_list check_timer;
+	struct clk *eclk;
+	unsigned int msg_enable;
+	struct mii_bus *mii_bus;
+	struct phy_device *phy_dev;
+	struct napi_struct napi;
 	int rxirq;
 	int txirq;
 	unsigned int cur_tx;
 	unsigned int cur_rx;
 	unsigned int finish_tx;
-	unsigned int rx_packets;
-	unsigned int rx_bytes;
+	//unsigned int rx_packets;
+	//unsigned int rx_bytes;
 	unsigned int start_tx_ptr;
 	unsigned int start_rx_ptr;
-	unsigned int linkflag;
+	int link;
+	int speed;
+	int duplex;
 };
 
 
-static void update_linkspeed_register(struct net_device *dev,
-				unsigned int speed, unsigned int duplex)
+static void adjust_link(struct net_device *dev)
 {
+	struct nuc970_ether *ether = netdev_priv(dev);
+	struct phy_device *phydev = ether->phy_dev;
 	unsigned int val;
+	bool status_change = false;
+	unsigned long flags;
 
-	val = __raw_readl(REG_MCMDR);
+	// clear GPIO interrupt status whihc indicates PHY statu change?
 
-	if (speed == SPEED_100) {
-		/* 100 full/half duplex */
-		if (duplex == DUPLEX_FULL) {
-			val |= (MCMDR_OPMOD | MCMDR_FDUP);
-		} else {
+	spin_lock_irqsave(&ether->lock, flags);
+
+	if (phydev->link) {
+		if ((ether->speed != phydev->speed) ||
+		    (ether->duplex != phydev->duplex)) {
+			ether->speed = phydev->speed;
+			ether->duplex = phydev->duplex;
+			status_change = true;
+		}
+	} else {
+		ether->speed = 0;
+		ether->duplex = -1;
+	}
+
+	if (phydev->link != ether->link) {
+
+		ether->link = phydev->link;
+
+		status_change = true;
+	}
+
+	spin_unlock_irqrestore(&ether->lock, flags);
+
+	if (status_change) {
+
+		val = __raw_readl( REG_MCMDR);
+
+		if (ether->speed == 100) {
 			val |= MCMDR_OPMOD;
+		} else {
+			val &= ~MCMDR_OPMOD;
+		}
+
+		if(ether->duplex == DUPLEX_FULL) {
+			val |= MCMDR_FDUP;
+		} else {
 			val &= ~MCMDR_FDUP;
 		}
-	} else {
-		/* 10 full/half duplex */
-		if (duplex == DUPLEX_FULL) {
-			val |= MCMDR_FDUP;
-			val &= ~MCMDR_OPMOD;
-		} else {
-			val &= ~(MCMDR_FDUP | MCMDR_OPMOD);
-		}
-	}
 
-	__raw_writel(val,  REG_MCMDR);
+		__raw_writel(val,  REG_MCMDR);
+	}
 }
 
-static void update_linkspeed(struct net_device *dev)
-{
-	struct nuc970_ether *ether = netdev_priv(dev);
-	struct platform_device *pdev;
-	unsigned int bmsr, bmcr, lpa, speed, duplex;
 
-	pdev = ether->pdev;
-
-	if (!mii_link_ok(&ether->mii)) {
-		ether->linkflag = 0x0;
-		netif_carrier_off(dev);
-		dev_dbg(&pdev->dev, "%s: Link down.\n", dev->name);
-		return;
-	}
-
-	if (ether->linkflag == 1)
-		return;
-
-	bmsr = nuc970_mdio_read(dev, ether->mii.phy_id, MII_BMSR);
-	bmcr = nuc970_mdio_read(dev, ether->mii.phy_id, MII_BMCR);
-
-	if (bmcr & BMCR_ANENABLE) {
-		if (!(bmsr & BMSR_ANEGCOMPLETE))
-			return;
-
-		lpa = nuc970_mdio_read(dev, ether->mii.phy_id, MII_LPA);
-
-		if ((lpa & LPA_100FULL) || (lpa & LPA_100HALF))
-			speed = SPEED_100;
-		else
-			speed = SPEED_10;
-
-		if ((lpa & LPA_100FULL) || (lpa & LPA_10FULL))
-			duplex = DUPLEX_FULL;
-		else
-			duplex = DUPLEX_HALF;
-
-	} else {
-		speed = (bmcr & BMCR_SPEED100) ? SPEED_100 : SPEED_10;
-		duplex = (bmcr & BMCR_FULLDPLX) ? DUPLEX_FULL : DUPLEX_HALF;
-	}
-
-	update_linkspeed_register(dev, speed, duplex);
-
-	dev_info(&pdev->dev, "%s: Link now %i-%s\n", dev->name, speed,
-			(duplex == DUPLEX_FULL) ? "FullDuplex" : "HalfDuplex");
-			
-			
-	ether->linkflag = 0x01;
-
-	netif_carrier_on(dev);
-}
-
-static void nuc970_check_link(unsigned long dev_id)
-{
-	struct net_device *dev = (struct net_device *) dev_id;
-	struct nuc970_ether *ether = netdev_priv(dev);
-
-	update_linkspeed(dev);
-	mod_timer(&ether->check_timer, jiffies + msecs_to_jiffies(1000));
-}
 
 static void nuc970_write_cam(struct net_device *dev,
 				unsigned int x, unsigned char *pval)
@@ -283,6 +254,24 @@ static void nuc970_write_cam(struct net_device *dev,
 	__raw_writel(msw,  REG_CAMM_BASE + x * CAM_ENTRY_SIZE);
 }
 
+
+static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
+	struct nuc970_ether *ether = netdev_priv(dev);
+	struct sk_buff *skb = dev_alloc_skb(1518 + 2);
+
+	if (skb == NULL)
+		return NULL;
+
+	skb_reserve(skb, 2);    // reserve 2 bytes to align IP header
+	skb->dev = dev;
+
+	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
+							1518, DMA_FROM_DEVICE);
+	rx_skb[i] = skb;
+
+	return skb;
+}
+
 static int nuc970_init_desc(struct net_device *dev)
 {
 	struct nuc970_ether *ether;
@@ -294,42 +283,40 @@ static int nuc970_init_desc(struct net_device *dev)
 	ether = netdev_priv(dev);
 	pdev = ether->pdev;
 
-	ether->tdesc = (struct tran_pdesc *)
-		dma_alloc_coherent(&pdev->dev, sizeof(struct tran_pdesc),
-					&ether->tdesc_phys, GFP_KERNEL);
+	ether->tdesc = (struct nuc970_txbd *)
+			dma_alloc_coherent(&pdev->dev, sizeof(struct nuc970_txbd) * TX_DESC_SIZE,
+						&ether->tdesc_phys, GFP_KERNEL);
 
 	if (!ether->tdesc) {
 		dev_err(&pdev->dev, "Failed to allocate memory for tx desc\n");
 		return -ENOMEM;
 	}
 
-	ether->rdesc = (struct recv_pdesc *)
-		dma_alloc_coherent(&pdev->dev, sizeof(struct recv_pdesc),
-					&ether->rdesc_phys, GFP_KERNEL);
+	ether->rdesc = (struct nuc970_rxbd *)
+			dma_alloc_coherent(&pdev->dev, sizeof(struct nuc970_rxbd) * RX_DESC_SIZE,
+						&ether->rdesc_phys, GFP_KERNEL);
 
 	if (!ether->rdesc) {
 		dev_err(&pdev->dev, "Failed to allocate memory for rx desc\n");
-		dma_free_coherent(&pdev->dev, sizeof(struct tran_pdesc),
-					ether->tdesc, ether->tdesc_phys);
+		dma_free_coherent(&pdev->dev, sizeof(struct nuc970_txbd) * TX_DESC_SIZE,
+						ether->tdesc, ether->tdesc_phys);
 		return -ENOMEM;
 	}
 
 	for (i = 0; i < TX_DESC_SIZE; i++) {
 		unsigned int offset;
 
-		tdesc = &(ether->tdesc->desclist[i]);
+		tdesc = (ether->tdesc + i);
 
 		if (i == TX_DESC_SIZE - 1)
-			offset = offsetof(struct tran_pdesc, desclist[0]);
+			offset = 0;
 		else
-			offset = offsetof(struct tran_pdesc, desclist[i + 1]);
+			offset = sizeof(struct nuc970_txbd) * (i + 1);
 
 		tdesc->next = ether->tdesc_phys + offset;
-		tdesc->buffer = ether->tdesc_phys +
-			offsetof(struct tran_pdesc, tran_buf[i]);
+		tdesc->buffer = (unsigned int)NULL;
 		tdesc->sl = 0;
 		tdesc->mode = 0;
-		//printk("TXD %d => 0x%x\n", i, (int)tdesc->buffer);
 	}
 
 	ether->start_tx_ptr = ether->tdesc_phys;
@@ -337,22 +324,64 @@ static int nuc970_init_desc(struct net_device *dev)
 	for (i = 0; i < RX_DESC_SIZE; i++) {
 		unsigned int offset;
 
-		rdesc = &(ether->rdesc->desclist[i]);
+		rdesc = (ether->rdesc + i);
 
 		if (i == RX_DESC_SIZE - 1)
-			offset = offsetof(struct recv_pdesc, desclist[0]);
+			offset = 0;
 		else
-			offset = offsetof(struct recv_pdesc, desclist[i + 1]);
+			offset = sizeof(struct nuc970_rxbd) * (i + 1);
 
 		rdesc->next = ether->rdesc_phys + offset;
 		rdesc->sl = RX_OWEN_DMA;
-		rdesc->buffer = ether->rdesc_phys +
-			offsetof(struct recv_pdesc, recv_buf[i]);
-	  }
+		if(get_new_skb(dev, i) == NULL) {
+			dma_free_coherent(&pdev->dev, sizeof(struct nuc970_txbd) * TX_DESC_SIZE,
+						ether->tdesc, ether->tdesc_phys);
+			dma_free_coherent(&pdev->dev, sizeof(struct nuc970_rxbd) * RX_DESC_SIZE,
+						ether->rdesc, ether->rdesc_phys);
+
+			for(; i != 0; i--) {
+				dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer),
+							1518, DMA_FROM_DEVICE);
+				dev_kfree_skb_any(rx_skb[i]);
+			}
+			return -ENOMEM;
+		}
+	}
 
 	ether->start_rx_ptr = ether->rdesc_phys;
 
 	return 0;
+}
+
+// This API must call with Tx/Rx stopped
+static void nuc970_free_desc(struct net_device *dev)
+{
+	struct sk_buff *skb;
+	u32 i;
+	struct nuc970_ether *ether = netdev_priv(dev);
+	struct platform_device *pdev = ether->pdev;
+
+	for (i = 0; i < TX_DESC_SIZE; i++) {
+		skb = tx_skb[i];
+		if(skb != NULL) {
+			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->tdesc + i)->buffer), skb->len, DMA_TO_DEVICE);
+			dev_kfree_skb_any(skb);
+		}
+	}
+
+	for (i = 0; i < RX_DESC_SIZE; i++) {
+		skb = rx_skb[i];
+		if(skb != NULL) {
+			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), 1518, DMA_FROM_DEVICE);
+			dev_kfree_skb_any(skb);
+		}
+	}
+
+	dma_free_coherent(&pdev->dev, sizeof(struct nuc970_txbd) * TX_DESC_SIZE,
+				ether->tdesc, ether->tdesc_phys);
+	dma_free_coherent(&pdev->dev, sizeof(struct nuc970_rxbd) * RX_DESC_SIZE,
+				ether->rdesc, ether->rdesc_phys);
+
 }
 
 static void nuc970_set_fifo_threshold(struct net_device *dev)
@@ -372,17 +401,6 @@ static void nuc970_return_default_idle(struct net_device *dev)
 	__raw_writel(val,  REG_MCMDR);
 }
 
-static void nuc970_trigger_rx(struct net_device *dev)
-{
-
-	__raw_writel(ENSTART,  REG_RSDR);
-}
-
-static void nuc970_trigger_tx(struct net_device *dev)
-{
-
-	__raw_writel(ENSTART,  REG_TSDR);
-}
 
 static void nuc970_enable_mac_interrupt(struct net_device *dev)
 {
@@ -406,7 +424,7 @@ static void nuc970_set_global_maccmd(struct net_device *dev)
 	unsigned int val;
 
 	val = __raw_readl( REG_MCMDR);
-	val |= MCMDR_SPCRC | MCMDR_ENMDC | MCMDR_ACP | ENMDC;
+	val |= MCMDR_SPCRC | /*MCMDR_ENMDC |*/ MCMDR_ACP /*| ENMDC*/;
 	__raw_writel(val,  REG_MCMDR);
 }
 
@@ -429,33 +447,6 @@ static void nuc970_enable_cam_command(struct net_device *dev)
 	__raw_writel(val,  REG_CAMCMR);
 }
 
-static void nuc970_enable_tx(struct net_device *dev, unsigned int enable)
-{
-	unsigned int val;
-
-	val = __raw_readl( REG_MCMDR);
-
-	if (enable)
-		val |= MCMDR_TXON;
-	else
-		val &= ~MCMDR_TXON;
-
-	__raw_writel(val,  REG_MCMDR);
-}
-
-static void nuc970_enable_rx(struct net_device *dev, unsigned int enable)
-{
-	unsigned int val;
-
-	val = __raw_readl(REG_MCMDR);
-
-	if (enable)
-		val |= MCMDR_RXON;
-	else
-		val &= ~MCMDR_RXON;
-
-	__raw_writel(val,  REG_MCMDR);
-}
 
 static void nuc970_set_curdest(struct net_device *dev)
 {
@@ -465,12 +456,12 @@ static void nuc970_set_curdest(struct net_device *dev)
 	__raw_writel(ether->start_tx_ptr,  REG_TXDLSA);
 }
 
-static void nuc970_reset_mac(struct net_device *dev)
+static void nuc970_reset_mac(struct net_device *dev, int need_free)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 
-	nuc970_enable_tx(dev, 0);
-	nuc970_enable_rx(dev, 0);
+	ETH_DISABLE_TX;
+	ETH_DISABLE_RX;;
 
 	nuc970_return_default_idle(dev);
 	nuc970_set_fifo_threshold(dev);
@@ -478,9 +469,11 @@ static void nuc970_reset_mac(struct net_device *dev)
 	if (!netif_queue_stopped(dev))
 		netif_stop_queue(dev);
 
+	if(need_free)
+		nuc970_free_desc(dev);
 	nuc970_init_desc(dev);
 
-	dev->trans_start = jiffies; /* prevent tx timeout */
+	//dev->trans_start = jiffies; /* prevent tx timeout */
 	ether->cur_tx = 0x0;
 	ether->finish_tx = 0x0;
 	ether->cur_rx = 0x0;
@@ -489,10 +482,10 @@ static void nuc970_reset_mac(struct net_device *dev)
 	nuc970_enable_cam(dev);
 	nuc970_enable_cam_command(dev);
 	nuc970_enable_mac_interrupt(dev);
-	nuc970_enable_tx(dev, 1);
-	nuc970_enable_rx(dev, 1);
-	nuc970_trigger_tx(dev);
-	nuc970_trigger_rx(dev);
+	ETH_ENABLE_TX;
+	ETH_ENABLE_RX;
+
+	ETH_TRIGGER_RX;
 
 	dev->trans_start = jiffies; /* prevent tx timeout */
 
@@ -500,55 +493,48 @@ static void nuc970_reset_mac(struct net_device *dev)
 		netif_wake_queue(dev);
 }
 
-static void nuc970_mdio_write(struct net_device *dev,
-					int phy_id, int reg, int data)
+static int nuc970_mdio_write(struct mii_bus *bus, int phy_id, int regnum,
+		u16 value)
 {
-	struct nuc970_ether *ether = netdev_priv(dev);
-	struct platform_device *pdev;
-	unsigned int val, i;
+	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT);
 
-	pdev = ether->pdev;
-	
-	__raw_writel(data,  REG_MIID);
+	__raw_writel(value,  REG_MIID);
+	__raw_writel((phy_id << 0x08) | regnum | PHYBUSY | MDCON | PHYWR,  REG_MIIDA);
 
-	val = (phy_id << 0x08) | reg;
-	val |= PHYBUSY | PHYWR | MDCCR_VAL;
-	__raw_writel(val,  REG_MIIDA);
 
-	for (i = 0; i < DELAY; i++) {
-		if ((__raw_readl( REG_MIIDA) & PHYBUSY) == 0)
-			break;
+	/* Wait for completion */
+	while (__raw_readl( REG_MIIDA) & PHYBUSY) {
+		if (time_after(jiffies, timeout))
+			return -ETIMEDOUT;
+		cpu_relax();
 	}
 
-	if (i == DELAY)
-		dev_warn(&pdev->dev, "mdio write timed out\n");
+	return 0;
+
 }
 
-static int nuc970_mdio_read(struct net_device *dev, int phy_id, int reg)
+static int nuc970_mdio_read(struct mii_bus *bus, int phy_id, int regnum)
 {
-	struct nuc970_ether *ether = netdev_priv(dev);
-	struct platform_device *pdev;
-	unsigned int val, i, data;
+	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT);
 
-	pdev = ether->pdev;
 
-	val = (phy_id << 0x08) | reg;
-	val |= PHYBUSY | MDCCR_VAL;
-	__raw_writel(val,  REG_MIIDA);
+	__raw_writel((phy_id << 0x08) | regnum | PHYBUSY | MDCON,  REG_MIIDA);
 
-	for (i = 0; i < DELAY; i++) {
-		if ((__raw_readl( REG_MIIDA) & PHYBUSY) == 0)
-			break;
+	/* Wait for completion */
+	while (__raw_readl( REG_MIIDA) & PHYBUSY) {
+		if (time_after(jiffies, timeout))
+			return -ETIMEDOUT;
+		cpu_relax();
 	}
 
-	if (i == DELAY) {
-		dev_warn(&pdev->dev, "mdio read timed out\n");
-		data = 0xffff;
-	} else {
-		data = __raw_readl( REG_MIID);
-	}
+	return __raw_readl(REG_MIID);
+}
 
-	return data;
+static int nuc970_mdio_reset(struct mii_bus *bus)
+{
+
+	// reser ENAC engine??
+	return 0;
 }
 
 static int nuc970_set_mac_address(struct net_device *dev, void *addr)
@@ -571,19 +557,16 @@ static int nuc970_ether_close(struct net_device *dev)
 
 	pdev = ether->pdev;
 
-	dma_free_coherent(&pdev->dev, sizeof(struct recv_pdesc),
-					ether->rdesc, ether->rdesc_phys);
-	dma_free_coherent(&pdev->dev, sizeof(struct tran_pdesc),
-					ether->tdesc, ether->tdesc_phys);
 
 	netif_stop_queue(dev);
-
-	del_timer_sync(&ether->check_timer);
-	clk_disable(ether->rmiiclk);
-	clk_disable(ether->clk);
-
+	napi_disable(&ether->napi);
 	free_irq(ether->txirq, dev);
 	free_irq(ether->rxirq, dev);
+
+	nuc970_free_desc(dev);
+
+	if (ether->phy_dev)
+		phy_stop(ether->phy_dev);
 
 	return 0;
 }
@@ -597,54 +580,31 @@ static struct net_device_stats *nuc970_ether_stats(struct net_device *dev)
 	return &ether->stats;
 }
 
-static int nuc970_send_frame(struct net_device *dev,
-					unsigned char *data, int length)
+
+static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-	struct nuc970_ether *ether;
-	struct nuc970_txbd *txbd;
-	struct platform_device *pdev;
-	unsigned char *buffer;
+	struct nuc970_ether *ether = netdev_priv(dev);
+	struct nuc970_txbd *txbd = (ether->tdesc + ether->cur_tx);
 
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
 
-	txbd = &ether->tdesc->desclist[ether->cur_tx];
-	buffer = ether->tdesc->tran_buf[ether->cur_tx];
-	
-	if (length > 1514) {
-		dev_err(&pdev->dev, "send data %d bytes, check it\n", length);
-		length = 1514;
-	}
+	txbd->buffer = dma_map_single(&dev->dev, skb->data,
+					skb->len, DMA_TO_DEVICE);
 
-	txbd->sl = length /*& 0xFFFF*/;
-
-	memcpy(buffer, data, length);
-
+	tx_skb[ether->cur_tx]  = skb;
+	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
 	txbd->mode = TX_OWEN_DMA | PADDINGMODE | CRCMODE | MACTXINTEN;
 
-	nuc970_enable_tx(dev, 1);
-
-	nuc970_trigger_tx(dev);
+	ETH_TRIGGER_TX;
 
 	if (++ether->cur_tx >= TX_DESC_SIZE)
 		ether->cur_tx = 0;
 
-	txbd = &ether->tdesc->desclist[ether->cur_tx];
+	txbd = (ether->tdesc + ether->cur_tx);
 
 	if (txbd->mode & TX_OWEN_DMA)
 		netif_stop_queue(dev);
 
-	return 0;
-}
-
-static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
-{
-	if (!(nuc970_send_frame(dev, skb->data, skb->len))) {
-		//ether->skb = skb;
-		dev_kfree_skb_irq(skb);
-		return 0;
-	}
-	return -EAGAIN;
+	return(0);
 }
 
 static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
@@ -653,9 +613,9 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 	struct nuc970_txbd  *txbd;
 	struct platform_device *pdev;
 	struct net_device *dev;
+	struct sk_buff *s;
 	unsigned int cur_entry, entry, status;
 
-//printk("[tx]\n");
 	dev = dev_id;
 	ether = netdev_priv(dev);
 	pdev = ether->pdev;
@@ -664,140 +624,147 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 
 	cur_entry = __raw_readl( REG_CTXDSA);
 
-	entry = ether->tdesc_phys +
-		offsetof(struct tran_pdesc, desclist[ether->finish_tx]);
+	entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 
 	while (entry != cur_entry) {
-		txbd = &ether->tdesc->desclist[ether->finish_tx];
+		txbd = (ether->tdesc + ether->finish_tx);
+		s = tx_skb[ether->finish_tx];
+		dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
+		dev_kfree_skb_irq(s);
+		tx_skb[ether->finish_tx] = NULL;
 
 		if (++ether->finish_tx >= TX_DESC_SIZE)
 			ether->finish_tx = 0;
 
 		if (txbd->sl & TXDS_TXCP) {
 			ether->stats.tx_packets++;
-			ether->stats.tx_bytes += txbd->sl & 0xFFFF;
+			ether->stats.tx_bytes += (txbd->sl & 0xFFFF);
 		} else {
 			ether->stats.tx_errors++;
 		}
 
 		txbd->sl = 0x0;
 		txbd->mode = 0x0;
+		txbd->buffer = (unsigned int)NULL;
 
-		//if (netif_queue_stopped(dev))
-			netif_wake_queue(dev);
+		netif_wake_queue(dev);
 
-		entry = ether->tdesc_phys +
-			offsetof(struct tran_pdesc, desclist[ether->finish_tx]);
+		entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 	}
 
 	if (status & MISTA_EXDEF) {
 		dev_err(&pdev->dev, "emc defer exceed interrupt\n");
 	} else if (status & MISTA_TXBERR) {
 		dev_err(&pdev->dev, "emc bus error interrupt\n");
-		nuc970_reset_mac(dev);
+		nuc970_reset_mac(dev, 1);
 	} else if (status & MISTA_TDU) {
-		//if (netif_queue_stopped(dev))
-			netif_wake_queue(dev);
+		netif_wake_queue(dev);
 	}
 
 	return IRQ_HANDLED;
 }
 
-static void netdev_rx(struct net_device *dev)
+static int nuc970_poll(struct napi_struct *napi, int budget)
 {
-	struct nuc970_ether *ether;
+	struct nuc970_ether *ether = container_of(napi, struct nuc970_ether, napi);
 	struct nuc970_rxbd *rxbd;
-	struct platform_device *pdev;
-	struct sk_buff *skb;
-	unsigned char *data;
+	struct net_device *dev = ether->ndev;
+	struct sk_buff *skb, *s;
 	unsigned int length, status, val, entry;
+	int rx_cnt = 0;
 
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
+	rxbd = (ether->rdesc + ether->cur_rx);
 
-	rxbd = &ether->rdesc->desclist[ether->cur_rx];
+	while(rx_cnt < budget) {
 
-	do {
+		val = __raw_readl(REG_CRXDSA);
+		entry = ether->rdesc_phys + sizeof(struct nuc970_rxbd) * (ether->cur_rx);
 
-                val = __raw_readl(REG_CRXDSA);
-
-                entry = ether->rdesc_phys +
-                        offsetof(struct recv_pdesc, desclist[ether->cur_rx]);
-
-                if (val == entry)
-                        break;
-
+		if (val == entry)
+			break;
+		s = rx_skb[ether->cur_rx];
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (status & RXDS_RXGD) {
-			data = ether->rdesc->recv_buf[ether->cur_rx];
-			skb = dev_alloc_skb(length+2);
+		if (likely(status & RXDS_RXGD)) {
+
+			skb = dev_alloc_skb(1518 + 2);
+
 			if (!skb) {
+				struct platform_device *pdev = ether->pdev;
 				dev_err(&pdev->dev, "get skb buffer error\n");
 				ether->stats.rx_dropped++;
-				return;
+				goto rx_out;
 			}
+			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, 1518, DMA_FROM_DEVICE);
 
-			skb_reserve(skb, 2);
-			skb_put(skb, length);
-			skb_copy_to_linear_data(skb, data, length);
-			skb->protocol = eth_type_trans(skb, dev);
+			skb_put(s, length);
+			s->protocol = eth_type_trans(s, dev);
+			netif_receive_skb(s);
 			ether->stats.rx_packets++;
 			ether->stats.rx_bytes += length;
-			netif_rx(skb);
-		
+
+			skb_reserve(skb, 2);
+			skb->dev = dev;
+
+			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
+							1518, DMA_FROM_DEVICE);
+			rx_skb[ether->cur_rx] = skb;
+
 		} else {
 			ether->stats.rx_errors++;
 
 			if (status & RXDS_RP) {
-				dev_err(&pdev->dev, "rx runt err\n");
 				ether->stats.rx_length_errors++;
 			} else if (status & RXDS_CRCE) {
-				dev_err(&pdev->dev, "rx crc err\n");
 				ether->stats.rx_crc_errors++;
 			} else if (status & RXDS_ALIE) {
-				dev_err(&pdev->dev, "rx aligment err\n");
 				ether->stats.rx_frame_errors++;
 			} else if (status & RXDS_PTLE) {
-				dev_err(&pdev->dev, "rx longer err\n");
 				ether->stats.rx_over_errors++;
 			}
 		}
 
+		wmb();
 		rxbd->sl = RX_OWEN_DMA;
 		rxbd->reserved = 0x0;
 
 		if (++ether->cur_rx >= RX_DESC_SIZE)
 			ether->cur_rx = 0;
 
-		rxbd = &ether->rdesc->desclist[ether->cur_rx];
+		rxbd = (ether->rdesc + ether->cur_rx);
 
-	} while (1);
+	}
+
+	if(rx_cnt < budget)
+		__napi_complete(napi);
+
+rx_out:
+
+	ETH_TRIGGER_RX;
+	__raw_writel(__raw_readl(REG_MIEN) | ENRXINTR,  REG_MIEN);
+	return(rx_cnt);
 }
 
 static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 {
-	struct net_device *dev;
-
+	struct net_device *dev = (struct net_device *)dev_id;
+	struct nuc970_ether *ether = netdev_priv(dev);
 	unsigned int status;
-	dev = dev_id;
 
-	//printk("[rx]\n");
 	nuc970_get_and_clear_int(dev, &status, 0xFFFF);
 
-	if (status & MISTA_RXBERR) {
-		struct nuc970_ether  *ether = netdev_priv(dev);
+	if (unlikely(status & MISTA_RXBERR)) {
 		struct platform_device *pdev = ether->pdev;
 		dev_err(&pdev->dev, "emc rx bus error\n");
-		nuc970_reset_mac(dev);
-	}
+		nuc970_reset_mac(dev, 1);
 
-	netdev_rx(dev);
-	nuc970_trigger_rx(dev);
+	} else {
+		__raw_writel(__raw_readl(REG_MIEN) & ~ENRXINTR,  REG_MIEN);
+		napi_schedule(&ether->napi);
+	}
 	return IRQ_HANDLED;
 }
-
 
 
 static int nuc970_ether_open(struct net_device *dev)
@@ -808,20 +775,15 @@ static int nuc970_ether_open(struct net_device *dev)
 	ether = netdev_priv(dev);
 	pdev = ether->pdev;
 
-	//clk_enable(ether->rmiiclk);
-	//clk_enable(ether->clk);
-	
-	nuc970_reset_mac(dev);
+	nuc970_reset_mac(dev, 0);
 	nuc970_set_fifo_threshold(dev);
 	nuc970_set_curdest(dev);
 	nuc970_enable_cam(dev);
 	nuc970_enable_cam_command(dev);
 	nuc970_enable_mac_interrupt(dev);
 	nuc970_set_global_maccmd(dev);
-	nuc970_enable_rx(dev, 1);
+	ETH_ENABLE_RX;
 
-	ether->rx_packets = 0x0;
-	ether->rx_bytes = 0x0;
 
 	if (request_irq(ether->txirq, nuc970_tx_interrupt,
 						0x0, pdev->name, dev)) {
@@ -836,12 +798,13 @@ static int nuc970_ether_open(struct net_device *dev)
 		return -EAGAIN;
 	}
 
-	mod_timer(&ether->check_timer, jiffies + msecs_to_jiffies(1000));
+	phy_start(ether->phy_dev);
 	netif_start_queue(dev);
-	nuc970_trigger_rx(dev);
+	napi_enable(&ether->napi);
+
+	ETH_TRIGGER_RX;
 
 	dev_info(&pdev->dev, "%s is OPENED\n", dev->name);
-
 
 	return 0;
 }
@@ -866,48 +829,69 @@ static int nuc970_ether_ioctl(struct net_device *dev,
 						struct ifreq *ifr, int cmd)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct mii_ioctl_data *data = if_mii(ifr);
+	struct phy_device *phydev = ether->phy_dev;
 
-	return generic_mii_ioctl(&ether->mii, data, cmd, NULL);
+	if (!netif_running(dev))
+		return -EINVAL;
+
+	if (!phydev)
+		return -ENODEV;;
+
+	return phy_mii_ioctl(phydev, ifr, cmd);
 }
 
 static void nuc970_get_drvinfo(struct net_device *dev,
 					struct ethtool_drvinfo *info)
 {
-	strcpy(info->driver, DRV_MODULE_NAME);
-	strcpy(info->version, DRV_MODULE_VERSION);
+	strlcpy(info->driver, DRV_MODULE_NAME, sizeof(info->driver));
+	strlcpy(info->version, DRV_MODULE_VERSION, sizeof(info->version));
+	strlcpy(info->fw_version, "N/A", sizeof(info->fw_version));
+	strlcpy(info->bus_info, "N/A", sizeof(info->bus_info));
 }
 
 static int nuc970_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	return mii_ethtool_gset(&ether->mii, cmd);
+	struct phy_device *phydev = ether->phy_dev;
+
+	if (NULL == phydev)
+		return -ENODEV;
+
+	return phy_ethtool_gset(phydev, cmd);
 }
 
 static int nuc970_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	return mii_ethtool_sset(&ether->mii, cmd);
+	struct phy_device *phydev = ether->phy_dev;
+
+	if (NULL == phydev)
+		return -ENODEV;
+
+	return phy_ethtool_sset(phydev, cmd);
 }
 
-static int nuc970_nway_reset(struct net_device *dev)
+static u32 nuc970_get_msglevel(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	return mii_nway_restart(&ether->mii);
+
+	return ether->msg_enable;
 }
 
-static u32 nuc970_get_link(struct net_device *dev)
+static void nuc970_set_msglevel(struct net_device *dev, u32 level)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	return mii_link_ok(&ether->mii);
+
+	ether->msg_enable = level;
 }
 
 static const struct ethtool_ops nuc970_ether_ethtool_ops = {
 	.get_settings	= nuc970_get_settings,
 	.set_settings	= nuc970_set_settings,
 	.get_drvinfo	= nuc970_get_drvinfo,
-	.nway_reset	= nuc970_nway_reset,
-	.get_link	= nuc970_get_link,
+	.get_msglevel	= nuc970_get_msglevel,
+	.set_msglevel	= nuc970_set_msglevel,
+	.get_link 	= ethtool_op_get_link,
 };
 
 static const struct net_device_ops nuc970_ether_netdev_ops = {
@@ -935,11 +919,148 @@ static void __init get_mac_address(struct net_device *dev)
 		dev_err(&pdev->dev, "invalid mac address\n");
 }
 
-static int nuc970_ether_setup(struct net_device *dev)
+
+static int nuc970_mii_setup(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
+	struct phy_device *phydev;
+	int i, err = 0;
 
-	ether_setup(dev);
+	ether->mii_bus = mdiobus_alloc();
+	if (!ether->mii_bus) {
+		err = -ENOMEM;
+		goto out0;
+	}
+
+	ether->mii_bus->name = "nuc970_mii0";
+	ether->mii_bus->read = &nuc970_mdio_read;
+	ether->mii_bus->write = &nuc970_mdio_write;
+	ether->mii_bus->reset = &nuc970_mdio_reset;
+	snprintf(ether->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
+		 ether->pdev->name, ether->pdev->id);
+	ether->mii_bus->priv = ether;
+	ether->mii_bus->parent = &ether->pdev->dev;
+
+	ether->mii_bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
+	if (!ether->mii_bus->irq) {
+		err = -ENOMEM;
+		goto out1;
+
+	}
+
+	for (i = 0; i < PHY_MAX_ADDR; i++)
+		ether->mii_bus->irq[i] = PHY_POLL;
+	//ether->mii_bus->irq[1] = ??   write me after the irq number is known
+
+	platform_set_drvdata(ether->pdev, ether->mii_bus);
+
+	if (mdiobus_register(ether->mii_bus))
+		goto out2;
+
+	phydev = phy_find_first(ether->mii_bus);
+	if(phydev == NULL)
+		goto out2;
+
+	phydev = phy_connect(dev, dev_name(&phydev->dev),
+			     &adjust_link,
+			     PHY_INTERFACE_MODE_RMII);
+
+	if(IS_ERR(phydev)) {
+		err = PTR_ERR(phydev);
+		goto out3;
+	}
+
+	phydev->supported &= PHY_BASIC_FEATURES;
+	phydev->advertising = phydev->supported;
+	ether->phy_dev = phydev;
+
+	return 0;
+
+out3:
+	mdiobus_unregister(ether->mii_bus);
+out2:
+	kfree(ether->mii_bus->irq);
+out1:
+	mdiobus_free(ether->mii_bus);
+out0:
+
+	return err;
+}
+
+static int nuc970_ether_probe(struct platform_device *pdev)
+{
+	struct nuc970_ether *ether;
+	struct net_device *dev;
+	struct pinctrl *p = NULL;
+	int error;
+
+	dev = alloc_etherdev(sizeof(struct nuc970_ether));
+	if (!dev)
+		return -ENOMEM;
+
+	ether = netdev_priv(dev);
+
+	ether->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (ether->res == NULL) {
+		dev_err(&pdev->dev, "failed to get I/O memory\n");
+		error = -ENXIO;
+		goto err0;
+	}
+
+	ether->txirq = platform_get_irq(pdev, 0);
+	if (ether->txirq < 0) {
+		dev_err(&pdev->dev, "failed to get ether tx irq\n");
+		error = -ENXIO;
+		goto err0;
+	}
+
+	ether->rxirq = platform_get_irq(pdev, 1);
+	if (ether->rxirq < 0) {
+		dev_err(&pdev->dev, "failed to get ether rx irq\n");
+		error = -ENXIO;
+		goto err0;
+	}
+
+	SET_NETDEV_DEV(dev, &pdev->dev);
+	platform_set_drvdata(pdev, dev);
+	ether->ndev = dev;
+
+	ether->eclk = clk_get(NULL, "emac0_eclk");
+	if (IS_ERR(ether->eclk)) {
+		dev_err(&pdev->dev, "failed to get emac0_eclk clock\n");
+		error = PTR_ERR(ether->eclk);
+		goto err1;
+	}
+
+	// Set MCLK to 1M
+	clk_set_rate(ether->eclk, 1000000);
+	clk_prepare(ether->eclk);
+	clk_enable(ether->eclk);
+
+	ether->clk = clk_get(NULL, "emac0_hclk");
+	if (IS_ERR(ether->clk)) {
+		dev_err(&pdev->dev, "failed to get emac0_hclk clock\n");
+		error = PTR_ERR(ether->clk);
+		goto err1;
+	}
+
+	clk_prepare(ether->clk);
+	clk_enable(ether->clk);
+
+#if defined (CONFIG_NUC970_ETH0_PA)
+	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PA");
+#elif defined (CONFIG_NUC970_ETH0_PF)
+	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PF");
+#endif
+	if(IS_ERR(p)) {
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		error = PTR_ERR(p);
+		goto err2;
+	}
+
+	ether->pdev = pdev;
+	ether->msg_enable = NETIF_MSG_LINK;
+
 	dev->netdev_ops = &nuc970_ether_netdev_ops;
 	dev->ethtool_ops = &nuc970_ether_ethtool_ops;
 
@@ -952,97 +1073,34 @@ static int nuc970_ether_setup(struct net_device *dev)
 	ether->cur_tx = 0x0;
 	ether->cur_rx = 0x0;
 	ether->finish_tx = 0x0;
-	ether->linkflag = 0x0;
-	ether->mii.phy_id = 0x01;
-	ether->mii.phy_id_mask = 0x1f;
-	ether->mii.reg_num_mask = 0x1f;
-	ether->mii.dev = dev;
-	ether->mii.mdio_read = nuc970_mdio_read;
-	ether->mii.mdio_write = nuc970_mdio_write;
-	
+	ether->link = 0;
+	ether->speed = 100;
+	ether->duplex = DUPLEX_FULL;
 
-	setup_timer(&ether->check_timer, nuc970_check_link, (unsigned long)dev);
+	netif_napi_add(dev, &ether->napi, nuc970_poll, 16);
 
-	return 0;
-}
+	ether_setup(dev);
 
-static int nuc970_ether_probe(struct platform_device *pdev)
-{
-	struct nuc970_ether *ether;
-	struct net_device *dev;
-	int error;
-	
-	printk("nuc970_ether_probe...\n");
-
-	dev = alloc_etherdev(sizeof(struct nuc970_ether));
-	if (!dev)
-		return -ENOMEM;
-
-	ether = netdev_priv(dev);
-
-	ether->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (ether->res == NULL) {
-		dev_err(&pdev->dev, "failed to get I/O memory\n");
-		error = -ENXIO;
-		goto failed_free;
+	if((error = nuc970_mii_setup(dev)) < 0) {
+		dev_err(&pdev->dev, "nuc970_mii_setup err\n");
+		goto err2;
 	}
-
-	ether->txirq = platform_get_irq(pdev, 0);
-	if (ether->txirq < 0) {
-		dev_err(&pdev->dev, "failed to get ether tx irq\n");
-		error = -ENXIO;
-		goto failed_free;
-	}
-
-	ether->rxirq = platform_get_irq(pdev, 1);
-	if (ether->rxirq < 0) {
-		dev_err(&pdev->dev, "failed to get ether rx irq\n");
-		error = -ENXIO;
-		goto failed_free_txirq;
-	}
-
-	platform_set_drvdata(pdev, dev);
-
-	// TO DO: ...
-//	mfp_set_groupf(&pdev->dev);
-
-	ether->clk = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(ether->clk)) {
-		dev_err(&pdev->dev, "failed to get ether clock\n");
-		error = PTR_ERR(ether->clk);
-		goto failed_free_rxirq;
-	}
-
-	ether->rmiiclk = clk_get(&pdev->dev, "RMII");
-	if (IS_ERR(ether->rmiiclk)) {
-		dev_err(&pdev->dev, "failed to get ether clock\n");
-		error = PTR_ERR(ether->rmiiclk);
-		goto failed_put_clk;
-	}
-
-	ether->pdev = pdev;
-
-	nuc970_ether_setup(dev);
 
 	error = register_netdev(dev);
 	if (error != 0) {
 		dev_err(&pdev->dev, "Regiter EMC nuc970 FAILED\n");
 		error = -ENODEV;
-		goto failed_put_rmiiclk;
+		goto err2;
 	}
-	printk("nuc970_ether_probe done.\n");
 
 	return 0;
-failed_put_rmiiclk:
-	clk_put(ether->rmiiclk);
-failed_put_clk:
+
+err2:
+	clk_disable(ether->clk);
 	clk_put(ether->clk);
-failed_free_rxirq:
-	free_irq(ether->rxirq, pdev);
+err1:
 	platform_set_drvdata(pdev, NULL);
-failed_free_txirq:
-	free_irq(ether->txirq, pdev);
-failed_free:
+err0:
 	free_netdev(dev);
 	return error;
 }
@@ -1054,13 +1112,20 @@ static int nuc970_ether_remove(struct platform_device *pdev)
 
 	unregister_netdev(dev);
 
-	clk_put(ether->rmiiclk);
+	clk_disable(ether->clk);
 	clk_put(ether->clk);
+
+	clk_disable(ether->eclk);
+	clk_put(ether->eclk);
 
 	free_irq(ether->txirq, dev);
 	free_irq(ether->rxirq, dev);
+	phy_disconnect(ether->phy_dev);
 
-	del_timer_sync(&ether->check_timer);
+	mdiobus_unregister(ether->mii_bus);
+	kfree(ether->mii_bus->irq);
+	mdiobus_free(ether->mii_bus);
+
 	platform_set_drvdata(pdev, NULL);
 
 	free_netdev(dev);

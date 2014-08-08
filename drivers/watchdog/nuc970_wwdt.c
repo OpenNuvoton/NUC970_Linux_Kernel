@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2009 Nuvoton technology corporation.
- *
- * Wan ZongShun <mcuos.com@gmail.com>
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,12 +9,10 @@
 
 #include <linux/bitops.h>
 #include <linux/errno.h>
-#include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/clk.h>
 #include <linux/kernel.h>
-#include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
@@ -24,321 +20,174 @@
 #include <linux/interrupt.h>
 #include <linux/types.h>
 #include <linux/watchdog.h>
-#include <linux/uaccess.h>
+#include <mach/map.h>
+#include <mach/regs-clock.h>
+#include <mach/regs-wwdt.h>
 
-#define REG_WTCR		0x1c
-#define WTCLK			(0x01 << 10)
-#define WTE			(0x01 << 7)	/*wdt enable*/
-#define WTIS			(0x03 << 4)
-#define WTIF			(0x01 << 3)
-#define WTRF			(0x01 << 2)
-#define WTRE			(0x01 << 1)
-#define WTR			(0x01 << 0)
+#define RELOAD_WORD	0x00005AA5
+
 /*
- * The watchdog time interval can be calculated via following formula:
- * WTIS		real time interval (formula)
- * 0x00		((2^ 14 ) * ((external crystal freq) / 256))seconds
- * 0x01		((2^ 16 ) * ((external crystal freq) / 256))seconds
- * 0x02		((2^ 18 ) * ((external crystal freq) / 256))seconds
- * 0x03		((2^ 20 ) * ((external crystal freq) / 256))seconds
+ *  Select WWDT clock source from external 32k crystal.
+ *  Here we set compare window to 32, and prescale to 1024 after init.
  *
- * The external crystal freq is 15Mhz in the nuc900 evaluation board.
- * So 0x00 = +-0.28 seconds, 0x01 = +-1.12 seconds, 0x02 = +-4.48 seconds,
- * 0x03 = +- 16.92 seconds..
+ *  So WWDT time out every 2048 * 32 * (1/32768) = 2 second,
+ *  And software has another 1 second window period to reload
+ *  WWDT counter by writing RELOAD_WORD to REG_WWDT_RLD register.
  */
-#define WDT_HW_TIMEOUT		0x02
-#define WDT_TIMEOUT		(HZ/2)
-#define WDT_HEARTBEAT		15
+#define WWDT_CONFIG	0x00200D01
 
-static int heartbeat = WDT_HEARTBEAT;
-module_param(heartbeat, int, 0);
-MODULE_PARM_DESC(heartbeat, "Watchdog heartbeats in seconds. "
-	"(default = " __MODULE_STRING(WDT_HEARTBEAT) ")");
-
-static bool nowayout = WATCHDOG_NOWAYOUT;
-module_param(nowayout, bool, 0);
-MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-
-struct nuc900_wdt {
-	struct resource  *res;
-	struct clk	 *wdt_clock;
-	struct platform_device *pdev;
-	void __iomem	 *wdt_base;
-	char		 expect_close;
-	struct timer_list timer;
-	spinlock_t       wdt_lock;
-	unsigned long next_heartbeat;
+struct nuc970_wwdt {
+	struct resource		*res;
+	struct platform_device	*pdev;
 };
 
-static unsigned long nuc900wdt_busy;
-static struct nuc900_wdt *nuc900_wdt;
+static struct nuc970_wwdt *nuc970_wwdt;
 
-static inline void nuc900_wdt_keepalive(void)
+static int nuc970wwdt_ping(struct watchdog_device *wdd)
 {
-	unsigned int val;
-
-	spin_lock(&nuc900_wdt->wdt_lock);
-
-	val = __raw_readl(nuc900_wdt->wdt_base + REG_WTCR);
-	val |= (WTR | WTIF);
-	__raw_writel(val, nuc900_wdt->wdt_base + REG_WTCR);
-
-	spin_unlock(&nuc900_wdt->wdt_lock);
-}
-
-static inline void nuc900_wdt_start(void)
-{
-	unsigned int val;
-
-	spin_lock(&nuc900_wdt->wdt_lock);
-
-	val = __raw_readl(nuc900_wdt->wdt_base + REG_WTCR);
-	val |= (WTRE | WTE | WTR | WTCLK | WTIF);
-	val &= ~WTIS;
-	val |= (WDT_HW_TIMEOUT << 0x04);
-	__raw_writel(val, nuc900_wdt->wdt_base + REG_WTCR);
-
-	spin_unlock(&nuc900_wdt->wdt_lock);
-
-	nuc900_wdt->next_heartbeat = jiffies + heartbeat * HZ;
-	mod_timer(&nuc900_wdt->timer, jiffies + WDT_TIMEOUT);
-}
-
-static inline void nuc900_wdt_stop(void)
-{
-	unsigned int val;
-
-	del_timer(&nuc900_wdt->timer);
-
-	spin_lock(&nuc900_wdt->wdt_lock);
-
-	val = __raw_readl(nuc900_wdt->wdt_base + REG_WTCR);
-	val &= ~WTE;
-	__raw_writel(val, nuc900_wdt->wdt_base + REG_WTCR);
-
-	spin_unlock(&nuc900_wdt->wdt_lock);
-}
-
-static inline void nuc900_wdt_ping(void)
-{
-	nuc900_wdt->next_heartbeat = jiffies + heartbeat * HZ;
-}
-
-static int nuc900_wdt_open(struct inode *inode, struct file *file)
-{
-
-	if (test_and_set_bit(0, &nuc900wdt_busy))
-		return -EBUSY;
-
-	nuc900_wdt_start();
-
-	return nonseekable_open(inode, file);
-}
-
-static int nuc900_wdt_close(struct inode *inode, struct file *file)
-{
-	if (nuc900_wdt->expect_close == 42)
-		nuc900_wdt_stop();
-	else {
-		dev_crit(&nuc900_wdt->pdev->dev,
-			"Unexpected close, not stopping watchdog!\n");
-		nuc900_wdt_ping();
-	}
-
-	nuc900_wdt->expect_close = 0;
-	clear_bit(0, &nuc900wdt_busy);
+	__raw_writel(RELOAD_WORD, REG_WWDT_RLD);
 	return 0;
 }
 
-static const struct watchdog_info nuc900_wdt_info = {
-	.identity	= "nuc900 watchdog",
-	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
-						WDIOF_MAGICCLOSE,
-};
-
-static long nuc900_wdt_ioctl(struct file *file,
-					unsigned int cmd, unsigned long arg)
+static int nuc970wwdt_start(struct watchdog_device *wdd)
 {
-	void __user *argp = (void __user *)arg;
-	int __user *p = argp;
-	int new_value;
-
-	switch (cmd) {
-	case WDIOC_GETSUPPORT:
-		return copy_to_user(argp, &nuc900_wdt_info,
-				sizeof(nuc900_wdt_info)) ? -EFAULT : 0;
-	case WDIOC_GETSTATUS:
-	case WDIOC_GETBOOTSTATUS:
-		return put_user(0, p);
-
-	case WDIOC_KEEPALIVE:
-		nuc900_wdt_ping();
-		return 0;
-
-	case WDIOC_SETTIMEOUT:
-		if (get_user(new_value, p))
-			return -EFAULT;
-
-		heartbeat = new_value;
-		nuc900_wdt_ping();
-
-		return put_user(new_value, p);
-	case WDIOC_GETTIMEOUT:
-		return put_user(heartbeat, p);
-	default:
-		return -ENOTTY;
-	}
+	__raw_writel(WWDT_CONFIG, REG_WWDT_CR);
+	return 0;
 }
 
-static ssize_t nuc900_wdt_write(struct file *file, const char __user *data,
-						size_t len, loff_t *ppos)
+/*
+ *  This function always return error, we define it here simply because stop() is mandatory operation.
+ *  Due to the fact that WWDT register can only be programmed once, so there is NO WAY OUT!!!
+ */
+static int nuc970wwdt_stop(struct watchdog_device *wdd)
 {
-	if (!len)
-		return 0;
 
-	/* Scan for magic character */
-	if (!nowayout) {
-		size_t i;
-
-		nuc900_wdt->expect_close = 0;
-
-		for (i = 0; i < len; i++) {
-			char c;
-			if (get_user(c, data + i))
-				return -EFAULT;
-			if (c == 'V') {
-				nuc900_wdt->expect_close = 42;
-				break;
-			}
-		}
-	}
-
-	nuc900_wdt_ping();
-	return len;
+	return -EBUSY;
 }
 
-static void nuc900_wdt_timer_ping(unsigned long data)
+static unsigned int nuc970wwdt_get_timeleft(struct watchdog_device *wdd)
 {
-	if (time_before(jiffies, nuc900_wdt->next_heartbeat)) {
-		nuc900_wdt_keepalive();
-		mod_timer(&nuc900_wdt->timer, jiffies + WDT_TIMEOUT);
-	} else
-		dev_warn(&nuc900_wdt->pdev->dev, "Will reset the machine !\n");
+	unsigned int time_left;
+
+	time_left = __raw_readl(REG_WWDT_CVR) / 32;
+
+	return time_left;
 }
 
-static const struct file_operations nuc900wdt_fops = {
-	.owner		= THIS_MODULE,
-	.llseek		= no_llseek,
-	.unlocked_ioctl	= nuc900_wdt_ioctl,
-	.open		= nuc900_wdt_open,
-	.release	= nuc900_wdt_close,
-	.write		= nuc900_wdt_write,
+static const struct watchdog_info nuc970wwdt_info = {
+	.identity	= "nuc970 window watchdog",
+	.options	= WDIOF_KEEPALIVEPING,
 };
 
-static struct miscdevice nuc900wdt_miscdev = {
-	.minor		= WATCHDOG_MINOR,
-	.name		= "watchdog",
-	.fops		= &nuc900wdt_fops,
+static struct watchdog_ops nuc970wwdt_ops = {
+	.owner 	= THIS_MODULE,
+	.start 	= nuc970wwdt_start,
+	.stop 	= nuc970wwdt_stop,
+	.ping 	= nuc970wwdt_ping,
+	.get_timeleft = nuc970wwdt_get_timeleft,
 };
 
-static int nuc900wdt_probe(struct platform_device *pdev)
+static struct watchdog_device nuc970_wdd = {
+	.status	= WATCHDOG_NOWAYOUT_INIT_STATUS,
+	.info 	= &nuc970wwdt_info,
+	.ops 	= &nuc970wwdt_ops,
+	.timeout = 2,
+};
+
+
+static int nuc970wwdt_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	struct clk *clk, *eclk, *clkmux, *clklxt;
 
-	nuc900_wdt = kzalloc(sizeof(struct nuc900_wdt), GFP_KERNEL);
-	if (!nuc900_wdt)
+	nuc970_wwdt = devm_kzalloc(&pdev->dev, sizeof(struct nuc970_wwdt), GFP_KERNEL);
+	if (!nuc970_wwdt)
 		return -ENOMEM;
 
-	nuc900_wdt->pdev = pdev;
+	nuc970_wwdt->pdev = pdev;
 
-	spin_lock_init(&nuc900_wdt->wdt_lock);
-
-	nuc900_wdt->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (nuc900_wdt->res == NULL) {
+	nuc970_wwdt->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (nuc970_wwdt->res == NULL) {
 		dev_err(&pdev->dev, "no memory resource specified\n");
-		ret = -ENOENT;
-		goto err_get;
+		return -ENOENT;
 	}
 
-	if (!request_mem_region(nuc900_wdt->res->start,
-				resource_size(nuc900_wdt->res), pdev->name)) {
+	if (!devm_request_mem_region(&pdev->dev, nuc970_wwdt->res->start,
+				resource_size(nuc970_wwdt->res), pdev->name)) {
 		dev_err(&pdev->dev, "failed to get memory region\n");
-		ret = -ENOENT;
-		goto err_get;
+		return -ENOENT;
 	}
 
-	nuc900_wdt->wdt_base = ioremap(nuc900_wdt->res->start,
-					resource_size(nuc900_wdt->res));
-	if (nuc900_wdt->wdt_base == NULL) {
-		dev_err(&pdev->dev, "failed to ioremap() region\n");
-		ret = -EINVAL;
-		goto err_req;
+
+	clkmux = clk_get(NULL, "wwdt_eclk_mux");
+	if (IS_ERR(clkmux)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock mux\n");
+		ret = PTR_ERR(clkmux);
+		return ret;
 	}
 
-	nuc900_wdt->wdt_clock = clk_get(&pdev->dev, NULL);
-	if (IS_ERR(nuc900_wdt->wdt_clock)) {
-		dev_err(&pdev->dev, "failed to find watchdog clock source\n");
-		ret = PTR_ERR(nuc900_wdt->wdt_clock);
-		goto err_map;
+	clklxt = clk_get(NULL, "xin32k");
+	if (IS_ERR(clklxt)) {
+		dev_err(&pdev->dev, "failed to get 32k clk\n");
+		ret = PTR_ERR(clklxt);
+		return ret;
 	}
 
-	clk_enable(nuc900_wdt->wdt_clock);
 
-	setup_timer(&nuc900_wdt->timer, nuc900_wdt_timer_ping, 0);
+	clk_set_parent(clkmux, clklxt);
 
-	ret = misc_register(&nuc900wdt_miscdev);
+	clk = clk_get(NULL, "wwdt");
+	if (IS_ERR(clk)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock\n");
+		ret = PTR_ERR(clk);
+		return ret;
+	}
+
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	eclk = clk_get(NULL, "wwdt_eclk");
+	if (IS_ERR(eclk)) {
+		dev_err(&pdev->dev, "failed to get wwdt clock\n");
+		ret = PTR_ERR(eclk);
+		return ret;
+	}
+
+	clk_prepare(eclk);
+	clk_enable(eclk);
+
+	ret = watchdog_register_device(&nuc970_wdd);
 	if (ret) {
-		dev_err(&pdev->dev, "err register miscdev on minor=%d (%d)\n",
-			WATCHDOG_MINOR, ret);
-		goto err_clk;
+		dev_err(&pdev->dev, "err register window watchdog device\n");
+		return ret;
 	}
 
 	return 0;
 
-err_clk:
-	clk_disable(nuc900_wdt->wdt_clock);
-	clk_put(nuc900_wdt->wdt_clock);
-err_map:
-	iounmap(nuc900_wdt->wdt_base);
-err_req:
-	release_mem_region(nuc900_wdt->res->start,
-					resource_size(nuc900_wdt->res));
-err_get:
-	kfree(nuc900_wdt);
-	return ret;
 }
 
-static int nuc900wdt_remove(struct platform_device *pdev)
+static int nuc970wwdt_remove(struct platform_device *pdev)
 {
-	misc_deregister(&nuc900wdt_miscdev);
 
-	clk_disable(nuc900_wdt->wdt_clock);
-	clk_put(nuc900_wdt->wdt_clock);
+	watchdog_unregister_device(&nuc970_wdd);
+	// There's no way out~~~~
 
-	iounmap(nuc900_wdt->wdt_base);
-
-	release_mem_region(nuc900_wdt->res->start,
-					resource_size(nuc900_wdt->res));
-
-	kfree(nuc900_wdt);
 
 	return 0;
 }
 
-static struct platform_driver nuc900wdt_driver = {
-	.probe		= nuc900wdt_probe,
-	.remove		= nuc900wdt_remove,
+
+static struct platform_driver nuc970wwdt_driver = {
+	.probe		= nuc970wwdt_probe,
+	.remove		= nuc970wwdt_remove,
 	.driver		= {
-		.name	= "nuc900-wdt",
+		.name	= "nuc970-wwdt",
 		.owner	= THIS_MODULE,
 	},
 };
 
-module_platform_driver(nuc900wdt_driver);
+module_platform_driver(nuc970wwdt_driver);
 
-MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
-MODULE_DESCRIPTION("Watchdog driver for NUC900");
+MODULE_DESCRIPTION("NUC970 Window Watchdog Timer Driver");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-MODULE_ALIAS("platform:nuc900-wdt");
+

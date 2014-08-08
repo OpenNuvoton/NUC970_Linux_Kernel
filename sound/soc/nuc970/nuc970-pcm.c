@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2010 Nuvoton technology corporation.
- *
- * Wan ZongShun <mcuos.com@gmail.com>
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +88,7 @@ static void nuc970_dma_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long val;
-printk("--> nuc970_dma_start\n");
+
 	val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 	val |= (P_DMA_IRQ_EN | R_DMA_IRQ_EN);
 	AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val);
@@ -101,7 +99,7 @@ static void nuc970_dma_stop(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long val;
-printk("--> nuc970_dma_stop\n");
+
 	val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 	val &= ~(P_DMA_IRQ_EN | R_DMA_IRQ_EN);
 	AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val);
@@ -338,7 +336,6 @@ static struct snd_soc_platform_driver nuc970_soc_platform = {
 
 static int nuc970_soc_platform_probe(struct platform_device *pdev)
 {
-	printk("nuc970_soc_platform_probe-->\n");
 	return snd_soc_register_platform(&pdev->dev, &nuc970_soc_platform);
 }
 
@@ -360,6 +357,5 @@ static struct platform_driver nuc970_pcm_driver = {
 
 module_platform_driver(nuc970_pcm_driver);
 
-MODULE_AUTHOR("Wan ZongShun, <mcuos.com@gmail.com>");
 MODULE_DESCRIPTION("nuc970 Audio DMA module");
 MODULE_LICENSE("GPL");

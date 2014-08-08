@@ -1,4 +1,4 @@
-/*
+ /*
  * linux/arch/arm/mach-nuc970/mach-nuc970.c
  *
  * Copyright (C) 2014 Nuvoton technology corporation.
@@ -31,11 +31,7 @@
 /* Initial IO mappings */	//TODO: MAP ENABLED IP ONLY
 static struct map_desc nuc970_iodesc[] __initdata = {
 	IODESC_ENT(IRQ),
-//	IODESC_ENT(GCR),
-//	IODESC_ENT(CLK),
 	IODESC_ENT(GCR_CLK),
-//	IODESC_ENT(EBI),
-//        IODESC_ENT(SDIC),
 	IODESC_ENT(EBI_SDIC),
         IODESC_ENT(EMAC0),
         IODESC_ENT(EMAC1),
@@ -52,18 +48,11 @@ static struct map_desc nuc970_iodesc[] __initdata = {
         IODESC_ENT(CAP),
         IODESC_ENT(CRYPTO),
         IODESC_ENT(UART),
-//        IODESC_ENT(TIMER),
-//        IODESC_ENT(ETIMER),
-//        IODESC_ENT(WDT),
-//        IODESC_ENT(WWDT),
-		IODESC_ENT(TIMER_ETIMER_WDT_WWDT),
+	IODESC_ENT(TIMER_ETIMER_WDT_WWDT),
         IODESC_ENT(GPIO),
         IODESC_ENT(RTC),
         IODESC_ENT(SC),
-//        IODESC_ENT(I2C),
-//        IODESC_ENT(SPI0),
-//        IODESC_ENT(SPI1),
-		IODESC_ENT(I2C_SPI),
+	IODESC_ENT(I2C_SPI),
         IODESC_ENT(PWM),
         IODESC_ENT(KPI),
         IODESC_ENT(ADC),

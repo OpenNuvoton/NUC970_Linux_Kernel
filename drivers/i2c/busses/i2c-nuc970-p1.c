@@ -1,7 +1,7 @@
 /*
  * linux/drivers/i2c/busses/i2c-nuc970-p1.c
  *
- * Copyright (c) 2010 Nuvoton technology corporation.
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  * This driver based on S3C2410 I2C driver of Ben Dooks <ben-Y5A6D6n0/KfQXOPxS62xeg@public.gmane.org>.
  * Written by Wan ZongShun <mcuos.com-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
@@ -11,7 +11,7 @@
  * the Free Software Foundation;version 2 of the License.
  *
  */
-//#define DEBUG
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 
@@ -532,6 +532,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 	struct nuc970_platform_i2c *pdata;
 	struct resource *res;
 	int ret;
+	struct pinctrl *p;
 
 	pdata = pdev->dev.platform_data;
 	if (!pdata) {
@@ -603,9 +604,20 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 	i2c->adap.algo_data = i2c;
 	i2c->adap.dev.parent = &pdev->dev;
 
-	nuc970_mfp_set_port_g(2, 8);
-	nuc970_mfp_set_port_g(3, 8);
-	
+#ifdef CONFIG_NUC970_I2C1_PB	
+	p = devm_pinctrl_get_select(&pdev->dev, "i2c1-PB");
+#elif defined(CONFIG_NUC970_I2C1_PG)
+    p = devm_pinctrl_get_select(&pdev->dev, "i2c1-PG");
+#elif defined(CONFIG_NUC970_I2C1_PH)
+    p = devm_pinctrl_get_select(&pdev->dev, "i2c1-PH");
+#else
+    p = devm_pinctrl_get_select(&pdev->dev, "i2c1-PI");
+#endif
+    if(IS_ERR(p)) { 
+        dev_err(&pdev->dev, "unable to reserve pin\n");
+        ret = PTR_ERR(p);
+    }
+    	
 	ret = clk_get_rate(i2c->clk)/(pdata->bus_freq * 5) - 1;
 	writel(ret & 0xffff, i2c->regs + DIVIDER);
 
