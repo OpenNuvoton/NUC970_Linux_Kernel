@@ -46,12 +46,13 @@
 #include <mach/fb.h>
 #include <mach/regs-lcd.h>
 #include <mach/nuc970_spi.h>
-#include <mach/gpio.h>
 
 #include <linux/platform_data/i2c-nuc970.h>
 #include <linux/i2c.h>
-#include <linux/i2c-gpio.h>
 #include <linux/i2c/i2c-hid.h>
+
+#include <linux/platform_data/dma-nuc970.h>
+
 
 #include "cpu.h"
 
@@ -394,11 +395,79 @@ static struct resource nuc970_cap_resource[] = {
 
 struct platform_device nuc970_device_cap = {
         .name		  = "nuc970-videoin",
-        .id		  = -1,
+        .id		  = -1,  
         .num_resources	  = ARRAY_SIZE(nuc970_cap_resource),
         .resource	  = nuc970_cap_resource,
 };
 
+#endif
+
+/* ADC */
+#ifdef CONFIG_NUC970_ADC
+static struct resource nuc970_adc_resource[] = {
+        [0] = {
+                .start = NUC970_PA_ADC,
+                .end   = NUC970_PA_ADC + NUC970_SZ_ADC - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_ADC,
+                .end   = IRQ_ADC,
+                .flags = IORESOURCE_IRQ,
+        }
+};
+
+struct platform_device nuc970_device_adc = {
+        .name		  = "nuc970-adc",
+        .id		  = -1,  
+        .num_resources	  = ARRAY_SIZE(nuc970_adc_resource),
+        .resource	  = nuc970_adc_resource,
+};
+#endif
+
+
+#ifdef CONFIG_NUC970_DMA
+#define DMA_CHANNEL(_name, _base, _irq) \
+	{ .name = (_name), .base = (_base), .irq = (_irq) }
+
+static struct resource nuc970_gdma_resource[] = {
+        [0] = {
+                .start = NUC970_PA_GDMA,
+                .end   = NUC970_PA_GDMA + NUC970_SZ_GDMA - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_GDMA0,
+                .end   = IRQ_GDMA0,
+                .flags = IORESOURCE_IRQ,
+        },
+        [2] = {
+                .start = IRQ_GDMA1,
+                .end   = IRQ_GDMA1,
+                .flags = IORESOURCE_IRQ,
+        }				
+};
+
+
+static struct nuc970_dma_chan_data nuc970_dma_m2m_channels[] = {
+	DMA_CHANNEL("m2m0", NUC970_VA_GDMA + 0x000, IRQ_GDMA0),
+	DMA_CHANNEL("m2m1", NUC970_VA_GDMA + 0x020, IRQ_GDMA1),
+};
+
+static struct nuc970_dma_platform_data nuc970_dma_m2m_data = {
+	.channels		= nuc970_dma_m2m_channels,
+	.num_channels		= ARRAY_SIZE(nuc970_dma_m2m_channels),
+};
+
+static struct platform_device nuc970_device_gdma = {
+	.name			= "nuc970-dma-m2m",
+	.id			= -1,
+    .num_resources	= ARRAY_SIZE(nuc970_gdma_resource),
+    .resource	= nuc970_gdma_resource,	
+	.dev			= {
+	.platform_data	= &nuc970_dma_m2m_data,
+	},
+};
 #endif
 
 
@@ -431,49 +500,26 @@ struct platform_device nuc970_device_audio_i2s = {
 };
 
 struct platform_device nuc970_device_audio = {
-	.name	= "nuc970-audio",
+	.name		= "nuc970-audio",
 	.id		= -1,
-    .dev    = {
-                .dma_mask               = &nuc970_device_audio_dmamask,
-                .coherent_dma_mask      = -1,
-    }
 };
 
 struct platform_device nuc970_device_audio_pcm = {
-	.name	= "nuc970-audio-pcm",
+	.name		= "nuc970-audio-pcm",
 	.id		= 0,
-    .dev    = {
-                .dma_mask               = &nuc970_device_audio_dmamask,
-                .coherent_dma_mask      = -1,
-        }
 };
 #endif
 
 /* I2C */
+#ifdef CONFIG_I2C_BUS_NUC970_P0
 // port 0
-#ifdef CONFIG_I2C
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
-#ifdef CONFIG_SENSOR_OV7725
-	{
-		I2C_BOARD_INFO("ov7725", 0x21),
-	},
-#endif
-#ifdef CONFIG_SENSOR_OV5640
-	{
-		I2C_BOARD_INFO("ov5640",  0x3c),
-	},
-#endif
-#ifdef CONFIG_SND_SOC_NAU8822
-	{
-		I2C_BOARD_INFO("nau8822", 0x1a),
-	},
-#endif
+	{I2C_BOARD_INFO("ov7725",  0x21),},
+	{I2C_BOARD_INFO("ov5640",  0x3c),},
+	{I2C_BOARD_INFO("nau8822", 0x1a),},
 };
-#endif
-
-#ifdef CONFIG_I2C_BUS_NUC970_P0
 
 static struct resource nuc970_i2c0_resource[] = {
         [0] = {
@@ -503,8 +549,17 @@ struct platform_device nuc970_device_i2c0 = {
     	}
 };
 #endif
-
 #ifdef CONFIG_I2C_BUS_NUC970_P1
+
+
+static struct i2c_board_info __initdata nuc970_i2c_clients1[] =
+{
+	{
+	    I2C_BOARD_INFO("nau8822", 0x1a),
+	},
+
+};
+
 //port 1
 static struct nuc970_platform_i2c nuc970_i2c1_data = {
 	.bus_num = 1,
@@ -694,42 +749,6 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
-#ifdef CONFIG_GPIO_NUC970 
-#ifdef CONFIG_I2C_ALGOBIT
-static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
-    .sda_pin = NUC970_PG1,   
-    .scl_pin = NUC970_PG0,   
-    .udelay = 1, 
-    .timeout = 100,   
-    .sda_is_open_drain = 0,   //not support open drain mode
-    .scl_is_open_drain = 0,   //not support open drain mode
-};   
-  
-static struct platform_device i2c_gpio = {   
-    .name = "i2c-gpio",   
-    .id = 0,   
-    .dev = {   
-        .platform_data = &i2c_gpio_adapter_data,   
-        },   
-};
-#endif
-static struct resource nuc970_gpio_resource[] = {
-	[0] = {
-	       .start = NUC970_PA_GPIO,
-	       .end = NUC970_PA_GPIO + NUC970_SZ_GPIO - 1,
-	       .flags = IORESOURCE_MEM,
-	       },
-};
-
-struct platform_device nuc970_device_gpio = {
-	.name = "nuc970-gpio",
-	.id = -1,
-	.num_resources = ARRAY_SIZE(nuc970_gpio_resource),
-	.resource = nuc970_gpio_resource,
-};
-   
-#endif
-
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device,
 #ifdef CONFIG_USB_OHCI_HCD
@@ -747,6 +766,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_I2C_BUS_NUC970_P1
         &nuc970_device_i2c1,
 #endif
+#ifdef CONFIG_NUC970_DMA
+	&nuc970_device_gdma,
+#endif
+
 #ifdef CONFIG_MMC_NUC970_SD
 	&nuc970_device_sdh,
 #endif
@@ -788,13 +811,13 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_SPI_NUC970_P1
 	&nuc970_device_spi1,
 #endif
-#ifdef CONFIG_GPIO_NUC970
-	&nuc970_device_gpio,
- #ifdef CONFIG_I2C_ALGOBIT
-	&i2c_gpio,
- #endif
+
+#ifdef CONFIG_NUC970_ADC
+	&nuc970_device_adc,
 #endif
+
 };
+
 
 void __init nuc970_platform_init(struct platform_device **device, int size)
 {
@@ -806,10 +829,13 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	spi_register_board_info(nuc970_spi_board_info, ARRAY_SIZE(nuc970_spi_board_info));
 #endif
 
-#ifdef CONFIG_I2C
-	if(sizeof(nuc970_i2c_clients0))
-		i2c_register_board_info(0, nuc970_i2c_clients0, sizeof(nuc970_i2c_clients0)/sizeof(struct i2c_board_info));
-#endif	
+#ifdef CONFIG_I2C_BUS_NUC970_P0
+	i2c_register_board_info(0, nuc970_i2c_clients0, sizeof(nuc970_i2c_clients0)/sizeof(struct i2c_board_info));
+#endif
+
+#ifdef CONFIG_I2C_BUS_NUC970_P1
+	i2c_register_board_info(1, nuc970_i2c_clients1, sizeof(nuc970_i2c_clients1)/sizeof(struct i2c_board_info));
+#endif
 
 #ifdef CONFIG_PWM_NUC970
 	pwm_add_table(board_pwm_lookup, ARRAY_SIZE(board_pwm_lookup));

@@ -75,6 +75,13 @@ config BATTERY_88PM860X
 	help
 	  Say Y here to enable battery monitor for Marvell 88PM860x chip.
 
+config BATTREY_NUC970ADC
+        tristate "NUC970 ADC battery driver"	
+	depends on ARCH_NUC970
+	select NUC970_ADC
+        help
+          Say Y here to enable battery monitor for NUC970 chip.
+
 config BATTERY_DS2760
 	tristate "DS2760 battery driver (HP iPAQ & others)"
 	depends on W1 && W1_SLAVE_DS2760

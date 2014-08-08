@@ -1,0 +1,42 @@
+#
+# Input core configuration
+#
+menuconfig NUC970_ADC
+	tristate "Input NUC970 ADC"
+        help
+          Say Y here, here to enable the nuc970 adc on evaluation board.
+          This option doesn't affect the kernel.
+
+          If unsure, say Y.
+if NUC970_ADC
+config KEYBOARD_NUC970ADC
+        tristate "Keypad support"
+        depends on ARCH_NUC970        
+        help
+          Say Y here to enable the matrix keypad on evaluation board
+          based on NUC970.
+
+          To compile this driver as a module, choose M here: the
+          module will be called nuc970adc keypad.
+
+config TOUCHSCREEN_NUC970ADC
+        tristate "Touchscreen support"
+        depends on ARCH_NUC970
+        help
+          Say Y here to enable the touchscreen on evaluation board
+          base on NUC970.
+
+          To compile this driver as a module, choose M here: the
+          module will be called nuc970adc touchscreen.
+
+#config BATTREY_NUC970ADC
+#        tristate "Battrey support"
+#        depends on ARCH_NUC970
+#        help
+#          Say Y here to enable the battrey on evaluation board
+#          base on NUC970.
+#
+#          To compile this driver as a module, choose M here: the
+#          module will be called nuc970adc battrey.
+
+endif
