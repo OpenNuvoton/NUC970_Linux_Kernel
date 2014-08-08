@@ -122,14 +122,17 @@ struct nuc970_adc {
 	enum keypad_state kp_state;
 	int kp_num;
 	u32 isr;
+	u32 ier;
+	u32 conf;
 	int used_state;
 	struct clk		*clk;
 	struct clk		*eclk;	
+	struct tasklet_struct irq_tasklet;
 #ifdef CONFIG_BATTREY_NUC970ADC	
 	struct device *dev;
 	struct power_supply bat;
 	u32 bt_data;
-	u8 bt_finish;
+	u8 bt_finish;	
 #endif	
 };
 
@@ -164,20 +167,18 @@ static void nuc970_touch2detect(void)
 }
 
 #ifdef CONFIG_KEYBOARD_NUC970ADC
-static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc,u32 isr,u32 conf)
+static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc)
 {
 		u32 val,i;
 		struct key_threshold *nuc970_th = (struct key_threshold *)nuc970_key_th;
 		ENTRY();
-		if((isr & ADC_ISR_KPCF) && (conf & ADC_CONF_KPCEN))
+		if((nuc970_adc->isr & ADC_ISR_KPCF) && (nuc970_adc->conf & ADC_CONF_KPCEN))
 		{			
 			if((nuc970_adc->kp_state == KP_DOWN) || (nuc970_adc->kp_state == KP_CONVERSION))
-			{
-				__raw_writel(ADC_ISR_KPCF,REG_ADC_ISR);
+			{				
 				nuc970_adc->kp_state= KP_CONVERSION;
 				val=__raw_readl(REG_ADC_KPDATA);
-				ADEBUG("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));				
-				//printk("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));
+				ADEBUG("KPDATA=0x%08x,ARRAY_SIZE(nuc970_keycode)=%d\n",val,ARRAY_SIZE(nuc970_keycode));								
 				for(i=0;i<ARRAY_SIZE(nuc970_keycode);i++)	
 				{	
 				 if(val>nuc970_th[i].thl && val<nuc970_th[i].thh)
@@ -200,12 +201,11 @@ static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc,u32 isr,u32 conf)
 		LEAVE();
 		return false;	
 }
-static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc,u32 isr,u32 ier)
+static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc)
 {
 	ENTRY();
-	if(isr & ADC_ISR_KPEF)
-	{							
-		__raw_writel(ADC_ISR_KPEF,REG_ADC_ISR);		
+	if(nuc970_adc->isr & ADC_ISR_KPEF)
+	{									
 		if(nuc970_adc->kp_state==KP_IDLE)
 		{
 			nuc970_adc->kp_state = KP_DOWN;		
@@ -218,11 +218,10 @@ static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc,u32 isr,u32 ie
 			return true;		
 		}
 	}
-	if(isr & ADC_ISR_KPUEF)
+	if(nuc970_adc->isr & ADC_ISR_KPUEF)
 	{		
 		if(nuc970_adc->kp_state == KP_CONVERSION)
-		{
-			__raw_writel(ADC_ISR_KPUEF,REG_ADC_ISR);
+		{			
 			nuc970_adc->kp_state = KP_UP;
 			input_report_key(nuc970_adc->input_kp,nuc970_keycode[nuc970_adc->kp_num],0);
 			input_sync(nuc970_adc->input_kp);
@@ -241,15 +240,14 @@ static void ts_wait_conversion(unsigned long param)
 	enable_menu();	
 }
 
-static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc,u32 isr,u32 conf)
+static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 {
 	u32 x,y,z;
 	ENTRY();
-	if(  (isr & ADC_ISR_TF) && (conf & ADC_CONF_TEN) && (isr & ADC_ISR_ZF) && (conf & ADC_CONF_ZEN) )	
+	if(  (nuc970_adc->isr & ADC_ISR_TF) && (nuc970_adc->conf & ADC_CONF_TEN) && (nuc970_adc->isr & ADC_ISR_ZF) && (nuc970_adc->conf & ADC_CONF_ZEN) )	
 	{				  
 		if((nuc970_adc->ts_state == TS_DOWN) || (nuc970_adc->ts_state == TS_CONVERSION))
-		{			
-			__raw_writel(ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);
+		{						
 			nuc970_adc->ts_state= TS_CONVERSION;				
 			x = (__raw_readl(REG_ADC_XYDATA) & 0xfff);
 			y = (__raw_readl(REG_ADC_XYDATA)>>16 & 0xfff);
@@ -268,23 +266,22 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc,u32 isr,u32 conf)
 			}else{								
 				mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(100));				
 			}	
-			input_sync(nuc970_adc->input_ts);		
+			input_sync(nuc970_adc->input_ts);
 			return true;
 		}
 	}
 	LEAVE();
 	return false;
 }
-static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc,u32 isr,u32 ier)
+static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc)
 {
 	ENTRY();
-	if((isr & ADC_ISR_PEDEF)&&(ier & ADC_IER_PEDEIEN ))
-	{
-			__raw_writel(ADC_ISR_PEDEF, REG_ADC_ISR);
+	if((nuc970_adc->isr & ADC_ISR_PEDEF)&&(nuc970_adc->ier & ADC_IER_PEDEIEN ))
+	{			
 			if(nuc970_adc->ts_state==TS_IDLE)
 			{
-				nuc970_adc->ts_state = TS_DOWN;					
-				nuc970_detect2touch();	
+				nuc970_adc->ts_state = TS_DOWN;				
+				nuc970_detect2touch();					
 				enable_menu();			
 				return true;
 			}
@@ -293,43 +290,79 @@ static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc,u32 isr,u32 ier)
 	return false;
 }
 #endif
-
-static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
+static void nuc970adc_irq_tasklet(struct nuc970_adc *nuc970_adc)
 {
-	struct nuc970_adc *nuc970_adc = dev_id;	
-	unsigned long flags;
-	u32 isr=__raw_readl(REG_ADC_ISR);
-	#if defined(CONFIG_TOUCHSCREEN_NUC970ADC) | defined(CONFIG_KEYBOARD_NUC970ADC)
-	u32 ier=__raw_readl(REG_ADC_IER);
-	#endif
-	u32 conf=__raw_readl(REG_ADC_CONF);		
-	ENTRY();	
-	ADEBUG("isr=0x%08x,ier=0x%08x\n",isr,ier);
-	spin_lock_irqsave(&nuc970_adc->lock, flags);
 	#ifdef CONFIG_TOUCHSCREEN_NUC970ADC	
-	if(nuc970_ts_detect_down(nuc970_adc,isr,ier)) goto leave;
+	if(nuc970_ts_detect_down(nuc970_adc)) return;
 	#endif
 
 	#ifdef CONFIG_KEYBOARD_NUC970ADC	
-	if(nuc970_kp_detect_up_down(nuc970_adc,isr,ier)) goto leave;
+	if(nuc970_kp_detect_up_down(nuc970_adc)) return;
 	#endif
 			
-	if(isr & ADC_ISR_MF)
-	{		
-		__raw_writel(isr,REG_ADC_ISR);		
+	if(nuc970_adc->isr & ADC_ISR_MF)
+	{				
 		#ifdef CONFIG_KEYBOARD_NUC970ADC
-		nuc970_kp_conversion(nuc970_adc,isr,conf);
+		nuc970_kp_conversion(nuc970_adc);
 		#endif
 		#ifdef CONFIG_TOUCHSCREEN_NUC970ADC	
-		nuc970_ts_conversion(nuc970_adc,isr,conf);					
+		nuc970_ts_conversion(nuc970_adc);					
 		#endif
+	}		
+}
+static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
+{
+	struct nuc970_adc *nuc970_adc = dev_id;		
+	nuc970_adc->isr=__raw_readl(REG_ADC_ISR);	
+	nuc970_adc->ier=__raw_readl(REG_ADC_IER);	
+	nuc970_adc->conf=__raw_readl(REG_ADC_CONF);		
+	ENTRY();	
+	ADEBUG("isr=0x%08x,ier=0x%08x\n",nuc970_adc->isr,nuc970_adc->ier);	
+	#ifdef CONFIG_TOUCHSCREEN_NUC970ADC	
+	if((nuc970_adc->isr & ADC_ISR_PEDEF)&&(nuc970_adc->ier & ADC_IER_PEDEIEN ))
+	{
+			__raw_writel(ADC_ISR_PEDEF, REG_ADC_ISR);
+			goto leave;
 	}
+	#endif
 	
-#if defined(CONFIG_TOUCHSCREEN_NUC970ADC) | defined(CONFIG_KEYBOARD_NUC970ADC)
-leave:	
-#endif	
-	spin_unlock_irqrestore(&nuc970_adc->lock, flags);
-	LEAVE();
+	#ifdef CONFIG_KEYBOARD_NUC970ADC	
+	if(nuc970_adc->isr & ADC_ISR_KPEF)
+	{							
+		__raw_writel(ADC_ISR_KPEF,REG_ADC_ISR);
+		goto leave;
+	}
+	if(nuc970_adc->isr & ADC_ISR_KPUEF)	
+	{
+		__raw_writel(ADC_ISR_KPUEF,REG_ADC_ISR);			
+			goto leave;
+	}	
+	#endif	
+		
+	if(nuc970_adc->isr & ADC_ISR_MF)
+	{				
+		__raw_writel(ADC_ISR_MF,REG_ADC_ISR);
+		#ifdef CONFIG_KEYBOARD_NUC970ADC
+		if((nuc970_adc->isr & ADC_ISR_KPCF) && (nuc970_adc->conf & ADC_CONF_KPCEN))				
+			if((nuc970_adc->kp_state == KP_DOWN) || (nuc970_adc->kp_state == KP_CONVERSION))	
+			{		
+				__raw_writel(ADC_ISR_KPCF,REG_ADC_ISR);
+				goto leave;
+			}
+					
+		#endif
+		#ifdef CONFIG_TOUCHSCREEN_NUC970ADC	
+		if(  (nuc970_adc->isr & ADC_ISR_TF) && (nuc970_adc->conf & ADC_CONF_TEN) && (nuc970_adc->isr & ADC_ISR_ZF) && (nuc970_adc->conf & ADC_CONF_ZEN) )
+			if((nuc970_adc->ts_state == TS_DOWN) || (nuc970_adc->ts_state == TS_CONVERSION))
+			{
+				__raw_writel(ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);			
+				goto leave;
+			}
+		#endif
+	}							
+	return IRQ_HANDLED;
+leave :	
+	tasklet_schedule(&nuc970_adc->irq_tasklet); 	
 	return IRQ_HANDLED;
 }	
 
@@ -344,9 +377,7 @@ static int nuc970ts_open(struct input_dev *dev)
 	
 	/* Clear interrupt before enable pendown */		
 	nuc970_touch2detect();	
-	__raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */		
-	__raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */				
-	__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */	
+
 	nuc970_adc->used_state |= TS_USED;
 	LEAVE();
 	return 0;
@@ -370,10 +401,10 @@ static void nuc970ts_close(struct input_dev *dev)
 	
 	
 	nuc970_touch2detect();
-	/* Diable penwdown : ts_enable_touch  */					
+	/* Diable penwdown : ts_enable_touch  */								
+	__raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */		
 	__raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */				
-	__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
-		
+	__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */			
 	nuc970_adc->used_state &= ~TS_USED;
 	LEAVE();	
 }
@@ -411,7 +442,7 @@ static void nuc970kp_close(struct input_dev *dev)
 static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
 {
 	u32 count=3;
-	u32 flags;
+	unsigned long flags;
 	ENTRY();
 	//spin_lock_irq(&nuc970_adc->lock);
 	spin_lock_irqsave(&nuc970_adc->lock, flags);	
@@ -633,9 +664,12 @@ static int nuc970adc_probe(struct platform_device *pdev)
 		printk("----------------------------------------------------power failed\n");		
 		goto fail5;
 	}		
-	#endif	
-	
+	#endif				
 	platform_set_drvdata(pdev, nuc970_adc);
+	
+	tasklet_init(&nuc970_adc->irq_tasklet,
+		     (void (*)(unsigned long))nuc970adc_irq_tasklet,
+		     (unsigned long)nuc970_adc);	
 	
 	LEAVE();
 	return 0;
@@ -661,7 +695,7 @@ static int nuc970adc_remove(struct platform_device *pdev)
 
 	#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
 	input_unregister_device(nuc970_adc->input_ts);
-	//tasklet_kill(&nuc970_adc->ts_irq_tasklet);
+	//tasklet_kill(&nuc970_adc->irq_tasklet);
 	#endif
 	
 	#ifdef CONFIG_KEYBOARD_NUC970ADC	
