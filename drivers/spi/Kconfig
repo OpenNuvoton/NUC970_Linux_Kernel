@@ -502,9 +502,9 @@ choice
 	  Select SPI0 multi-function pin. Can be PB6 ~ PB9 and PB10, PB11 for quad mode.
 
 	config SPI_NUC970_P0_NORMAL
-		bool "Select pins for normal mode"
+		bool "Normal mode"
 	config SPI_NUC970_P0_QUAD
-		bool "Select pins for quad mode"	
+		bool "Quad mode"	
 endchoice
 
 config SPI_NUC970_P1
@@ -522,13 +522,13 @@ choice
 	  Select SPI1 multi-function pin. Can be port B: PB12 ~ PB15, port I: PI5 ~ PI8 and PG4, PG5 for quad mode.
 
 	config SPI_NUC970_P1_PB
-		bool "Port B"
+		bool "Port B - Normal mode"
 	config SPI_NUC970_P1_PI
-		bool "Port I"
+		bool "Port I - Normal mode"
 	config SPI_NUC970_P1_QUAD_PB
-		bool "Port B with quad mode pins"
+		bool "Port B - Quad mode"
 	config SPI_NUC970_P1_QUAD_PI
-		bool "Port I with quad mode pins"
+		bool "Port I - Quad mode"
 endchoice
 #
 # Add new SPI master controllers in alphabetical order above this line
