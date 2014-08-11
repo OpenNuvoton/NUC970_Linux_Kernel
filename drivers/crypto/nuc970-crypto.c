@@ -23,6 +23,7 @@
 
 #include <linux/io.h>
 #include <linux/delay.h>
+#include <linux/clk.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -389,7 +390,7 @@ static int nuc970_des_setkey(struct crypto_ablkcipher *cipher,
 	for (i = 0; i < keylen/4; i++)
 	{
 		tdes_regs->key[i] = *(u32 *)(key + i * 4);
-		printk("DES/TDES KEY %d = 0x%x, 0x%x\n", i, tdes_regs->key[i], *(u32 *)(key + i * 4));
+		//printk("DES/TDES KEY %d = 0x%x, 0x%x\n", i, tdes_regs->key[i], *(u32 *)(key + i * 4));
 	}
 	return 0;
 }
@@ -970,7 +971,7 @@ static int do_sha(struct ahash_request *req, int is_last)
 		
 		in_sg = sg_next(in_sg);
 		
-		if (dma_len % 4)
+		if (dma_len == req_len)
 			crpt_regs->CRPT_HMAC_CTL |= HMAC_DMALAST;
 		
 		crpt_regs->CRPT_HMAC_CTL |= HMAC_START | HMAC_DMAEN;
@@ -999,7 +1000,7 @@ static int do_sha(struct ahash_request *req, int is_last)
 		
 		req_len -= 	dma_len;
 		
-		nuc970_dump_digest();
+		//nuc970_dump_digest();
 	}
 	return 0;
 }
@@ -1007,7 +1008,7 @@ static int do_sha(struct ahash_request *req, int is_last)
 
 static int nuc970_sha_update(struct ahash_request *req)
 {
-	printk("nuc970_sha_update - %d bytes\n", req->nbytes);
+	//printk("nuc970_sha_update - %d bytes\n", req->nbytes);
 	return do_sha(req, 0);
 }
 
@@ -1015,7 +1016,7 @@ static int nuc970_sha_final(struct ahash_request *req)
 {
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 
-	printk("nuc970_sha_final - %d bytes\n", req->nbytes);
+	//printk("nuc970_sha_final - %d bytes\n", req->nbytes);
 
 	do_sha(req, 1);
 
@@ -1030,8 +1031,6 @@ static int nuc970_sha_final(struct ahash_request *req)
 	else
 		memcpy(req->result, (u8 *)&(crpt_regs->CRPT_HMAC_DGST[0]), SHA512_DIGEST_SIZE);
 
-	nuc970_dump_digest();
-
 	return 0;
 }
 
@@ -1042,8 +1041,8 @@ static int nuc970_sha_init(struct ahash_request *req)
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 	
 	crpt_regs->CRPT_HMAC_CTL = HMAC_STOP;
-	printk("nuc970_sha_init: digest size: %d\n", crypto_ahash_digestsize(tfm));
-	crpt_regs->CRPT_HMAC_CTL = HMAC_INSWAP;
+	//printk("nuc970_sha_init: digest size: %d\n", crypto_ahash_digestsize(tfm));
+	crpt_regs->CRPT_HMAC_CTL = HMAC_INSWAP | HMAC_OUTSWAP;
 	crpt_regs->CRPT_HMAC_KEYCNT = 0;
 	ctx->is_first_block = 1;
 	ctx->sha_remain_bytes = 0;
@@ -1082,7 +1081,7 @@ static int nuc970_sha_finup(struct ahash_request *req)
 {
 	int err1, err2;
 
-	printk("nuc970_sha_finup.\n");
+	//printk("nuc970_sha_finup.\n");
 
 	err1 = nuc970_sha_update(req);
 	if (err1 == -EINPROGRESS || err1 == -EBUSY)
@@ -1099,13 +1098,13 @@ static int nuc970_sha_finup(struct ahash_request *req)
 
 static int nuc970_sha_digest(struct ahash_request *req)
 {
-	printk("nuc970_sha_digest.\n");
+	//printk("nuc970_sha_digest.\n");
 	return nuc970_sha_init(req) ?: nuc970_sha_finup(req);
 }
 
 static int nuc970_sha_cra_init(struct crypto_tfm *tfm)
 {
-	printk("nuc970_sha_cra_init.\n");
+	//printk("nuc970_sha_cra_init.\n");
 
 	//spin_lock(&nuc970_crdev.sha_lock);
 	return 0;
@@ -1113,7 +1112,7 @@ static int nuc970_sha_cra_init(struct crypto_tfm *tfm)
 
 static void nuc970_sha_cra_exit(struct crypto_tfm *tfm)
 {
-	printk("nuc970_sha_cra_exit.\n");
+	//printk("nuc970_sha_cra_exit.\n");
 	//spin_unlock(&nuc970_crdev.sha_lock);
 }
 
@@ -1131,7 +1130,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 			.cra_name		= "sha1",
 			.cra_driver_name	= "nuc970-sha1",
 			.cra_priority	= 100,
-			.cra_flags		= CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
 			.cra_blocksize	= SHA1_BLOCK_SIZE,
 			.cra_ctxsize	= sizeof(struct nuc970_ctx),
 			.cra_alignmask	= 0,
@@ -1172,6 +1171,15 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resource *res;
 	int   i, err, ret;
+
+    if (IS_ERR(clk_get(NULL, "crypto_hclk"))) {
+        printk("nuc970_crypto_probe clk_get error!!\n");
+        return -1;
+    }
+
+	/* Enable Cryptographic Accerlator clock */
+    clk_prepare(clk_get(NULL, "crypto_hclk"));	
+    clk_enable(clk_get(NULL, "crypto_hclk"));
 	
 	memset((u8 *)&nuc970_crdev, 0, sizeof(nuc970_crdev));
 
@@ -1185,8 +1193,6 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
 	nuc970_crdev.regs = ioremap(res->start, resource_size(res));
 	if (!nuc970_crdev.regs)
 		return -ENOMEM;
-		
-	__raw_writel(__raw_readl(REG_CLK_HCLKEN) | 0x800000, REG_CLK_HCLKEN);
 		
 	//printk("nuc970_crdev.regs = 0x%x\n", (u32)nuc970_crdev.regs);
 

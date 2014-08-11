@@ -111,6 +111,35 @@ static struct platform_device nuc970_device_ohci = {
         }
 };
 #endif
+
+/* Cryptographic Accelerator */
+#ifdef CONFIG_CRYPTO_DEV_NUC970
+static struct resource nuc970_crypto_resource[] = {
+        [0] = {
+                .start = NUC970_PA_CRYPTO,
+                .end   = NUC970_PA_CRYPTO + NUC970_SZ_CRYPTO - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_CRYPTO,
+                .end   = IRQ_CRYPTO,
+                .flags = IORESOURCE_IRQ,
+        }
+};
+
+static u64 nuc970_device_crypto_dmamask = 0xffffffffUL;
+static struct platform_device nuc970_device_crypto = {
+        .name		  = "nuc970-crypto",
+        .id		  = -1,
+        .num_resources	  = ARRAY_SIZE(nuc970_crypto_resource),
+        .resource	  = nuc970_crypto_resource,
+        .dev              = {
+                .dma_mask = &nuc970_device_crypto_dmamask,
+                .coherent_dma_mask = 0xffffffffUL
+        }
+};
+#endif
+
 /* USB Device (Gadget)*/
 #ifdef CONFIG_USB_NUC970
 static struct resource nuc970_usbgadget_resource[] = {
@@ -858,6 +887,9 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_USB_EHCI_HCD
         &nuc970_device_ehci,
+#endif
+#ifdef CONFIG_CRYPTO_DEV_NUC970
+		&nuc970_device_crypto,
 #endif
 #ifdef CONFIG_FB_NUC970
         &nuc970fb_device_lcd,
