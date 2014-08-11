@@ -17,4 +17,9 @@ config SENSOR_OV7725
 config SENSOR_OV5640
 	bool "OV5640"
 
+config SENSOR_NT99141
+        bool "NT99141"
+
+config SENSOR_NT99050
+	bool "NT99050"
 endchoice

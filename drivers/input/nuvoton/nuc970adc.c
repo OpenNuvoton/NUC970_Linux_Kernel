@@ -373,7 +373,7 @@ static int nuc970ts_open(struct input_dev *dev)
 	ENTRY();
 							
 	/* Set touch parameters */
-	writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<20) | (7<<3) | (3<<6)), REG_ADC_CONF); /* CONF */		
+	writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<20) | (7<<3) | (3<<6)), REG_ADC_CONF); /* CONF */		
 	
 	/* Clear interrupt before enable pendown */		
 	nuc970_touch2detect();	
@@ -416,7 +416,7 @@ static int nuc970kp_open(struct input_dev *dev)
 	struct nuc970_adc *nuc970_adc = input_get_drvdata(dev);
 	ENTRY();		
 	__raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN | ADC_CTL_PKWPEN), REG_ADC_CTL);
-	__raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_KPCEN), REG_ADC_CONF);	
+	__raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_KPCEN|ADC_CONF_HSPEED), REG_ADC_CONF);	
 	__raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_KPEIEN | ADC_IER_KPUEIEN | ADC_IER_MIEN), REG_ADC_IER);
 	__raw_writel(__raw_readl(REG_ADC_ISR) | (ADC_ISR_KPCF), REG_ADC_ISR);
 	
@@ -447,7 +447,7 @@ static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
 	//spin_lock_irq(&nuc970_adc->lock);
 	spin_lock_irqsave(&nuc970_adc->lock, flags);	
 	__raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN | ADC_CTL_VBGEN), REG_ADC_CTL);
-	__raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_VBATEN), REG_ADC_CONF);	
+	__raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_VBATEN|ADC_CONF_HSPEED), REG_ADC_CONF);	
 	__raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_MIEN), REG_ADC_IER);
 	__raw_writel(__raw_readl(REG_ADC_ISR) | (ADC_ISR_VBF), REG_ADC_ISR);
 	
@@ -463,8 +463,7 @@ static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
 		__raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PKWPEN),REG_ADC_CTL);
 		__raw_writel(__raw_readl(REG_ADC_CONF)& ~(ADC_CONF_KPCEN), REG_ADC_CONF);	
 		__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_KPEIEN | ADC_IER_KPUEIEN), REG_ADC_IER);					
-	}
-		
+	}	
 	while(count--)
 	{
 		enable_menu();
