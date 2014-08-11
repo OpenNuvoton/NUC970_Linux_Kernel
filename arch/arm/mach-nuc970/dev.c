@@ -188,6 +188,7 @@ static struct platform_device nuc970_serial_device = {
 //#define YUV422
 
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
+#ifdef CONFIG_A025DL02_320X240
 	/* AUO A035QN02V0 320x240 TFT Panel , 18bits*/
 	[0] = {
 #ifndef YUV422
@@ -216,6 +217,29 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.fbctrl		= 0x00a000a0,
 		.scale		= 0x04000400,
 	},
+#endif
+#ifdef CONFIG_E50A2V1_800X480		
+	/* E50A2V1 800x480 TFT Panel , 24bits*/
+	[0] = {
+		.type		= LCM_DCCS_VA_SRC_RGB888,
+		.width		= 800,
+		.height		= 480,
+		.xres		= 800,
+		.yres		= 480,
+		.bpp		= 32,
+		.pixclock	= 200000,
+		.left_margin	= 88,
+		.right_margin   = 40,
+		.hsync_len		= 48,
+		.upper_margin	= 32,
+		.lower_margin	= 13,
+		.vsync_len		= 3,
+		.dccs		= 0x0e00020a,
+		.devctl		= 0x070000c0,
+		.fbctrl		= 0x03200320,
+		.scale		= 0x04000400,
+	},
+#endif
 };
 
 

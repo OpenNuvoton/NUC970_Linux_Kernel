@@ -13,7 +13,7 @@
  *  Author:
  *    Wang Qiang (rurality.linux@gmail.com) 2009/12/11
  */
- 
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
@@ -216,7 +216,6 @@ static void nuc970fb_calculate_lcd_regs(const struct fb_info *info,
 			       LCM_CRTC_HSYNC_SVAL(hsync);
 	regs->lcd_crtc_vr = LCM_CRTC_VR_EVAL(vsync + var->vsync_len) |
 			    LCM_CRTC_VR_SVAL(vsync);
-
 }
 
 /*
@@ -599,8 +598,16 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	clk_enable(clk_get(NULL, "lcd_hclk"));
 
 	fbi->clk = clk_get(NULL, "lcd_eclk");
+
+#ifdef CONFIG_A025DL02_320X240	
 	// set lcd clock to 4MHz
 	clk_set_rate(fbi->clk, 4000000);
+#endif
+#ifdef CONFIG_E50A2V1_800X480
+	// set lcd clock to 12MHz
+	clk_set_rate(fbi->clk, 12000000);
+#endif
+
 	clk_prepare(fbi->clk);	
 	clk_enable(fbi->clk);
 	fbi->clk_rate = clk_get_rate(fbi->clk);
