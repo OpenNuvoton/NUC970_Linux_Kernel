@@ -545,8 +545,19 @@ struct platform_device nuc970_device_audio_pcm = {
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
+#ifdef CONFIG_SENSOR_OV7725	
 	{I2C_BOARD_INFO("ov7725",  0x21),},
+#endif
+#ifdef CONFIG_SENSOR_OV5640	
 	{I2C_BOARD_INFO("ov5640",  0x3c),},
+#endif
+#ifdef CONFIG_SENSOR_NT99141
+	{I2C_BOARD_INFO("nt99141", 0x2a),},
+#endif
+#ifdef CONFIG_SENSOR_NT99050
+	{I2C_BOARD_INFO("nt99050", 0x21),},
+#endif	
+
 	{I2C_BOARD_INFO("nau8822", 0x1a),},
 };
 
