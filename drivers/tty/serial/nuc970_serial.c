@@ -120,12 +120,20 @@ static void rs485_stop_rx(struct uart_nuc970_port *port)
 static inline void __stop_tx(struct uart_nuc970_port *p)
 {
 	unsigned int ier;
+	struct tty_struct *tty = p->port.state->port.tty;
 
 	if ((ier = serial_in(p, UART_REG_IER)) & THRE_IEN) {
 		serial_out(p, UART_REG_IER, ier & ~THRE_IEN);
 	}
 	if (p->rs485.flags & SER_RS485_ENABLED)
 		rs485_start_rx(p);
+
+	if (tty->termios.c_line == N_IRDA)
+	{
+		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & ~0x20) ); // Tx not inverse
+		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & 0x40) );  // Rx inverse
+		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & ~0x2) ); // Tx disable (select Rx)
+	}
 }
 
 static void nuc970serial_stop_tx(struct uart_port *port)
@@ -146,7 +154,9 @@ static void nuc970serial_start_tx(struct uart_port *port)
 
 	if (tty->termios.c_line == N_IRDA)
 	{
-		
+		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) & ~0x20) ); // Tx not inverse
+		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) & 0x40) );  // Rx inverse
+		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) | 0x2) ); // Tx enable
 	}
 
 	if (up->rs485.flags & SER_RS485_ENABLED)
@@ -486,22 +496,17 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 static void
 nuc970serial_set_ldisc(struct uart_port *port, int ld)
 {
-	//struct nuc970_serial_port *uart = (struct nuc970_serial_port *)port;
-	//unsigned int val;
+	struct uart_nuc970_port *uart = (struct uart_nuc970_port *)port;
 
-	#if 0
 	switch (ld) {
 	case N_IRDA:
-		//val = UART_GET_GCTL(uart);
-		//val |= (UMOD_IRDA | RPOLC);
-		//UART_PUT_GCTL(uart, val);
+		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) & ~FUN_SEL_Msk) );
+		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) | FUN_SEL_IrDA) );
 		break;
 	default:
-		//val = UART_GET_GCTL(uart);
-		//val &= ~(UMOD_MASK | RPOLC);
-		//UART_PUT_GCTL(uart, val);
+		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) & ~FUN_SEL_Msk) );
 	}
-	#endif
+
 }
 
 static void
