@@ -42,6 +42,7 @@
 #include <mach/regs-gcr.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-lcd.h>
+#include <mach/regs-gpio.h>
 
 #include <mach/regs-cap.h>
 #include <linux/time.h>
@@ -1077,13 +1078,17 @@ int capture_init(struct nuvoton_vin_device* cam)
 	//i32Div = (66000000/u32SensorFreq)-1;	
 	//if(i32Div < 0) i32Div = 0;			
 	//__raw_writel((__raw_readl(REG_CLK_DIV3) & ~0x0f000000 ) | i32Div<<24,REG_CLK_DIV3);
-	
-	
+			
 	
 	//printk("REG_CLK_HCLKEN=0x%08x\n",__raw_readl(REG_CLK_HCLKEN));
 	//printk("REG_MFP_GPI_L=0x%08x\n",__raw_readl(REG_MFP_GPI_L));
 	//printk("REG_MFP_GPI_H=0x%08x\n",__raw_readl(REG_MFP_GPI_H));
 	//printk("REG_CLK_DIV3=0x%08x\n",__raw_readl(REG_CLK_DIV3));
+	
+	/* GPIOI7 set to high */
+	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xF0000000) ,REG_MFP_GPI_L);
+	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0080),(GPIO_BA+0x200)); /* GPIOI7 Output mode */
+	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0080),(GPIO_BA+0x204)); /* GPIOI7 Output to high */
 	return 0;
 }
 
@@ -1646,6 +1651,7 @@ int nuvoton_vdi_device_register(void)
 	//for sensor init
 	if(nuvoton_vin_probe(cam)<0){  //sensor probe;
 		VDEBUG("Initialization failed. I will retry on open().");
+		return -EAGAIN;
 	}
 	
 	VDEBUG("capture_init().");	
@@ -1732,7 +1738,11 @@ static int nuvoton_cap_device_probe(struct platform_device *pdev)
 	ENTRY();	
 	ret = nuvoton_vdi_device_register();
 	if(ret)
+	{	
+		printk("%s, main sensor registeration fail.\n\n", __func__);
+		ret = -EPROBE_DEFER;
 		goto out;
+	}
 	else
 		printk("%s, main sensor registeration ok.\n\n", __func__);
 	
@@ -1747,23 +1757,6 @@ static int nuvoton_cap_device_remove(struct platform_device *pdev)
 	LEAVE();
 	return 0;
 }
-
-#if 0
-static struct platform_device_id nuc970_dma_driver_ids[] = {	
-	{ "nuc970-dma-m2m", 0 },
-	{ },
-};
-
-static struct platform_driver nuc970_dma_driver = {
-	.driver		= {
-		.name	= "nuc970-dma",
-		.owner	= THIS_MODULE,
-	},
-	.probe		= nuc970_dma_probe,
-	.id_table	= nuc970_dma_driver_ids,
-};
-module_platform_driver(nuc970_dma_driver);
-#endif
 
 static struct platform_device_id nuc970_cap_driver_ids[] = {	
 	{ "nuc970-videoin", 0 },

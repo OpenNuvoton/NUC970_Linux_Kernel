@@ -1,4 +1,5 @@
 #include <linux/delay.h>
+#include <linux/module.h>
 #include "nuc970_cap.h"
 
 
@@ -32,6 +33,7 @@ static struct OV_RegValue RegValue[] =
 
 /************  I2C  *****************/
 static struct i2c_client *save_client;
+static char sensor_inited = 0;
 __u8 sensor_read(__u8 uRegAddr)
 {
 		u8 val;		
@@ -52,6 +54,7 @@ static int32_t sensor_write(__u8 uRegAddr, __u8 uData)
 static int sensor_probe(struct i2c_client *client,const struct i2c_device_id *did)
 {
 	ENTRY();
+	sensor_inited = 1;
 	client->flags = I2C_CLIENT_SCCB;
 	save_client = client;	
 	LEAVE();
@@ -63,17 +66,6 @@ static int sensor_remove(struct i2c_client *client)
 	LEAVE();
 	return 0;
 }
-static const struct i2c_device_id sensor_id[] = {{ "ov7725", 0 },};
-
-static struct i2c_driver sensor_i2c_driver = {
-	.driver = { .name  = "ov7725", 
-							.owner = THIS_MODULE,
-						},
-	.probe    = sensor_probe,
-	.remove   = sensor_remove,	
-	.id_table = sensor_id,
-};
-/*************************************/
 
 static int ov7725_init(struct nuvoton_vin_device* cam)
 {
@@ -118,13 +110,12 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	__u8 SensorID[4];
 	struct OV_RegValue *psRegValue;
 	ENTRY();	
-	nuvoton_vin_attach_sensor(cam, &ov7725);	
-	ret = i2c_add_driver(&sensor_i2c_driver);	
-	if(ret<0)
-	{
-		printk("Add sensor i2c driver failed\n");
-		return ret;
-	}		
+	nuvoton_vin_attach_sensor(cam, &ov7725);
+	
+	// if i2c module isn't loaded at this time
+	if(!sensor_inited)
+		return -1;
+		
 	psRegValue=RegValue;
 	for(i=0;i<_REG_TABLE_SIZE(RegValue); i++, psRegValue++)
 	{
@@ -151,3 +142,17 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	LEAVE();		
 	return ret;	
 }
+
+static const struct i2c_device_id sensor_id[] = {{ "ov7725", 0 },};
+MODULE_DEVICE_TABLE(i2c, sensor_id);
+
+static struct i2c_driver sensor_i2c_driver = {
+	.driver = { .name  = "ov7725", 
+							.owner = THIS_MODULE,
+						},
+	.probe    = sensor_probe,
+	.remove   = sensor_remove,	
+	.id_table = sensor_id,
+};
+
+module_i2c_driver(sensor_i2c_driver);
