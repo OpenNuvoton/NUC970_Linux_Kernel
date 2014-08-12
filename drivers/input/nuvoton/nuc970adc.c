@@ -111,7 +111,8 @@ static struct key_threshold nuc970_key_th[] = {
 #endif
 
 #define CLK_PCLKEN1_ADCEN (1<<24)
-#define Z_TH 0x300
+//#define Z_TH 0x300
+#define Z_TH 100
 struct nuc970_adc {
 	struct input_dev *input_ts;
 	struct input_dev *input_kp;
@@ -148,7 +149,7 @@ static void nuc970_detect2touch(void)
 	__raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
 						
 	/* Config touch paramters : ts_enable_touch  */
-	__raw_writel(__raw_readl(REG_ADC_CONF)| ADC_CONF_TEN | ADC_CONF_ZEN | ADC_CONF_DISTMAVEN | ADC_CONF_DISZMAVEN | (7<<3) | (3<<6), REG_ADC_CONF);	
+	__raw_writel(__raw_readl(REG_ADC_CONF)| ADC_CONF_TEN | ADC_CONF_ZEN | ADC_CONF_DISTMAVEN | ADC_CONF_DISZMAVEN | (1<<22) | (7<<3) | (3<<6), REG_ADC_CONF);	
 	__raw_writel(__raw_readl(REG_ADC_ISR) | ADC_ISR_MF, REG_ADC_ISR);	
 	__raw_writel(__raw_readl(REG_ADC_IER) |(ADC_IER_MIEN), REG_ADC_IER);	
 	LEAVE();	
@@ -373,7 +374,7 @@ static int nuc970ts_open(struct input_dev *dev)
 	ENTRY();
 							
 	/* Set touch parameters */
-	writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<20) | (7<<3) | (3<<6)), REG_ADC_CONF); /* CONF */		
+	writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<22)|(1<<20) | (7<<3) | (3<<6)), REG_ADC_CONF); /* CONF */		
 	
 	/* Clear interrupt before enable pendown */		
 	nuc970_touch2detect();	
@@ -581,6 +582,8 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	clk_prepare(nuc970_adc->clk);
 	clk_enable(nuc970_adc->clk);
 
+  __raw_writel(0x03000000,REG_CLK_DIV7);
+	//printk("CLK_DIVCTL7=0x%08x\n",__raw_readl(REG_CLK_DIV7));
 	nuc970_adc->kp_state = KP_IDLE;
 	nuc970_adc->ts_state = TS_IDLE;
 	
