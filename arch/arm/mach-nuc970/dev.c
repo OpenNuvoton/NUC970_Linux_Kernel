@@ -46,9 +46,11 @@
 #include <mach/fb.h>
 #include <mach/regs-lcd.h>
 #include <mach/nuc970_spi.h>
+#include <mach/gpio.h>
 
 #include <linux/platform_data/i2c-nuc970.h>
 #include <linux/i2c.h>
+#include <linux/i2c-gpio.h>
 #include <linux/i2c/i2c-hid.h>
 
 #include <linux/platform_data/dma-nuc970.h>
@@ -673,7 +675,7 @@ struct platform_device nuc970_device_audio_pcm = {
 #endif
 
 /* I2C */
-#ifdef CONFIG_I2C_BUS_NUC970_P0
+#ifdef CONFIG_I2C
 // port 0
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
@@ -690,10 +692,13 @@ static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 #ifdef CONFIG_SENSOR_NT99050
 	{I2C_BOARD_INFO("nt99050", 0x21),},
 #endif	
-
+#ifdef CONFIG_SND_SOC_NAU8822
 	{I2C_BOARD_INFO("nau8822", 0x1a),},
+#endif
 };
+#endif
 
+#ifdef CONFIG_I2C_BUS_NUC970_P0
 static struct resource nuc970_i2c0_resource[] = {
         [0] = {
                 .start = NUC970_PA_I2C0,
@@ -723,16 +728,6 @@ struct platform_device nuc970_device_i2c0 = {
 };
 #endif
 #ifdef CONFIG_I2C_BUS_NUC970_P1
-
-
-static struct i2c_board_info __initdata nuc970_i2c_clients1[] =
-{
-	{
-	    I2C_BOARD_INFO("nau8822", 0x1a),
-	},
-
-};
-
 //port 1
 static struct nuc970_platform_i2c nuc970_i2c1_data = {
 	.bus_num = 1,
@@ -1165,12 +1160,8 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	spi_register_board_info(nuc970_spi_board_info, ARRAY_SIZE(nuc970_spi_board_info));
 #endif
 
-#ifdef CONFIG_I2C_BUS_NUC970_P0
+#ifdef CONFIG_I2C
 	i2c_register_board_info(0, nuc970_i2c_clients0, sizeof(nuc970_i2c_clients0)/sizeof(struct i2c_board_info));
-#endif
-
-#ifdef CONFIG_I2C_BUS_NUC970_P1
-	i2c_register_board_info(1, nuc970_i2c_clients1, sizeof(nuc970_i2c_clients1)/sizeof(struct i2c_board_info));
 #endif
 
 #ifdef CONFIG_PWM_NUC970
