@@ -9,7 +9,7 @@ config VIDEO_NUC970
 choice
 	prompt "NUVOTON NUC970 Image Sensor Selection"
 	depends on VIDEO_NUC970
-	default OV_7725
+	default SENSOR_NT99141
 
 config SENSOR_OV7725
 	bool "OV7725"
