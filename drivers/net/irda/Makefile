@@ -24,6 +24,7 @@ obj-$(CONFIG_SH_IRDA)		+= sh_irda.o
 obj-$(CONFIG_IRTTY_SIR)		+= irtty-sir.o	sir-dev.o
 obj-$(CONFIG_BFIN_SIR)		+= bfin_sir.o
 obj-$(CONFIG_SH_SIR)		+= sh_sir.o
+obj-$(CONFIG_NUC970_SIR)	+= nuc970-sir.o sir-dev.o
 # dongle drivers for SIR drivers
 obj-$(CONFIG_ESI_DONGLE)	+= esi-sir.o
 obj-$(CONFIG_TEKRAM_DONGLE)	+= tekram-sir.o

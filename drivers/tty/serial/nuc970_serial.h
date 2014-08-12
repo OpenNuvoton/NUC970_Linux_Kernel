@@ -58,6 +58,11 @@
 #define UART_REG_TOR	0x20
 #define UART_REG_BAUD	0x24
 
-
+#define UART_FUN_SEL    0x30
+#define FUN_SEL_UART    0x00000000
+#define FUN_SEL_LIN     0x00000001
+#define FUN_SEL_IrDA    0x00000002
+#define FUN_SEL_RS485	0x00000003
+#define FUN_SEL_Msk		0x00000007
 
 #endif // __NUC970_SERIAL_H__

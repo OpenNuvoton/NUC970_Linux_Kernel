@@ -42,11 +42,15 @@
 #include <mach/map.h>
 #include <mach/regs-serial.h>
 #include <mach/regs-gcr.h>
+#include <mach/mfp.h>
+
 
 #include "nuc970_serial.h"
 
-#define UART_NR	CONFIG_SERIAL_NUC970_UARTS
+#define UART_NR 11
 static struct uart_driver nuc970serial_reg;
+
+struct clk		*clk;
 
 struct uart_nuc970_port {
 	struct uart_port	port;
@@ -66,7 +70,6 @@ struct uart_nuc970_port {
 				      unsigned int state, unsigned int old);
 };
 
-//static struct uart_nuc970_port nuc970_ports[UART_NR];
 static struct uart_nuc970_port nuc970serial_ports[UART_NR];
 
 static inline struct uart_nuc970_port *
@@ -74,20 +77,6 @@ to_nuc970_uart_port(struct uart_port *uart)
 {
 	return container_of(uart, struct uart_nuc970_port, port);
 }
-
-static void rs485_start_rx(struct uart_nuc970_port *port)
-{
-	// WRITE ME:
-
-}
-
-static void rs485_stop_rx(struct uart_nuc970_port *port)
-{
-	// WRITE ME:
-
-}
-
-
 
 static inline unsigned int serial_in(struct uart_nuc970_port *p, int offset)
 {
@@ -99,7 +88,34 @@ static inline void serial_out(struct uart_nuc970_port *p, int offset, int value)
 	__raw_writel(value, p->port.membase + offset);
 }
 
+static void rs485_start_rx(struct uart_nuc970_port *port)
+{
+	if(port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+	{
+		// Set logical level for RTS pin equal to high 
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) & ~0x200) );
+}
+	else
+{
+		// Set logical level for RTS pin equal to low 
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) | 0x200) );
+	}
+}
 
+static void rs485_stop_rx(struct uart_nuc970_port *port)
+{
+	if(port->rs485.flags & SER_RS485_RTS_ON_SEND)
+	{
+		// Set logical level for RTS pin equal to high 
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) & ~0x200) );
+	}
+	else
+	{
+		// Set logical level for RTS pin equal to low 
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) | 0x200) );
+	}
+
+}
 
 static inline void __stop_tx(struct uart_nuc970_port *p)
 {
@@ -126,6 +142,12 @@ static void nuc970serial_start_tx(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	unsigned int ier;	
+	struct tty_struct *tty = up->port.state->port.tty;
+
+	if (tty->termios.c_line == N_IRDA)
+	{
+		
+	}
 
 	if (up->rs485.flags & SER_RS485_ENABLED)
 		rs485_stop_rx(up);
@@ -141,19 +163,12 @@ static void nuc970serial_stop_rx(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 
-	//up->ier &= ~UART_IER_RLSI;
-	//up->port.read_status_mask &= ~UART_LSR_DR;
 	serial_out(up, UART_REG_IER, serial_in(up, UART_REG_IER) & ~RDA_IEN);
 }
 
 static void nuc970serial_enable_ms(struct uart_port *port)
 {
-	//struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
-	
-	// write me...
 
-	//up->ier |= UART_IER_MSI;
-	//serial_out(up, UART_IER, up->ier);
 }
 
 static void
@@ -216,7 +231,7 @@ receive_chars(struct uart_nuc970_port *up)
 static void transmit_chars(struct uart_nuc970_port *up)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
-	int count = 256;
+	int count = 12;
 
 	if (up->port.x_char) {
 		while(serial_in(up, UART_REG_FSR) & TX_FULL);
@@ -236,7 +251,7 @@ static void transmit_chars(struct uart_nuc970_port *up)
 	}
 
 	do {
-		while(serial_in(up, UART_REG_FSR) & TX_FULL);
+		//while(serial_in(up, UART_REG_FSR) & TX_FULL);
 		serial_out(up, UART_REG_THR, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		up->port.icount.tx++;
@@ -253,8 +268,7 @@ static void transmit_chars(struct uart_nuc970_port *up)
 
 static unsigned int check_modem_status(struct uart_nuc970_port *up)
 {
-	unsigned int status = 0;//serial_in(up, UART_MSR);
-
+	unsigned int status = 0;
 
 	if (0) {
 
@@ -303,7 +317,7 @@ static unsigned int nuc970serial_get_mctrl(struct uart_port *port)
 
 	status = check_modem_status(up);
 	
-	// write me...
+
 	return ret;
 }
 
@@ -312,7 +326,7 @@ static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	unsigned char mcr = 0;
 
-	// write me...
+
 
 	serial_out(up, UART_REG_MCR, mcr);
 }
@@ -333,18 +347,19 @@ static void nuc970serial_break_ctl(struct uart_port *port, int break_state)
 	spin_unlock_irqrestore(&up->port.lock, flags);
 }
 
-
 static int nuc970serial_startup(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	struct tty_struct *tty = port->state->port.tty;
 	int retval;
 	
-	/* GPE0, GPE1 */
-	__raw_writel((__raw_readl(REG_MFP_GPE_L) & 0xffffff00) | 0x99, REG_MFP_GPE_L);
-	
+	//printk("\n nuc970serial_startup() \n");
+
+	//  TODO: configure pin function and enable engine clock
+	//nuc970serial_pinctrl();
+
 	/* Reset FIFO */
-//	serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
+	serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
 
 	/* Clear pending interrupts (not every bit are write 1 clear though...) */
 	serial_out(up, UART_REG_ISR, 0xFFFFFFFF);
@@ -399,7 +414,6 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	unsigned int lcr = 0;
-	//unsigned char cval, fcr = 0;
 	unsigned long flags;
 	unsigned int baud, quot;
 
@@ -431,6 +445,7 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 	baud = uart_get_baud_rate(port, termios, old,
 				  port->uartclk / 16 / 0xffff,
 				  port->uartclk / 16);
+
 	quot = nuc970serial_get_divisor(port, baud);
 
 	/*
@@ -462,18 +477,31 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 	}
 
 	serial_out(up, UART_REG_BAUD, quot | 0x30000000);
-//	serial_out(up, UART_REG_IER, serial_in(up, UART_REG_IER) | RDA_IEN);
 	serial_out(up, UART_REG_LCR, lcr);		
 
-	//nuc970serial_set_mctrl(&up->port, up->port.mctrl);
 	spin_unlock_irqrestore(&up->port.lock, flags);
 
 }
 
 static void
-nuc970serial_set_ldisc(struct tty_struct *tty)
+nuc970serial_set_ldisc(struct uart_port *port, int ld)
 {
-	// write me...
+	//struct nuc970_serial_port *uart = (struct nuc970_serial_port *)port;
+	//unsigned int val;
+
+	#if 0
+	switch (ld) {
+	case N_IRDA:
+		//val = UART_GET_GCTL(uart);
+		//val |= (UMOD_IRDA | RPOLC);
+		//UART_PUT_GCTL(uart, val);
+		break;
+	default:
+		//val = UART_GET_GCTL(uart);
+		//val &= ~(UMOD_MASK | RPOLC);
+		//UART_PUT_GCTL(uart, val);
+	}
+	#endif
 }
 
 static void
@@ -482,7 +510,6 @@ nuc970serial_pm(struct uart_port *port, unsigned int state,
 {
 	struct uart_nuc970_port *p = (struct uart_nuc970_port *)port;
 
-	// write me...
 
 	if (p->pm)
 		p->pm(port, state, oldstate);
@@ -508,8 +535,6 @@ static int nuc970serial_request_port(struct uart_port *port)
 
 static void nuc970serial_config_port(struct uart_port *port, int flags)
 {
-	//struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
-	//int probeflags = PROBE_ANY;
 	int ret;
 
 	/*
@@ -520,7 +545,7 @@ static void nuc970serial_config_port(struct uart_port *port, int flags)
 	if (ret < 0)
 		return;
 	port->type = PORT_NUC970;
-	// write me... configure port. maybe enable interrupt here?
+
 
 }
 
@@ -547,7 +572,15 @@ void nuc970serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs48
 	spin_lock(&port->lock);
 
 	p->rs485 = *rs485conf;
-	if(rs485conf->flags & SER_RS485_ENABLED) {
+
+	if (p->rs485.delay_rts_before_send >= 1000)
+		p->rs485.delay_rts_before_send = 1000;
+
+	serial_out(p, UART_FUN_SEL, (serial_in(p, UART_FUN_SEL) & ~FUN_SEL_Msk) );
+		
+	if(rs485conf->flags & SER_RS485_ENABLED)
+	{
+		serial_out(p, UART_FUN_SEL, (serial_in(p, UART_FUN_SEL) | FUN_SEL_RS485) );
 		rs485_start_rx(p);	// stay in Rx mode 	
 	}
 
@@ -593,7 +626,7 @@ static struct uart_ops nuc970serial_ops = {
 	.startup	= nuc970serial_startup,
 	.shutdown	= nuc970serial_shutdown,
 	.set_termios	= nuc970serial_set_termios,
-//	.set_ldisc	= nuc970serial_set_ldisc,
+	.set_ldisc	= nuc970serial_set_ldisc,
 	.pm		= nuc970serial_pm,
 	.type		= nuc970serial_type,
 	.release_port	= nuc970serial_release_port,
@@ -604,31 +637,16 @@ static struct uart_ops nuc970serial_ops = {
 
 };
 
-static struct uart_port nuc970_default_serial_ports[UART_NR] = {
-	{
-		.membase	= (void *) NUC970_VA_UART,
-		.iobase		= NUC970_VA_UART,
-		.iotype		= SERIAL_IO_MEM,
-		.irq		= IRQ_UART0,
-		.uartclk	= 12000000,				
-		.fifosize	= 16,
-		.ops		= &nuc970serial_ops,
-		.flags		= ASYNC_BOOT_AUTOCONF,
-		.line		= 0,
-	}
-};
-
 static void __init nuc970serial_init_ports(void)
 {
 	static int first = 1;
 	int i;
 	
 	// enable clock
-	clk_prepare(clk_get(NULL, "uart0_eclk"));
-	clk_enable(clk_get(NULL, "uart0_eclk"));
-	
-	clk_prepare(clk_get(NULL, "uart0"));
-	clk_enable(clk_get(NULL, "uart0"));
+	clk = clk_get(NULL, "uart0");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
 	
 	if (!first)
 		return;
@@ -639,10 +657,12 @@ static void __init nuc970serial_init_ports(void)
 
 		up->port.line = i;
 		spin_lock_init(&up->port.lock);
-		up->port.ops = nuc970_default_serial_ports[i].ops;		
-		up->port.iobase = nuc970_default_serial_ports[i].iobase;
-		up->port.membase = nuc970_default_serial_ports[i].membase;
-		up->port.uartclk = nuc970_default_serial_ports[i].uartclk;	
+
+		up->port.ops = &nuc970serial_ops;
+		up->port.iobase = (long)(NUC970_VA_UART + (i*0x100));
+		up->port.membase = NUC970_VA_UART + (i*0x100);
+		up->port.uartclk = 12000000;
+	
 	}
 }
 
@@ -771,6 +791,269 @@ void nuc970serial_resume_port(int line)
 	uart_resume_port(&nuc970serial_reg, &up->port);
 }
 
+static int nuc970serial_pinctrl(struct platform_device *pdev)
+{
+	struct pinctrl *p = NULL;
+	int retval = 0;  
+
+if(pdev->id == 1)
+{
+#if defined (CONFIG_NUC970_UART1_PE)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-PE");
+#elif defined (CONFIG_NUC970_UART1_FC_PE)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-fc-PE");
+#elif defined (CONFIG_NUC970_UART1_FF_PE)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart1-ff-PE");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 2)
+{
+#if defined (CONFIG_NUC970_UART2)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart2");
+#elif defined (CONFIG_NUC970_UART2_FC)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart2_fc");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 4)
+{
+#if defined (CONFIG_NUC970_UART4_PC)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart4-PC");
+#elif defined (CONFIG_NUC970_UART4_FC_PC)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart4-fc-PC");
+#elif defined (CONFIG_NUC970_UART4_FH)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart4-PH");
+#elif defined (CONFIG_NUC970_UART4_FC_PH)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart4-fc-PH");
+#elif defined (CONFIG_NUC970_UART4_PI)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart4-PI");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 6)
+{
+#if defined (CONFIG_NUC970_UART6_PB)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart6-PB");
+#elif defined (CONFIG_NUC970_UART6_FC_PB)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart6-fc-PB");
+#elif defined (CONFIG_NUC970_UART6_PG)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart6-PG");
+#elif defined (CONFIG_NUC970_UART6_FC_PG)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart6-fc-PG");
+#elif defined (CONFIG_NUC970_UART6_FC_PB)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart6-fc-PB");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 7)
+{
+#if defined (CONFIG_NUC970_UART7_PG)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart7-PG");
+#elif defined (CONFIG_NUC970_UART7_PI)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart7-PI");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 8)
+{
+#if defined (CONFIG_NUC970_UART8_PE)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-PE");
+#elif defined (CONFIG_NUC970_UART8_FC_PE)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-fc-PE");
+#elif defined (CONFIG_NUC970_UART8_PH)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-PH");
+#elif defined (CONFIG_NUC970_UART8_FC_PH)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-fc-PH");
+#elif defined (CONFIG_NUC970_UART8_PI)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-PI");
+#elif defined (CONFIG_NUC970_UART8_FC_PI)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart8-fc-PI");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 9)
+{
+#if defined (CONFIG_NUC970_UART9_PD0)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart9-PD0");
+#elif defined (CONFIG_NUC970_UART9_PD1)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart9-PD1");
+#elif defined (CONFIG_NUC970_UART9_PH)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart9-PH");
+#endif
+
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(p);
+	}
+}
+else if(pdev->id == 10)
+{
+#if defined (CONFIG_NUC970_UART10_PB0)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart10-PB0");
+#elif defined (CONFIG_NUC970_UART10_PB1)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart10-PB1");
+#elif defined (CONFIG_NUC970_UART10_FC_PB1)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart10-fc-PB1");
+#elif defined (CONFIG_NUC970_UART10_PC)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart10-PC");
+#elif defined (CONFIG_NUC970_UART10_FC_PC)
+	p = devm_pinctrl_get_select(&pdev->dev, "uart10-fc-PC");
+#endif
+
+    if (IS_ERR(p))
+    {
+        dev_err(&pdev->dev, "unable to reserve pin\n");
+        retval = PTR_ERR(p);
+    }
+}
+	return retval;
+}
+
+void nuc970serial_set_clock(void)
+{
+	clk = clk_get(NULL, "uart0");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart0_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+
+	#ifdef CONFIG_NUC970_UART1
+	clk = clk_get(NULL, "uart1");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart1_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART2
+	clk = clk_get(NULL, "uart2");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart2_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART3
+	clk = clk_get(NULL, "uart3");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart3_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART4
+	clk = clk_get(NULL, "uart4");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart4_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART5
+	clk = clk_get(NULL, "uart5");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart5_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART6
+	clk = clk_get(NULL, "uart6");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart6_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART7
+	clk = clk_get(NULL, "uart7");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart7_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART8
+	clk = clk_get(NULL, "uart8");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart8_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART9
+	clk = clk_get(NULL, "uart9");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart9_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+
+	#ifdef CONFIG_NUC970_UART10
+	clk = clk_get(NULL, "uart10");	
+	clk_prepare(clk);
+	clk_enable(clk);
+
+	clk = clk_get(NULL, "uart10_eclk");	
+	clk_prepare(clk);
+	clk_enable(clk);
+	#endif
+	
+}
+
 /*
  * Register a set of serial devices attached to a platform device.  The
  * list is terminated with a zero flags entry, which means we expect
@@ -780,15 +1063,20 @@ static int nuc970serial_probe(struct platform_device *pdev)
 {
 	struct plat_nuc970serial_port *p = pdev->dev.platform_data;
 	struct uart_nuc970_port *up;
-	//struct uart_port port;
 
-	int ret, i;//, irqflag = 0;
+	int ret, i, retval;
 
 //	memset(&port, 0, sizeof(struct uart_port));
 
+	retval = nuc970serial_pinctrl(pdev);
+	if(retval != 0)
+		return retval;
 
-//	for (i = 0; p /*&& p->flags != 0*/; p++, i++) {
-	for (i = 0; i < UART_NR && p; p++, i++) {
+	nuc970serial_set_clock();
+
+	i = pdev->id;
+
+	//for (i = 0; i < UART_NR && p; p++, i++) {
 		up = &nuc970serial_ports[i];
 		
 		up->port.line 			= i;
@@ -809,7 +1097,12 @@ static int nuc970serial_probe(struct platform_device *pdev)
 
 		ret = uart_add_one_port(&nuc970serial_reg, &up->port);
 
-	}
+
+	//}
+
+
+
+	
 	return 0;
 }
 

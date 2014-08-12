@@ -171,17 +171,126 @@ static struct platform_device nuc970_device_usbgadget = {
 /* Initial serial platform data */
 static struct plat_nuc970serial_port nuc970_uart_data[] = {
         [0] = NUC970SERIAL_PORT(UART0),
+        [1] = NUC970SERIAL_PORT(UART1),
+        [2] = NUC970SERIAL_PORT(UART2),
+        [3] = NUC970SERIAL_PORT(UART3),
+        [4] = NUC970SERIAL_PORT(UART4),
+        [5] = NUC970SERIAL_PORT(UART5),
+        [6] = NUC970SERIAL_PORT(UART6),
+        [7] = NUC970SERIAL_PORT(UART7),
+        [8] = NUC970SERIAL_PORT(UART8),
+        [9] = NUC970SERIAL_PORT(UART9),
+        [10] = NUC970SERIAL_PORT(UART10),
         {},
 };
 
-static struct platform_device nuc970_serial_device = {
+static struct platform_device nuc970_serial_device0 = {
         .name			= "nuc970-uart",
         .id			= 0,
         .dev			= {
-                .platform_data	= nuc970_uart_data,
+                .platform_data	= &nuc970_uart_data[0],
         },
 };
 
+#ifdef CONFIG_NUC970_UART1
+static struct platform_device nuc970_serial_device1 = {
+        .name			= "nuc970-uart",
+        .id			= 1,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[1],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART2
+static struct platform_device nuc970_serial_device2 = {
+        .name			= "nuc970-uart",
+        .id			= 2,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[2],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART3
+static struct platform_device nuc970_serial_device3 = {
+        .name			= "nuc970-uart",
+        .id			= 3,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[3],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART4
+static struct platform_device nuc970_serial_device4 = {
+        .name			= "nuc970-uart",
+        .id			= 4,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[4],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART5
+static struct platform_device nuc970_serial_device5 = {
+        .name			= "nuc970-uart",
+        .id			= 5,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[5],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART6
+static struct platform_device nuc970_serial_device6 = {
+        .name			= "nuc970-uart",
+        .id			= 6,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[6],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART7
+static struct platform_device nuc970_serial_device7 = {
+        .name			= "nuc970-uart",
+        .id			= 7,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[7],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART8
+static struct platform_device nuc970_serial_device8 = {
+        .name			= "nuc970-uart",
+        .id			= 8,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[8],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART9
+static struct platform_device nuc970_serial_device9 = {
+        .name			= "nuc970-uart",
+        .id			= 9,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[9],
+        },
+};
+#endif
+
+#ifdef CONFIG_NUC970_UART10
+static struct platform_device nuc970_serial_device10 = {
+        .name			= "nuc970-uart",
+        .id			= 10,
+        .dev			= {
+                .platform_data	= &nuc970_uart_data[10],
+        },
+};
+#endif
 
 /* LCD controller*/
 #ifdef CONFIG_FB_NUC970
@@ -916,7 +1025,48 @@ struct platform_device nuc970_device_gpio = {
 #endif
 
 static struct platform_device *nuc970_public_dev[] __initdata = {
-        &nuc970_serial_device,
+        &nuc970_serial_device0,
+
+#ifdef CONFIG_NUC970_UART1
+		&nuc970_serial_device1,
+#endif
+
+#ifdef CONFIG_NUC970_UART2
+		&nuc970_serial_device2,
+#endif
+
+#ifdef CONFIG_NUC970_UART3
+		&nuc970_serial_device3,
+#endif
+
+#ifdef CONFIG_NUC970_UART4
+		&nuc970_serial_device4,
+#endif
+
+#ifdef CONFIG_NUC970_UART5
+		&nuc970_serial_device5,
+#endif
+
+#ifdef CONFIG_NUC970_UART6
+		&nuc970_serial_device6,
+#endif
+
+#ifdef CONFIG_NUC970_UART7
+		&nuc970_serial_device7,
+#endif
+
+#ifdef CONFIG_NUC970_UART8
+		&nuc970_serial_device8,
+#endif
+
+#ifdef CONFIG_NUC970_UART9
+		&nuc970_serial_device9,
+#endif
+
+#ifdef CONFIG_NUC970_UART10
+		&nuc970_serial_device10,
+#endif
+
 #ifdef CONFIG_USB_OHCI_HCD
         &nuc970_device_ohci,
 #endif

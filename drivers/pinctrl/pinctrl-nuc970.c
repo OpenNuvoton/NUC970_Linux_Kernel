@@ -2270,7 +2270,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart1-fc-PE",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart1",
+		.data.mux.function = "uart1_fc",
 		.data.mux.group = "uart1_1_grp",
 	},
 	{
@@ -2286,7 +2286,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart1-ff-PE",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart1",
+		.data.mux.function = "uart1_fc",
 		.data.mux.group = "uart1_1_grp",
 	},
 	{
@@ -2294,7 +2294,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart1-ff-PE",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart1",
+		.data.mux.function = "uart1_ff",
 		.data.mux.group = "uart1_2_grp",
 	},
 	{
@@ -2314,11 +2314,11 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "uart2_0_grp",
 	},
 	{
-		.dev_name = "nuc970-uart",
+		.dev_name = "nuc970-uart.2",
 		.name = "uart2_fc",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart2",
+		.data.mux.function = "uart2_fc",
 		.data.mux.group = "uart2_1_grp",
 	},
 	{
@@ -2350,7 +2350,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart4-fc-PC",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart4",
+		.data.mux.function = "uart4_fc",
 		.data.mux.group = "uart4_1_grp",
 	},
 	{
@@ -2374,7 +2374,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart4-fc-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart4",
+		.data.mux.function = "uart4_fc",
 		.data.mux.group = "uart4_3_grp",
 	},
 	{
@@ -2399,7 +2399,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "uart6",
-		.data.mux.group = "uart6_2_grp",
+		.data.mux.group = "uart6_0_grp",
 	},
 	{
 		.dev_name = "nuc970-uart.6",
@@ -2407,15 +2407,15 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "uart6",
-		.data.mux.group = "uart6_2_grp",
+		.data.mux.group = "uart6_0_grp",
 	},
 	{
 		.dev_name = "nuc970-uart.6",
 		.name = "uart6-fc-PB",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart6",
-		.data.mux.group = "uart6_3_grp",
+		.data.mux.function = "uart6_fc",
+		.data.mux.group = "uart6_1_grp",
 	},
 	{
 		.dev_name = "nuc970-uart.6",
@@ -2438,7 +2438,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart6-fc-PG",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart6",
+		.data.mux.function = "uart6_fc",
 		.data.mux.group = "uart6_3_grp",
 	},
 	{
@@ -2478,7 +2478,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart8-fc-PE",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart8",
+		.data.mux.function = "uart8_fc",
 		.data.mux.group = "uart8_1_grp",
 	},
 	{
@@ -2502,7 +2502,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart8-fc-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart8",
+		.data.mux.function = "uart8_fc",
 		.data.mux.group = "uart8_3_grp",
 	},
 	{
@@ -2526,7 +2526,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart8-fc-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart8",
+		.data.mux.function = "uart8_fc",
 		.data.mux.group = "uart8_5_grp",
 	},
 	{
@@ -2582,7 +2582,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart10-fc-PB1",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart10",
+		.data.mux.function = "uart10_fc",
 		.data.mux.group = "uart10_2_grp",
 	},
 	{
@@ -2606,7 +2606,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "uart10-fc-PC",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "uart10",
+		.data.mux.function = "uart10_fc",
 		.data.mux.group = "uart10_4_grp",
 	},
 	{

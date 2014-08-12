@@ -17,12 +17,275 @@ config SERIAL_NUC970
 	---help---
 	  This selects NUC970 serial driver.
 
-config SERIAL_NUC970_UARTS
-	int "Number of UART ports"
+config NUC970_UART1
+	bool "NUC970 UART1 support"
 	depends on SERIAL_NUC970=y
-	default 1
 	help
-	  Set the uart number of NUC970 SoC
+	  This selects NUC970 uart1 driver
+
+config NUC970_UART1_PE
+	bool "NUC970 UART1 port: Tx:PE2, Rx:PE3"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART1=y)
+	help
+	  This selects NUC970 uart1 port:
+	  	Tx:PE2; Rx:PE3
+
+config NUC970_UART1_FC_PE
+	bool "NUC970 UART1 port: Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART1=y)
+	help
+	  This selects NUC970 uart1 port:
+	  	Tx:PE2; Rx:PE3; RTS:PE4; CTS:PE5
+
+config NUC970_UART1_FF_PE
+	bool "NUC970 UART1 port: Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART1=y)
+	help
+	  This selects NUC970 uart1 port:
+	  	Tx:PE2; Rx:PE3; RTS:PE4; CTS:PE5; DTR:PE6; DSR:PE7; nRI:PE8; nCD:PE9
+
+config NUC970_UART2
+	bool "NUC970 UART2 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart2 driver
+
+config NUC970_UART2_PF
+	bool "NUC970 UART2 port: Tx:PF11, Rx:PF12"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART2=y)
+	help
+	  This selects NUC970 uart2 port:
+	  	Tx:PF11; Rx:PF12
+	  	
+config NUC970_UART2_FC_PF
+	bool "NUC970 UART2 port: Tx:PF11, Rx:PF12, CTS:PF13, RTS:PF14"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART2=y)
+	help
+	  This selects NUC970 uart2 port:
+	  	Tx:PF11, Rx:PF12, CTS:PF13, RTS:PF14	  	
+
+config NUC970_UART3
+	bool "NUC970 UART3 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart3 driver
+
+config NUC970_UART4
+	bool "NUC970 UART4 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart4 driver
+
+config NUC970_UART4_PC
+	bool "NUC970 UART4 port: Tx:PC10, Rx:PC11"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART4=y)
+	help
+	  This selects NUC970 uart4 port:
+	  	Tx:PC10, Rx:PC11
+
+config NUC970_UART4_FC_PC
+	bool "NUC970 UART4 port: Tx:PC10, Rx:PC11, CTS:PC12, RTS:PC13"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART4=y)
+	help
+	  This selects NUC970 uart4 port:
+	  	Tx:PC10, Rx:PC11, CTS:PC12, RTS:PC13
+
+config NUC970_UART4_PH
+	bool "NUC970 UART4 port: Tx:PH8, Rx:PH9"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART4=y)
+	help
+	  This selects NUC970 uart4 port:
+	  	Tx:PH8, Rx:PH9
+
+config NUC970_UART4_FC_PH
+	bool "NUC970 UART4 port: Tx:PH8, Rx:PH9, CTS:PH10, RTS:PH11"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART4=y)
+	help
+	  This selects NUC970 uart4 port:
+	  	Tx:PH8, Rx:PH9, CTS:PH10, RTS:PH11
+
+config NUC970_UART4_PI
+	bool "NUC970 UART4 port: Tx:PI9, Rx:PI10"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART4=y)
+	help
+	  This selects NUC970 uart4 port:
+	  	Tx:PI9, Rx:PI10
+
+config NUC970_UART5
+	bool "NUC970 UART5 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart5 driver
+	  
+config NUC970_UART6
+	bool "NUC970 UART6 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart6 driver
+
+config NUC970_UART6_PB
+	bool "NUC970 UART6 port: Tx:PB2, Rx:PB3"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART6=y)
+	help
+	  This selects NUC970 uart6 port:
+	  	Tx:PB2, Rx:PB3
+	  	
+config NUC970_UART6_FC_PB
+	bool "NUC970 UART6 port: Tx:PB2, Rx:PB3, CTS:PB4, RTS:PB5"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART6=y)
+	help
+	  This selects NUC970 uart6 port:
+	  	Tx:PB2, Rx:PB3, CTS:PB4, RTS:PB5
+
+config NUC970_UART6_PG
+	bool "NUC970 UART6 port: Tx:PG11, Rx:PG12"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART6=y)
+	help
+	  This selects NUC970 uart6 port:
+	  	Tx:PG11, Rx:PG12
+	  	
+config NUC970_UART6_FC_PG
+	bool "NUC970 UART6 port: Tx:PG11, Rx:PG12, CTS:PG13, RTS:PG14"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART6=y)
+	help
+	  This selects NUC970 uart6 port:
+	  	Tx:PG11, Rx:PG12, CTS:PG13, RTS:PG14
+
+config NUC970_UART7
+	bool "NUC970 UART7 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart7 driver
+
+config NUC970_UART7_PG
+	bool "NUC970 UART7 port: Tx:PG4, Rx:PG5"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART7=y)
+	help
+	  This selects NUC970 uart7 port:
+	  	Tx:PG4, Rx:PG5
+	  	
+config NUC970_UART7_PI
+	bool "NUC970 UART7 port: Tx:PI1, Rx:PI2"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART7=y)
+	help
+	  This selects NUC970 uart7 port:
+	  	Tx:PI1, Rx:PI2
+
+config NUC970_UART8
+	bool "NUC970 UART8 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart8 driver
+
+config NUC970_UART8_PE
+	bool "NUC970 UART8 port: Tx:PE10, Rx:PE11"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PE10, Rx:PE11
+
+config NUC970_UART8_FC_PE
+	bool "NUC970 UART8 port: Tx:PE10, Rx:PE11, RTC:PE12, CTS:PE13"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PE10, Rx:PE11, RTC:PE12, CTS:PE13
+
+config NUC970_UART8_PH
+	bool "NUC970 UART8 port: Tx:PH12, Rx:PH13"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PH12, Rx:PH13
+
+config NUC970_UART8_FC_PH
+	bool "NUC970 UART8 port: Tx:PH12, Rx:PH13, RTC:PH14, CTS:PH15"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PH12, Rx:PH13, RTC:PH14, CTS:PH15
+
+config NUC970_UART8_PI
+	bool "NUC970 UART8 port: Tx:PI12, Rx:PI13"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PI12, Rx:PI13
+
+config NUC970_UART8_FC_PI
+	bool "NUC970 UART8 port: Tx:PI12, Rx:PI13, RTC:PI14, CTS:PI15"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART8=y)
+	help
+	  This selects NUC970 uart8 port:
+	  	Tx:PI12, Rx:PI13, RTC:PI14, CTS:PI15
+
+config NUC970_UART9
+	bool "NUC970 UART9 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart9 driver
+
+config NUC970_UART9_PD0
+	bool "NUC970 UART9 port: Tx:PD11, Rx:PD12"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART9=y)
+	help
+	  This selects NUC970 uart9 port:
+	  	Tx:PD11, Rx:PD12
+
+config NUC970_UART9_PD2
+	bool "NUC970 UART9 port: Tx:PD14, Rx:PD14"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART9=y)
+	help
+	  This selects NUC970 uart9 port:
+	  	Tx:PD14, Rx:PD15
+
+config NUC970_UART9_PH
+	bool "NUC970 UART9 port: Tx:PH2, Rx:PH3"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART9=y)
+	help
+	  This selects NUC970 uart9 port:
+	  	Tx:PH2, Rx:PH3
+
+config NUC970_UART10
+	bool "NUC970 UART10 support"
+	depends on SERIAL_NUC970=y
+	help
+	  This selects NUC970 uart10 driver
+
+config NUC970_UART10_PB0
+	bool "NUC970 UART10 port: Tx:PB10, Rx:PB11"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART10=y)
+	help
+	  This selects NUC970 uart10 port:
+	  	Tx:PB10, Rx:PB11
+
+config NUC970_UART10_PB1
+	bool "NUC970 UART10 port: Tx:PB12, Rx:PB13"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART10=y)
+	help
+	  This selects NUC970 uart10 port:
+	  	Tx:PB10, Rx:PB11
+
+config NUC970_UART10_FC_PB1
+	bool "NUC970 UART10 port: Tx:PB12, Rx:PB13, CTS:PB14, RTS:PB15"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART10=y)
+	help
+	  This selects NUC970 uart10 port:
+	  	Tx:PB10, Rx:PB11, CTS:PB14, RTS:PB15
+
+config NUC970_UART10_PC
+	bool "NUC970 UART10 port: Tx:PC6, Rx:PC7"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART10=y)
+	help
+	  This selects NUC970 uart10 port:
+	  	Tx:PC6, Rx:PC7
+	  
+config NUC970_UART10_FC_PC
+	bool "NUC970 UART10 port: Tx:PC6, Rx:PC7, CTS:PC8, RTS:PC9"
+	depends on (SERIAL_NUC970=y) && (NUC970_UART10=y)
+	help
+	  This selects NUC970 uart10 port:
+	  	Tx:PC6, Rx:PC7, CTS:PC8, RTS:PC9	  
 
 config SERIAL_NUC970_CONSOLE
 	bool "Console on NUC970 serial port"
