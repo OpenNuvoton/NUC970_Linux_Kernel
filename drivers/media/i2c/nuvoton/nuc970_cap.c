@@ -1046,11 +1046,12 @@ int capture_init(struct nuvoton_vin_device* cam)
 {
 	//u32 i32Div;
 	//struct nuvoton_vin_sensor* s = &cam->sensor;
-	struct clk *clk;
+	struct clk *clk,*clkcap,*clkaplldiv,*clkmux;
+	int ret;
 	//u32 u32SensorFreq=24000000;
 	ENTRY();
 	
-	
+	#if 0
 	clk = clk_get(NULL, "cap_eclk");
 	if (IS_ERR(clk)) {	
 		return -ENOENT;
@@ -1065,6 +1066,28 @@ int capture_init(struct nuvoton_vin_device* cam)
 	clk_prepare(clk_get(NULL, "sensor_hclk"));
         clk_enable(clk_get(NULL, "sensor_hclk"));
 
+
+	clkmux = clk_get(NULL, "cap_eclk_mux");
+        if (IS_ERR(clkmux)) {
+			printk(KERN_ERR "nuc970-audio:failed to get cap clock source\n");
+			ret = PTR_ERR(clkmux);
+			return ret;
+		}
+	clkcap = clk_get(NULL, "cap_eclk");
+        if (IS_ERR(clkcap)) {
+			printk(KERN_ERR "nuc970-cap:failed to get cap clock source\n");
+			ret = PTR_ERR(clkcap);
+			return ret;
+		}
+	clkaplldiv = clk_get(NULL, "cap_aplldiv");
+        if (IS_ERR(clkaplldiv)) {
+			printk(KERN_ERR "nuc970-cap:failed to get cap clock source\n");
+			ret = PTR_ERR(clkaplldiv);
+			return ret;
+		}		
+		clk_set_parent(clkmux, clkaplldiv);
+		clk_set_rate(clkcap, 24000000);
+	#endif
 	/* Muti-pin setting */	
 
 	/* MFP_GPI_L : 3=SEN_CLK0, 4=SEN_PCLK, 5=SEN_HSYNC, 6=SEN_VSYNC, 7=SEN_FIFLD */
