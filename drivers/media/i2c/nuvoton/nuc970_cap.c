@@ -1046,8 +1046,10 @@ int capture_init(struct nuvoton_vin_device* cam)
 {
 	//u32 i32Div;
 	//struct nuvoton_vin_sensor* s = &cam->sensor;
+	#if 0
 	struct clk *clk,*clkcap,*clkaplldiv,*clkmux;
 	int ret;
+	#endif
 	//u32 u32SensorFreq=24000000;
 	ENTRY();
 	
