@@ -31,11 +31,11 @@ choice
 	  Select UART1 multi-function pin.
 
 	config NUC970_UART1_PE
-		bool "NUC970 UART1 port: Tx:PE2, Rx:PE3"
+		bool "Tx:PE2, Rx:PE3"
 	config NUC970_UART1_FC_PE
-		bool "NUC970 UART1 port: Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5"
+		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5"
 	config NUC970_UART1_FF_PE
-		bool "NUC970 UART1 port: Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"	
+		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"	
 endchoice
 
 config NUC970_UART2
@@ -52,9 +52,9 @@ choice
 	  Select UART2 multi-function pin.
 
 	config NUC970_UART2_PF
-		bool "NUC970 UART2 port: Tx:PF11, Rx:PF12"
+		bool "Tx:PF11, Rx:PF12"
 	config NUC970_UART2_FC_PF
-		bool "NUC970 UART2 port: Tx:PF11, Rx:PF12, CTS:PF13, RTS:PF14"
+		bool "Tx:PF11, Rx:PF12, CTS:PF13, RTS:PF14"
 endchoice
 
 config NUC970_UART3
@@ -77,15 +77,15 @@ choice
 	  Select UART4 multi-function pin.
 
 	config NUC970_UART4_PC
-		bool "NUC970 UART4 port: Tx:PC10, Rx:PC11"
+		bool "Tx:PC10, Rx:PC11"
 	config NUC970_UART4_FC_PC
-		bool "NUC970 UART4 port: Tx:PC10, Rx:PC11, CTS:PC12, RTS:PC13"
+		bool "Tx:PC10, Rx:PC11, CTS:PC12, RTS:PC13"
 	config NUC970_UART4_PH
-		bool "NUC970 UART4 port: Tx:PH8, Rx:PH9"
+		bool "Tx:PH8, Rx:PH9"
 	config NUC970_UART4_FC_PH
-		bool "NUC970 UART4 port: Tx:PH8, Rx:PH9, CTS:PH10, RTS:PH11"
+		bool "Tx:PH8, Rx:PH9, CTS:PH10, RTS:PH11"
 	config NUC970_UART4_PI
-		bool "NUC970 UART4 port: Tx:PI9, Rx:PI10"
+		bool "Tx:PI9, Rx:PI10"
 endchoice
 
 config NUC970_UART5
@@ -108,13 +108,13 @@ choice
 	  Select UART6 multi-function pin.
 
 	config NUC970_UART6_PB
-		bool "NUC970 UART6 port: Tx:PB2, Rx:PB3"
+		bool "Tx:PB2, Rx:PB3"
 	config NUC970_UART6_FC_PB
-		bool "NUC970 UART6 port: Tx:PB2, Rx:PB3, CTS:PB4, RTS:PB5"
+		bool "Tx:PB2, Rx:PB3, CTS:PB4, RTS:PB5"
 	config NUC970_UART6_PG
-		bool "NUC970 UART6 port: Tx:PG11, Rx:PG12"
+		bool "Tx:PG11, Rx:PG12"
 	config NUC970_UART6_FC_PG
-		bool "NUC970 UART6 port: Tx:PG11, Rx:PG12, CTS:PG13, RTS:PG14"
+		bool "Tx:PG11, Rx:PG12, CTS:PG13, RTS:PG14"
 endchoice
 
 config NUC970_UART7
@@ -131,9 +131,9 @@ choice
 	  Select UART7 multi-function pin.
 
 	config NUC970_UART7_PG
-		bool "NUC970 UART7 port: Tx:PG4, Rx:PG5"
+		bool "Tx:PG4, Rx:PG5"
 	config NUC970_UART7_PI
-		bool "NUC970 UART7 port: Tx:PI1, Rx:PI2"
+		bool "Tx:PI1, Rx:PI2"
 endchoice
 
 config NUC970_UART8
@@ -150,17 +150,17 @@ choice
 	  Select UART8 multi-function pin.
 
 	config NUC970_UART8_PE
-		bool "NUC970 UART8 port: Tx:PE10, Rx:PE11"
+		bool "Tx:PE10, Rx:PE11"
 	config NUC970_UART8_FC_PE
-		bool "NUC970 UART8 port: Tx:PE10, Rx:PE11, RTC:PE12, CTS:PE13"
+		bool "Tx:PE10, Rx:PE11, RTC:PE12, CTS:PE13"
 	config NUC970_UART8_PH
-		bool "NUC970 UART8 port: Tx:PH12, Rx:PH13"
+		bool "Tx:PH12, Rx:PH13"
 	config NUC970_UART8_FC_PH
-		bool "NUC970 UART8 port: Tx:PH12, Rx:PH13, RTC:PH14, CTS:PH15"
+		bool "Tx:PH12, Rx:PH13, RTC:PH14, CTS:PH15"
 	config NUC970_UART8_PI
-		bool "NUC970 UART8 port: Tx:PI12, Rx:PI13"
+		bool "Tx:PI12, Rx:PI13"
 	config NUC970_UART8_FC_PI
-		bool "NUC970 UART8 port: Tx:PI12, Rx:PI13, RTC:PI14, CTS:PI15"
+		bool "Tx:PI12, Rx:PI13, RTC:PI14, CTS:PI15"
 endchoice
 
 config NUC970_UART9
@@ -177,11 +177,11 @@ choice
 	  Select UART9 multi-function pin.
 
 	config NUC970_UART9_PD0
-		bool "NUC970 UART9 port: Tx:PD11, Rx:PD12"
+		bool "Tx:PD11, Rx:PD12"
 	config NUC970_UART9_PD2
-		bool "NUC970 UART9 port: Tx:PD14, Rx:PD14"
+		bool "Tx:PD14, Rx:PD14"
 	config NUC970_UART9_PH
-		bool "NUC970 UART9 port: Tx:PH2, Rx:PH3"
+		bool "Tx:PH2, Rx:PH3"
 endchoice
 
 config NUC970_UART10
@@ -198,15 +198,15 @@ choice
 	  Select UART9 multi-function pin.
 
 	config NUC970_UART10_PB0
-		bool "NUC970 UART10 port: Tx:PB10, Rx:PB11"
+		bool "Tx:PB10, Rx:PB11"
 	config NUC970_UART10_PB1
-		bool "NUC970 UART10 port: Tx:PB12, Rx:PB13"
+		bool "Tx:PB12, Rx:PB13"
 	config NUC970_UART10_FC_PB1
-		bool "NUC970 UART10 port: Tx:PB12, Rx:PB13, CTS:PB14, RTS:PB15"
+		bool "Tx:PB12, Rx:PB13, CTS:PB14, RTS:PB15"
 	config NUC970_UART10_PC
-		bool "NUC970 UART10 port: Tx:PC6, Rx:PC7"
+		bool "Tx:PC6, Rx:PC7"
 	config NUC970_UART10_FC_PC
-		bool "NUC970 UART10 port: Tx:PC6, Rx:PC7, CTS:PC8, RTS:PC9"
+		bool "Tx:PC6, Rx:PC7, CTS:PC8, RTS:PC9"
 endchoice
 
 config SERIAL_NUC970_CONSOLE
