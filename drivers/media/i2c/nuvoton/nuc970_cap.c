@@ -495,7 +495,7 @@ static int nuvoton_vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer
 
 	cam->frame[b.index].state = F_QUEUED;
 
-	spin_lock_irqsave(&cam->queue_lock, lock_flags);
+	spin_lock_irqsave(&cam->queue_lock, lock_flags);		
 	list_add_tail(&cam->frame[b.index].frame, &cam->inqueue);
 	spin_unlock_irqrestore(&cam->queue_lock, lock_flags);
 
@@ -919,7 +919,7 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 	if (count > NUVOTON_MAX_FRAMES)
 		count = NUVOTON_MAX_FRAMES;
 
-	cam->nbuffers = count;
+	cam->nbuffers = (count);
 	while (cam->nbuffers > 0) {
 		if((buff = dma_alloc_writecombine(NULL, cam->nbuffers * PAGE_ALIGN(imagesize),
 							&pbuf, GFP_KERNEL))!=NULL)
@@ -942,9 +942,9 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 		//VDEBUG("cam->frame[%d].pbuf=0x%08x\n",i,(unsigned int)cam->frame[i].pbuf);		
 	}
 	
-	cam->frame_current=&cam->frame[0];
+	cam->frame_current=&cam->frame[0];	
 	LEAVE();
-	return cam->nbuffers;
+	return (cam->nbuffers);
 }
 
 
@@ -1089,6 +1089,11 @@ int capture_init(struct nuvoton_vin_device* cam)
 	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xF0000000) ,REG_MFP_GPI_L);
 	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0080),(GPIO_BA+0x200)); /* GPIOI7 Output mode */
 	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0080),(GPIO_BA+0x204)); /* GPIOI7 Output to high */
+	
+	/* GPIOI0 set to low  */
+	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
+	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+	__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */	
 	return 0;
 }
 
@@ -1432,11 +1437,11 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 {
 	struct nuvoton_vin_device* cam=priv;	
-	struct nuvoton_vin_frame_t** f=NULL;
+	struct nuvoton_vin_frame_t** f=NULL;	
 	ENTRY();	
-	f = &cam->frame_current;
-
+	f  = &cam->frame_current;	
 	if (cam->stream == STREAM_INTERRUPT) {
+		VDEBUG("STREAM_INTERRUPT\n");
 		cam->stream = STREAM_OFF;
 		if ((*f))
 			(*f)->state = F_QUEUED;
@@ -1445,163 +1450,44 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 
 	if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue))
 	{
+		if(cam->stream == STREAM_OFF) VDEBUG("STREAM_OFF\n");
+		VDEBUG("goto resubmit\n");
 		goto resubmit;
 	}
 
-	if (!(*f))
-	{
-		(*f) = list_entry(cam->inqueue.next, struct nuvoton_vin_frame_t,frame);		
-	}
+	//if (!(*f))
+	//{
+	//	(*f) = list_entry(cam->inqueue.next, struct nuvoton_vin_frame_t,frame);		
+	//}
 	spin_lock(&cam->queue_lock);
 	list_move_tail(&(*f)->frame, &cam->outqueue);
-	
-	if (!list_empty(&cam->inqueue))
-	{
-		(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
 
+	if (!list_empty(&cam->inqueue))
+	{						
+		(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
+		
 		/* Update New frame */
 		__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
 		
 		if(cam->vpe.PacketEnable==1)
 		{				
 			/* Setting packet buffer start address */
-			__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
+			__raw_writel((*f)->pbuf,REG_CAP_PKTBA0);
 		}
-
 		if(cam->vpe.PlanarEnable==1)
 		{
 				/* Setting planar buffer Y address, U address, V address */
-				__raw_writel((unsigned int)cam->frame_current->pbuf,REG_CAP_YBA);
+				__raw_writel((unsigned int)(*f)->pbuf,REG_CAP_YBA);
 				__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 				__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
-		}
-	}
-	else
-		(*f) = NULL;
+		}			
+	}	
+//	else
+//		(*f) = NULL;
 	spin_unlock(&cam->queue_lock);
+
 	
-				
-resubmit:		
-
-#if 0 /* for reference zc0301_core */
-struct zc0301_device* cam = urb->context;
-	struct zc0301_frame_t** f;
-	size_t imagesize;
-	u8 i;
-	int err = 0;
-
-	if (urb->status == -ENOENT)
-		return;
-
-	f = &cam->frame_current;
-
-	if (cam->stream == STREAM_INTERRUPT) {
-		cam->stream = STREAM_OFF;
-		if ((*f))
-			(*f)->state = F_QUEUED;
-		DBG(3, "Stream interrupted");
-		wake_up(&cam->wait_stream);
-	}
-
-	if (cam->state & DEV_DISCONNECTED)
-		return;
-
-	if (cam->state & DEV_MISCONFIGURED) {
-		wake_up_interruptible(&cam->wait_frame);
-		return;
-	}
-
-	if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue))
-		goto resubmit_urb;
-
-	if (!(*f))
-		(*f) = list_entry(cam->inqueue.next, struct zc0301_frame_t,
-				  frame);
-
-	imagesize = (cam->sensor.pix_format.width *
-		     cam->sensor.pix_format.height *
-		     cam->sensor.pix_format.priv) / 8;
-
-	for (i = 0; i < urb->number_of_packets; i++) {
-		unsigned int len, status;
-		void *pos;
-		u16* soi;
-		u8 sof;
-
-		len = urb->iso_frame_desc[i].actual_length;
-		status = urb->iso_frame_desc[i].status;
-		pos = urb->iso_frame_desc[i].offset + urb->transfer_buffer;
-
-		if (status) {
-			DBG(3, "Error in isochronous frame");
-			(*f)->state = F_ERROR;
-			continue;
-		}
-
-		sof = (*(soi = pos) == 0xd8ff);
-
-		PDBGG("Isochrnous frame: length %u, #%u i,", len, i);
-
-		if ((*f)->state == F_QUEUED || (*f)->state == F_ERROR)
-start_of_frame:
-			if (sof) {
-				(*f)->state = F_GRABBING;
-				(*f)->buf.bytesused = 0;
-				do_gettimeofday(&(*f)->buf.timestamp);
-				DBG(3, "SOF detected: new video frame");
-			}
-
-		if ((*f)->state == F_GRABBING) {
-			if (sof && (*f)->buf.bytesused)
-					goto end_of_frame;
-
-			if ((*f)->buf.bytesused + len > imagesize) {
-				DBG(3, "Video frame size exceeded");
-				(*f)->state = F_ERROR;
-				continue;
-			}
-
-			memcpy((*f)->bufmem+(*f)->buf.bytesused, pos, len);
-			(*f)->buf.bytesused += len;
-
-			if ((*f)->buf.bytesused == imagesize) {
-				u32 b;
-end_of_frame:
-				b = (*f)->buf.bytesused;
-				(*f)->state = F_DONE;
-				(*f)->buf.sequence= ++cam->frame_count;
-				spin_lock(&cam->queue_lock);
-				list_move_tail(&(*f)->frame, &cam->outqueue);
-				if (!list_empty(&cam->inqueue))
-					(*f) = list_entry(cam->inqueue.next,
-						       struct zc0301_frame_t,
-							  frame);
-				else
-					(*f) = NULL;
-				spin_unlock(&cam->queue_lock);
-				DBG(3, "Video frame captured: : %lu bytes",
-				       (unsigned long)(b));
-
-				if (!(*f))
-					goto resubmit_urb;
-
-				if (sof)
-					goto start_of_frame;
-			} 
-		}
-	}
-
-resubmit_urb:
-	urb->dev = cam->usbdev;
-	err = usb_submit_urb(urb, GFP_ATOMIC);
-	if (err < 0 && err != -EPERM) {
-		cam->state |= DEV_MISCONFIGURED;
-		DBG(1, "usb_submit_urb() failed");
-	}
-
-
-
-#endif
+resubmit:				
 	VDEBUG("wake_up_interruptible\n");
 	wake_up_interruptible(&cam->wait_frame);
 	__raw_writel(__raw_readl(REG_CAP_INT),REG_CAP_INT);

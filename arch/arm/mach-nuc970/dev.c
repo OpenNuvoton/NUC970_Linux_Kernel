@@ -986,8 +986,8 @@ struct platform_device nuc970_device_pinctrl = {
 #ifdef CONFIG_GPIO_NUC970 
 #ifdef CONFIG_I2C_ALGOBIT
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
-    .sda_pin = NUC970_PG1,   
-    .scl_pin = NUC970_PG0,   
+    .sda_pin = NUC970_PB1,   
+    .scl_pin = NUC970_PB0,   
     .udelay = 1, 
     .timeout = 100,   
     .sda_is_open_drain = 0,   //not support open drain mode
