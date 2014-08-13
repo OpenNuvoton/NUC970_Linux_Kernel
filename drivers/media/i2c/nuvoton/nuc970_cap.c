@@ -1046,14 +1046,16 @@ int capture_init(struct nuvoton_vin_device* cam)
 {
 	//u32 i32Div;
 	//struct nuvoton_vin_sensor* s = &cam->sensor;
-	#if 0
-	struct clk *clk,*clkcap,*clkaplldiv,*clkmux;
+
+	struct clk *clk;
+	#if 0	
+	struct clk *clkcap,*clkaplldiv,*clkmux;
 	int ret;
 	#endif
 	//u32 u32SensorFreq=24000000;
 	ENTRY();
 	
-	#if 0
+
 	clk = clk_get(NULL, "cap_eclk");
 	if (IS_ERR(clk)) {	
 		return -ENOENT;
@@ -1068,7 +1070,7 @@ int capture_init(struct nuvoton_vin_device* cam)
 	clk_prepare(clk_get(NULL, "sensor_hclk"));
         clk_enable(clk_get(NULL, "sensor_hclk"));
 
-
+#if 0
 	clkmux = clk_get(NULL, "cap_eclk_mux");
         if (IS_ERR(clkmux)) {
 			printk(KERN_ERR "nuc970-audio:failed to get cap clock source\n");
@@ -1480,10 +1482,11 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 		goto resubmit;
 	}
 
-	//if (!(*f))
-	//{
-	//	(*f) = list_entry(cam->inqueue.next, struct nuvoton_vin_frame_t,frame);		
-	//}
+	if (!(*f))
+	{
+		goto resubmit;
+		//(*f) = list_entry(cam->inqueue.next, struct nuvoton_vin_frame_t,frame);		
+	}
 	spin_lock(&cam->queue_lock);
 	list_move_tail(&(*f)->frame, &cam->outqueue);
 
