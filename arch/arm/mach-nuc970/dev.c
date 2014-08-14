@@ -348,10 +348,10 @@ static struct nuc970fb_mach_info nuc970fb_fb_info = {
 	.displays		= &nuc970fb_lcd_info[0],
 	.num_displays		= ARRAY_SIZE(nuc970fb_lcd_info),
 	.default_display	= 0,
-	.gpio_dir		= 0x00000004,
-	.gpio_dir_mask		= 0xFFFFFFFD,
-	.gpio_data		= 0x00000004,
-	.gpio_data_mask		= 0xFFFFFFFD,
+	.gpio_dir		= 0x0000000C,		//io control: PG2/PG3
+	.gpio_dir_mask		= 0xFFFFFFF3,
+	.gpio_data		= 0x0000000C,
+	.gpio_data_mask		= 0xFFFFFFF3,
 };
 
 static struct resource nuc970fb_lcd_resource[] = {

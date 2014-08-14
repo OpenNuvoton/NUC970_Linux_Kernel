@@ -2115,16 +2115,23 @@ config FB_NUC970
           Frame buffer driver for the built-in LCD controller in the Nuvoton
           NUC970 processor
 
-config A025DL02_320X240
+choice
+	prompt "NUC970 LCD panel selection"
+	default A025DL02_320X240
+	depends on FB_NUC970
+	help
+	  Select LCD panel supported by NUC970.
+	  
+	config A025DL02_320X240
         bool "AUO A025DL02 320x240 Color TFT LCD"
         depends on FB_NUC970
         select FB_NUC970_18BIT_PIN
 
-config E50A2V1_800X480
-        bool "800x480 5' Color TFT LCD"
+	config E50A2V1_800X480
+        bool "800x480 5-Inch Color TFT LCD"
         depends on FB_NUC970
         select FB_NUC970_24BIT_PIN
-
+endchoice
 config FB_NUC970_16BIT_PIN
 		bool
 		depends on FB_NUC970
