@@ -1052,7 +1052,7 @@ static int __init nuc970_dma_probe(struct platform_device *pdev)
 	struct nuc970_dma_engine *edma;
 	struct dma_device *dma_dev;
 	size_t edma_size;
-	//struct clk *clk;
+	struct clk *clk;
 	int ret, i;
 	ENTRY();
 	//DMA_DEBUG("%s pdev->dev=%s\n", __func__,pdev->dev);
@@ -1066,10 +1066,10 @@ static int __init nuc970_dma_probe(struct platform_device *pdev)
 	DMA_DEBUG("NUC970 GDMA !!!\n");
 	
   	/* enable gdma clock */ 
-	#if 1
+	#if 0
 	__raw_writel(__raw_readl(REG_CLK_HCLKEN)| CLK_HCLKEN_GDMA ,REG_CLK_HCLKEN);
 	#else
-	clk = clk_get(NULL, "gdma");
+	clk = clk_get(NULL, "gdma_hclk");
 	if (IS_ERR(clk)) {
 		dev_err(&pdev->dev, "cannot get clock\n");		
 		return -ENOENT;
