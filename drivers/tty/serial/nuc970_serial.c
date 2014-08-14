@@ -130,8 +130,9 @@ static inline void __stop_tx(struct uart_nuc970_port *p)
 
 	if (tty->termios.c_line == N_IRDA)
 	{
-		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & ~0x20) ); // Tx not inverse
-		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & 0x40) );  // Rx inverse
+		while(!(serial_in(p, UART_REG_FSR) & TX_EMPTY));
+		while(!(serial_in(p, UART_REG_FSR) & TE_FLAG));
+	
 		serial_out(p, UART_REG_IRCR, (serial_in(p, UART_REG_IRCR) & ~0x2) ); // Tx disable (select Rx)
 	}
 }
@@ -154,8 +155,6 @@ static void nuc970serial_start_tx(struct uart_port *port)
 
 	if (tty->termios.c_line == N_IRDA)
 	{
-		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) & ~0x20) ); // Tx not inverse
-		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) & 0x40) );  // Rx inverse
 		serial_out(up, UART_REG_IRCR, (serial_in(up, UART_REG_IRCR) | 0x2) ); // Tx enable
 	}
 
@@ -363,8 +362,6 @@ static int nuc970serial_startup(struct uart_port *port)
 	struct tty_struct *tty = port->state->port.tty;
 	int retval;
 	
-	//printk("\n nuc970serial_startup() \n");
-
 	//  TODO: configure pin function and enable engine clock
 	//nuc970serial_pinctrl();
 
@@ -497,11 +494,23 @@ static void
 nuc970serial_set_ldisc(struct uart_port *port, int ld)
 {
 	struct uart_nuc970_port *uart = (struct uart_nuc970_port *)port;
+	unsigned int baud;
 
 	switch (ld) {
 	case N_IRDA:
+
+		baud = serial_in(uart, UART_REG_BAUD);
+		baud = baud & (0x0000ffff);
+		baud = baud + 2;
+		baud = baud / 16;
+		baud = baud - 2;
+
+		serial_out(uart, UART_REG_BAUD, baud);
+		serial_out(uart, UART_REG_IRCR, (serial_in(uart, UART_REG_IRCR) & ~0x40) );  // Rx inverse
+			
 		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) & ~FUN_SEL_Msk) );
 		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) | FUN_SEL_IrDA) );
+
 		break;
 	default:
 		serial_out(uart, UART_FUN_SEL, (serial_in(uart, UART_FUN_SEL) & ~FUN_SEL_Msk) );
