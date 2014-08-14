@@ -374,9 +374,9 @@ static int nuc970fb_init_registers(struct fb_info *info)
 	writel(0, regs + REG_LCM_DEV_CTRL);
 
 	/* config gpio output */
-	modify_gpio(NUC970_VA_GPIO + 0x54, mach_info->gpio_dir,
+	modify_gpio(NUC970_VA_GPIO + 0x180, mach_info->gpio_dir,
 		    mach_info->gpio_dir_mask);
-	modify_gpio(NUC970_VA_GPIO + 0x58, mach_info->gpio_data,
+	modify_gpio(NUC970_VA_GPIO + 0x184, mach_info->gpio_data,
 		    mach_info->gpio_data_mask);
 
 	return 0;
