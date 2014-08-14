@@ -296,17 +296,11 @@ static struct platform_device nuc970_serial_device10 = {
 
 /* LCD controller*/
 #ifdef CONFIG_FB_NUC970
-//#define YUV422
-
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
 #ifdef CONFIG_A025DL02_320X240
 	/* AUO A035QN02V0 320x240 TFT Panel , 18bits*/
 	[0] = {
-#ifndef YUV422
 		.type		= LCM_DCCS_VA_SRC_RGB565,
-#else
-		.type		= LCM_DCCS_VA_SRC_YUV422,
-#endif
 		.width		= 320,
 		.height		= 240,
 		.xres		= 320,
@@ -319,17 +313,13 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.upper_margin	= 2,
 		.lower_margin	= 4,
 		.vsync_len	= 1,
-#ifndef YUV422
 		.dccs		= 0x0e00041a,
-#else
-		.dccs		= 0x0e00000a,
-#endif
 		.devctl		= 0x060800c0,
 		.fbctrl		= 0x00a000a0,
 		.scale		= 0x04000400,
 	},
 #endif
-#ifdef CONFIG_E50A2V1_800X480		
+#ifdef CONFIG_E50A2V1_800X480
 	/* E50A2V1 800x480 TFT Panel , 24bits*/
 	[0] = {
 		.type		= LCM_DCCS_VA_SRC_RGB888,
@@ -761,7 +751,7 @@ struct platform_device nuc970_device_i2c1 = {
 
 /* SPI */
 /* spi device, spi flash info */
-#ifdef CONFIG_SPI_NUC970_P0
+#if defined(CONFIG_MTD_M25P80) && (defined(CONFIG_SPI_NUC970_P0) || defined(CONFIG_SPI_NUC970_P1))
 static struct mtd_partition nuc970_spi_flash_partitions[] = {
         {
                 .name = "SPI flash",
@@ -799,7 +789,9 @@ static struct nuc970_spi_info nuc970_spiflash_data = {
         .txbitlen	= 8,
         .bus_num	= 0,
 };
+#endif
 
+#ifdef CONFIG_SPI_NUC970_P0
 static struct resource nuc970_spi0_resource[] = {
         [0] = {
                 .start = NUC970_PA_SPI0,
@@ -818,9 +810,11 @@ struct platform_device nuc970_device_spi0 = {
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_spi0_resource),
         .resource	  = nuc970_spi0_resource,
+#ifdef CONFIG_MTD_M25P80
         .dev		= {
                 .platform_data = &nuc970_spiflash_data,
     }
+#endif
 };
 #endif
 
@@ -843,6 +837,11 @@ struct platform_device nuc970_device_spi1 = {
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_spi1_resource),
         .resource	  = nuc970_spi1_resource,
+#ifdef CONFIG_MTD_M25P80
+        .dev		= {
+                .platform_data = &nuc970_spiflash_data,
+		}
+#endif
 };
 #endif
 
@@ -1155,8 +1154,8 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	platform_add_devices(device, size);
 	platform_add_devices(nuc970_public_dev, ARRAY_SIZE(nuc970_public_dev));
 
-#ifdef CONFIG_SPI_NUC970_P0
-	/* register spi devices */
+#ifdef CONFIG_MTD_M25P80
+ 	/* register spi devices */
 	spi_register_board_info(nuc970_spi_board_info, ARRAY_SIZE(nuc970_spi_board_info));
 #endif
 
