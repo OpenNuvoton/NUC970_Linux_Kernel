@@ -254,10 +254,6 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 			y = (__raw_readl(REG_ADC_XYDATA)>>16 & 0xfff);
 			z = (__raw_readl(REG_ADC_ZDATA) & 0xfff);			
 			ADEBUG("x=0x%03x,y=0x%03x,z=0x%03x\n",x,y,z);
-			input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);			
-			input_report_abs(nuc970_adc->input_ts, ABS_X,x);
-			input_report_abs(nuc970_adc->input_ts, ABS_Y,y);
-			input_report_abs(nuc970_adc->input_ts, ABS_Z,z);
 			if(z<=Z_TH) /* threshold value */
 			{				
 				nuc970_adc->ts_state = TS_IDLE;
@@ -265,6 +261,11 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 				del_timer(&nuc970_adc->timer);
 				nuc970_touch2detect();					
 			}else{								
+				input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);
+				input_report_abs(nuc970_adc->input_ts, ABS_X,y);
+				input_report_abs(nuc970_adc->input_ts, ABS_Y,x);
+				//input_report_abs(nuc970_adc->input_ts, ABS_Z,z);
+				input_report_abs(nuc970_adc->input_ts, ABS_PRESSURE,z);				
 				mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(100));				
 			}	
 			input_sync(nuc970_adc->input_ts);
@@ -582,7 +583,8 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	clk_prepare(nuc970_adc->clk);
 	clk_enable(nuc970_adc->clk);
 
-  __raw_writel(0x03000000,REG_CLK_DIV7);
+	clk_set_rate(nuc970_adc->eclk, 1000000);
+  //__raw_writel(0x0B000000,REG_CLK_DIV7);
 	//printk("CLK_DIVCTL7=0x%08x\n",__raw_readl(REG_CLK_DIV7));
 	nuc970_adc->kp_state = KP_IDLE;
 	nuc970_adc->ts_state = TS_IDLE;
@@ -606,10 +608,10 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	input_ts_dev->close = nuc970ts_close;
 	input_ts_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS) | BIT_MASK(EV_SYN);
 	input_ts_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);	
-	input_set_abs_params(input_ts_dev, ABS_X, 0, 0xFFF, 0, 0);
-	input_set_abs_params(input_ts_dev, ABS_Y, 0, 0xFFF, 0, 0);
-	input_set_abs_params(input_ts_dev, ABS_Z, 0, 0xFFF, 0, 0);
-	//input_set_abs_params(input_ts_dev, ABS_PRESSURE, 0, 0xFFF, 0, 0);
+	input_set_abs_params(input_ts_dev, ABS_X, 0, 0x400, 0, 0);
+	input_set_abs_params(input_ts_dev, ABS_Y, 0, 0x400, 0, 0);
+	//input_set_abs_params(input_ts_dev, ABS_Z, 0, 0xFFF, 0, 0);
+	input_set_abs_params(input_ts_dev, ABS_PRESSURE, 0, 0x400, 0, 0);
 	input_set_drvdata(input_ts_dev, nuc970_adc);
 	setup_timer(&nuc970_adc->timer, ts_wait_conversion,(unsigned long)nuc970_adc);
 	if(input_register_device(nuc970_adc->input_ts))
