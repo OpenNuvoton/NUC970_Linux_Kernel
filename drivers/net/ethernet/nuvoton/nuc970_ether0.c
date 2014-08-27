@@ -22,6 +22,7 @@
 #include <linux/kthread.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
+#include <linux/ctype.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -185,6 +186,48 @@ struct  nuc970_ether {
 	int duplex;
 };
 
+
+static __init int setup_macaddr(char *str)
+{
+	u8 mac[6] = {0, 0, 0, 0, 0, 0};
+	char *c = str;
+	int i, j;
+
+	if (!str)
+		goto err;
+
+	for(i = 0; i < 6; i++) {
+		for(j = 0; j < 2; j++) {
+			mac[i] <<= 4;
+			if(isdigit(*c))
+				mac[i] += *c - '0';
+			else if(isxdigit(*c))
+				mac[i] += toupper(*c) - 'A' + 10;
+			else {
+				goto err;
+			}
+			c++;
+		}
+
+		if(i != 5)
+			if(*c != ':') {
+				goto err;
+			}
+
+		c++;
+	}
+
+	// all good
+	for(i = 0; i < 6; i++) {
+		nuc970_mac0[i] = mac[i];
+
+	}
+	return 0;
+
+err:
+	return -EINVAL;
+}
+early_param("ethaddr0", setup_macaddr);
 
 static void adjust_link(struct net_device *dev)
 {
