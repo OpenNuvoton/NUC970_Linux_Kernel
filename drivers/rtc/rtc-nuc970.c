@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Nuvoton technology corporation.
+ * Copyright (c) 2014 Nuvoton technology corporation.
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -123,6 +123,8 @@ static int nuc970_rtc_bcd2bin(unsigned int timereg,
 {
 	tm->tm_mday	= bcd2bin(calreg >> 0);
 	tm->tm_mon	= bcd2bin(calreg >> 8);
+	tm->tm_mon	= tm->tm_mon - 1;
+	
 	tm->tm_year	= bcd2bin(calreg >> 16) + 100;
 
 	tm->tm_sec	= bcd2bin(timereg >> 0);
@@ -136,7 +138,7 @@ static void nuc970_rtc_bin2bcd(struct device *dev, struct rtc_time *settm,
 						struct nuc970_bcd_time *gettm)
 {
 	gettm->bcd_mday = bin2bcd(settm->tm_mday) << 0;
-	gettm->bcd_mon  = bin2bcd(settm->tm_mon) << 8;
+	gettm->bcd_mon  = bin2bcd((settm->tm_mon + 1)) << 8;
 
 	if (settm->tm_year < 100) {
 		dev_warn(dev, "The year will be between 1970-1999, right?\n");
@@ -296,7 +298,7 @@ static struct platform_driver nuc970_rtc_driver = {
 
 module_platform_driver_probe(nuc970_rtc_driver, nuc970_rtc_probe);
 
-MODULE_AUTHOR("aaa");
+MODULE_AUTHOR("nuvoton");
 MODULE_DESCRIPTION("nuc970 RTC driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-rtc");
