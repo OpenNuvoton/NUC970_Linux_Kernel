@@ -1965,7 +1965,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x2-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_0_grp",
 	},
 	{
@@ -1973,7 +1973,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x2-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_1_grp",
 	},
 	{
@@ -1981,7 +1981,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_0_grp",
 	},
 	{
@@ -1989,7 +1989,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_1_grp",
 	},
 	{
@@ -1997,7 +1997,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_4col",
 		.data.mux.group = "kpi_2_grp",
 	},
 	{
@@ -2005,7 +2005,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_0_grp",
 	},
 	{
@@ -2013,7 +2013,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_1_grp",
 	},
 	{
@@ -2021,7 +2021,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_4col",
 		.data.mux.group = "kpi_2_grp",
 	},
 	{
@@ -2029,7 +2029,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_8col",
 		.data.mux.group = "kpi_3_grp",
 	},
 	{
@@ -2037,7 +2037,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x2-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_4_grp",
 	},
 	{
@@ -2045,7 +2045,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x2-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_5_grp",
 	},
 	{
@@ -2053,7 +2053,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_4_grp",
 	},
 	{
@@ -2061,7 +2061,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_5_grp",
 	},
 	{
@@ -2069,7 +2069,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x4-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_4col",
 		.data.mux.group = "kpi_6_grp",
 	},
 	{
@@ -2077,7 +2077,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_row",
 		.data.mux.group = "kpi_4_grp",
 	},
 	{
@@ -2085,7 +2085,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_2col",
 		.data.mux.group = "kpi_5_grp",
 	},
 	{
@@ -2093,7 +2093,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_4col",
 		.data.mux.group = "kpi_6_grp",
 	},
 	{
@@ -2101,7 +2101,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.name = "kpi_4x8-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "kpi",
+		.data.mux.function = "kpi_8col",
 		.data.mux.group = "kpi_7_grp",
 	},
 	{

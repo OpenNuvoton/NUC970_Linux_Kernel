@@ -618,16 +618,36 @@ config KEYBOARD_XTKBD
 	  To compile this driver as a module, choose M here: the
 	  module will be called xtkbd.
 
-config KEYBOARD_W90P910
-	tristate "W90P910 Matrix Keypad support"
-	depends on ARCH_W90X900
+config KEYBOARD_NUC970
+	tristate "NUC970 Matrix Keypad support"
 	select INPUT_MATRIXKMAP
 	help
 	  Say Y here to enable the matrix keypad on evaluation board
-	  based on W90P910.
+	  based on NUC970.
 
 	  To compile this driver as a module, choose M here: the
-	  module will be called w90p910_keypad.
+	  module will be called nuc970_keypad.
+
+choice
+	prompt "NUC970 matrix keypad pin selection"
+	default NUC970_KEYPAD_PA_4x8
+	depends on KEYBOARD_NUC970
+	help
+	  Select keypad multi-function pin.
+
+	config NUC970_KEYPAD_PA_4x2
+		bool "Keypad pins are 4x2 matrix PA pin"
+	config NUC970_KEYPAD_PA_4x4
+		bool "Keypad pins are 4x4 matrix PA pin"
+	config NUC970_KEYPAD_PA_4x8
+		bool "Keypad pins are 4x8 matrix PA pin"
+	config NUC970_KEYPAD_PH_4x2
+		bool "Keypad pins are 4x2 matrix PH pin"
+	config NUC970_KEYPAD_PH_4x4
+		bool "Keypad pins are 4x4 matrix PH pin"
+	config NUC970_KEYPAD_PH_4x8
+		bool "Keypad pins are 4x8 matrix PH pin"
+endchoice
 
 config KEYBOARD_CROS_EC
 	tristate "ChromeOS EC keyboard"

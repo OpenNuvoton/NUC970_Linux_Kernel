@@ -55,6 +55,8 @@
 
 #include <linux/platform_data/dma-nuc970.h>
 
+#include <linux/platform_data/keypad-nuc970.h>
+
 
 #include "cpu.h"
 
@@ -845,6 +847,88 @@ struct platform_device nuc970_device_spi1 = {
 };
 #endif
 
+#ifdef CONFIG_KEYBOARD_NUC970
+static int nuc970_keymap[] = {
+	KEY(0, 0, KEY_A),	KEY(0, 1, KEY_B),
+	KEY(0, 2, KEY_C),	KEY(0, 3, KEY_D),
+	KEY(0, 4, KEY_E),	KEY(0, 5, KEY_F),
+	KEY(0, 6, KEY_G),	KEY(0, 7, KEY_H),
+
+	KEY(1, 0, KEY_I),	KEY(1, 1, KEY_J),
+	KEY(1, 2, KEY_K),	KEY(1, 3, KEY_L),
+	KEY(1, 4, KEY_M),	KEY(1, 5, KEY_N),
+	KEY(1, 6, KEY_O),	KEY(1, 7, KEY_P),
+
+	KEY(2, 0, KEY_Q),	KEY(2, 1, KEY_R),
+	KEY(2, 2, KEY_S),	KEY(2, 3, KEY_T),
+	KEY(2, 4, KEY_U),	KEY(2, 5, KEY_V),
+	KEY(2, 6, KEY_W),	KEY(2, 7, KEY_X),
+
+	KEY(3, 0, KEY_Y),	KEY(3, 1, KEY_Z),
+	KEY(3, 2, KEY_1),	KEY(3, 3, KEY_2),
+	KEY(3, 4, KEY_3),	KEY(3, 5, KEY_4),
+	KEY(3, 6, KEY_5),	KEY(3, 7, KEY_6),
+};
+
+static struct matrix_keymap_data nuc970_map_data = {
+	.keymap			= nuc970_keymap,
+	.keymap_size	= ARRAY_SIZE(nuc970_keymap),
+};
+
+static struct nuc970_keypad_platform_data nuc970_keypad_info = {
+		.keymap_data	= &nuc970_map_data,
+        .prescale		= 0x80,
+        .debounce		= 0x8,
+};
+
+
+static struct resource nuc970_kpi_resource[] = {
+	[0] = {
+			.start = NUC970_PA_KPI,
+			.end   = NUC970_PA_KPI + NUC970_SZ_KPI - 1,
+			.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+			.start = IRQ_KPI,
+			.end   = IRQ_KPI,
+			.flags = IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device nuc970_device_kpi = {
+        .name		  = "nuc970-kpi",
+        .id		  = -1,
+        .num_resources	  = ARRAY_SIZE(nuc970_kpi_resource),
+        .resource	  = nuc970_kpi_resource,
+
+		.dev		= {
+                .platform_data = &nuc970_keypad_info,
+		}
+};
+#endif
+
+#ifdef CONFIG_RTC_DRV_NUC970
+static struct resource nuc970_rtc_resource[] = {
+        [0] = {
+                .start = NUC970_PA_RTC,
+                .end   = NUC970_PA_RTC + NUC970_SZ_RTC - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_RTC,
+                .end   = IRQ_RTC,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_rtc = {
+        .name		= "nuc970-rtc",
+        .id		= -1,
+        .num_resources	= ARRAY_SIZE(nuc970_rtc_resource),
+        .resource	= nuc970_rtc_resource,
+};
+#endif
+
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
 	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
@@ -982,6 +1066,7 @@ struct platform_device nuc970_device_pinctrl = {
         .id		  = -1,
 };
 #endif
+
 #ifdef CONFIG_GPIO_NUC970 
 #ifdef CONFIG_I2C_ALGOBIT
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
@@ -1139,6 +1224,12 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_PINCTRL
 	&nuc970_device_pinctrl,
+#endif
+#ifdef CONFIG_KEYBOARD_NUC970
+	&nuc970_device_kpi,
+#endif
+#ifdef CONFIG_RTC_DRV_NUC970
+	&nuc970_device_rtc,
 #endif
 #ifdef CONFIG_GPIO_NUC970
 	&nuc970_device_gpio,

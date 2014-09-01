@@ -104,6 +104,7 @@ enum nuc970_clks {
 	uart0_gate, uart1_gate, uart2_gate, uart3_gate, uart4_gate, uart5_gate, uart6_gate, uart7_gate, uart8_gate, uart9_gate, uart10_gate,
 	timer0_gate, timer1_gate, timer2_gate, timer3_gate, timer4_gate, 
 	wdt_gate,
+	rtc_gate,
 	wwdt_gate, 
 	gpio_gate,
 	smc0_gate, smc1_gate,
@@ -370,6 +371,8 @@ int __init nuc970_init_clocks(void)
 	clk[wdt_gate] = nuc970_clk_gate("wdt_gate", "pclk_div", REG_CLK_PCLKEN0, 0);
 	clk[wwdt_gate] = nuc970_clk_gate("wwdt_gate", "pclk_div", REG_CLK_PCLKEN0, 1);
 	
+	clk[rtc_gate] = nuc970_clk_gate("rtc_gate", "pclk_div", REG_CLK_PCLKEN0, 2);
+	
 	clk[gpio_gate] = nuc970_clk_gate("gpio_gate", "pclk_div", REG_CLK_PCLKEN0, 3);
 	
 	clk[smc0_gate] = nuc970_clk_gate("smc0_gate", "pclk_div", REG_CLK_PCLKEN1, 12);
@@ -593,6 +596,7 @@ int __init nuc970_init_clocks(void)
 
 	//PCLK	
 	clk_register_clkdev(clk[pclk_div], "pclkdiv", NULL);
+	clk_register_clkdev(clk[rtc_gate], "rtc", NULL);
 	clk_register_clkdev(clk[i2c0_gate], "i2c0", NULL);
 	clk_register_clkdev(clk[i2c1_gate], "i2c1", NULL);
 	clk_register_clkdev(clk[spi0_gate], "spi0", NULL);
