@@ -2185,7 +2185,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "usbh_pf_grp",
 	},
 	{
-		.dev_name = "nuc970-usbgadget",
+		.dev_name = "nuc970-usbdev",
 		.name = PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
