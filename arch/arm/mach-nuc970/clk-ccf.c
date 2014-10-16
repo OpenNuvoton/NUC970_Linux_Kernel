@@ -86,6 +86,8 @@ enum nuc970_clks {
 	etimer3_eclk_mux, etimer3_eclk_gate,
 	wwdt_eclk_mux, wwdt_eclk_gate,
 	wdt_eclk_mux, wdt_eclk_gate,
+	smc0_eclk_div, smc0_eclk_gate, smc0_gate, 
+	smc1_eclk_div, smc1_eclk_gate, smc1_gate, 
 	
 	// sys
 	sys_mux, sys_div, cpu_div, cpu_gate, ddr_gate, 
@@ -106,8 +108,7 @@ enum nuc970_clks {
 	wdt_gate,
 	rtc_gate,
 	wwdt_gate, 
-	gpio_gate,
-	smc0_gate, smc1_gate,
+	gpio_gate,	
 	adc_gate, 
 	kpi_gate, 
 	mtpc_gate,
@@ -346,7 +347,14 @@ int __init nuc970_init_clocks(void)
 	// -WDT
 	clk[wdt_eclk_mux] = nuc970_clk_mux("wdt_eclk_mux", REG_CLK_DIV8, 8, 2, wwdt_sel_clks, ARRAY_SIZE(wwdt_sel_clks));
 	clk[wdt_eclk_gate]  = nuc970_clk_gate("wdt_eclk_gate", "wdt_eclk_mux", REG_CLK_PCLKEN0, 0);
+	
+	// -SMARTCARD
+	clk[smc0_eclk_div]  = nuc970_clk_divider("smc0_eclk_div", "xin", REG_CLK_DIV6, 24, 4);
+	clk[smc0_eclk_gate] = nuc970_clk_gate("smc0_eclk_gate", "smc0_eclk_div", REG_CLK_PCLKEN1, 12);
 		
+	clk[smc1_eclk_div]  = nuc970_clk_divider("smc1_eclk_div", "xin", REG_CLK_DIV6, 28, 4);
+	clk[smc1_eclk_gate] = nuc970_clk_gate("smc1_eclk_gate", "smc1_eclk_div", REG_CLK_PCLKEN1, 13);
+	
 	// PCLK
 	clk[pclk_div]	= nuc970_clk_divider("pclk_div", "hclk1_div", REG_CLK_DIV0, 24, 4);
 	clk[pclk4096_div]  = nuc970_clk_fixed_factor("pclk4096_div", "pclk_div", 1, 4096);		//  pclk/4096
@@ -375,9 +383,6 @@ int __init nuc970_init_clocks(void)
 	
 	clk[gpio_gate] = nuc970_clk_gate("gpio_gate", "pclk_div", REG_CLK_PCLKEN0, 3);
 	
-	clk[smc0_gate] = nuc970_clk_gate("smc0_gate", "pclk_div", REG_CLK_PCLKEN1, 12);
-	clk[smc1_gate] = nuc970_clk_gate("smc1_gate", "pclk_div", REG_CLK_PCLKEN1, 13);
-	
 	clk[adc_gate] = nuc970_clk_gate("adc_gate", "pclk_div", REG_CLK_PCLKEN1, 24);
 	
 	clk[kpi_gate] = nuc970_clk_gate("kpi_gate", "pclk_div", REG_CLK_PCLKEN1, 25);
@@ -399,6 +404,9 @@ int __init nuc970_init_clocks(void)
 	clk[timer2_gate] = nuc970_clk_gate("timer2_gate", "xin", REG_CLK_PCLKEN0, 10);
 	clk[timer3_gate] = nuc970_clk_gate("timer3_gate", "xin", REG_CLK_PCLKEN0, 11);
 	clk[timer4_gate] = nuc970_clk_gate("timer4_gate", "xin", REG_CLK_PCLKEN0, 12);	
+	
+	clk[smc0_gate] = nuc970_clk_gate("smc0_gate", "pclk_div", REG_CLK_PCLKEN1, 12);
+	clk[smc1_gate] = nuc970_clk_gate("smc1_gate", "pclk_div", REG_CLK_PCLKEN1, 13);
 	
 	for (i = 0; i < ARRAY_SIZE(clk); i++)
 		if (IS_ERR(clk[i]))
@@ -593,6 +601,11 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[wwdt_eclk_gate], "wwdt_eclk", NULL);
 	clk_register_clkdev(clk[wdt_eclk_mux], "wdt_eclk_mux", NULL);
 	clk_register_clkdev(clk[wdt_eclk_gate], "wdt_eclk", NULL);
+	
+	clk_register_clkdev(clk[smc0_eclk_div], "smc0_eclk_div", NULL);
+	clk_register_clkdev(clk[smc0_eclk_gate], "smc0_eclk", NULL);
+	clk_register_clkdev(clk[smc1_eclk_div], "smc1_eclk_div", NULL);
+	clk_register_clkdev(clk[smc1_eclk_gate], "smc1_eclk", NULL);
 
 	//PCLK	
 	clk_register_clkdev(clk[pclk_div], "pclkdiv", NULL);
