@@ -267,11 +267,11 @@ static const unsigned uart10_3_pins[] = {0x26, 0x27}; // tx, rx
 static const unsigned uart10_4_pins[] = {0x28, 0x29}; // rts, cts
 
 static const unsigned sc0_0_pins[] = {0x6A, 0x6B, 0x6C, 0x6D, 0x6E};
-static const unsigned sc0_1_pins[] = {0x86, 0x87, 0x88, 0x89, 0x8A};
+static const unsigned sc0_1_pins[] = {0x8B, 0x8C, 0x8D, 0x8E, 0x8F};
 static const unsigned sc0_2_pins[] = {0x6B, 0x6C};  // scuart
-static const unsigned sc0_3_pins[] = {0x87, 0x88};  // scuart
-static const unsigned sc1_0_pins[] = {0x66, 0x67, 0x68, 0x69, 0x6A};
-static const unsigned sc1_1_pins[] = {0x67, 0x68};  // scuart
+static const unsigned sc0_3_pins[] = {0x8C, 0x8D};  // scuart
+static const unsigned sc1_0_pins[] = {0x86, 0x87, 0x88, 0x89, 0x8A};
+static const unsigned sc1_1_pins[] = {0x87, 0x88};  // scuart
 
 static const unsigned spi0_0_pins[] = {0x16, 0x17, 0x18, 0x19};
 static const unsigned spi0_1_pins[] = {0x1A, 0x1B}; // quad
@@ -2610,7 +2610,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "uart10_4_grp",
 	},
 	{
-		.dev_name = "nuc970-sc0",
+		.dev_name = "nuc970-sc.0",
 		.name = "sc0-PG",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2618,7 +2618,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "sc0_0_grp",
 	},
 	{
-		.dev_name = "nuc970-sc0",
+		.dev_name = "nuc970-sc.0",
 		.name = "sc0-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2626,23 +2626,23 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "sc0_1_grp",
 	},
 	{
-		.dev_name = "nuc970-sc0",
+		.dev_name = "nuc970-sc.0",
 		.name = "scuart0-PG",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "scuart0",
-		.data.mux.group = "sc_2_grp",
+		.data.mux.group = "sc0_2_grp",
 	},
 	{
-		.dev_name = "nuc970-sc0",
+		.dev_name = "nuc970-sc.0",
 		.name = "scuart0-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "scuart0",
-		.data.mux.group = "sc_2_grp",
+		.data.mux.group = "sc0_3_grp",
 	},
 	{
-		.dev_name = "nuc970-sc1",
+		.dev_name = "nuc970-sc.1",
 		.name = PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -2650,8 +2650,8 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "sc1_0_grp",
 	},
 	{
-		.dev_name = "nuc970-sc1",
-		.name = PINCTRL_STATE_DEFAULT,
+		.dev_name = "nuc970-sc.1",
+		.name = "scuart1",//PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "scuart1",

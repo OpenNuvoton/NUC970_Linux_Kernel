@@ -551,7 +551,7 @@ static struct resource nuc970_cap_resource[] = {
 
 struct platform_device nuc970_device_cap = {
         .name		  = "nuc970-videoin",
-        .id		  = -1,  
+        .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_cap_resource),
         .resource	  = nuc970_cap_resource,
 };
@@ -575,7 +575,7 @@ static struct resource nuc970_adc_resource[] = {
 
 struct platform_device nuc970_device_adc = {
         .name		  = "nuc970-adc",
-        .id		  = -1,  
+        .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_adc_resource),
         .resource	  = nuc970_adc_resource,
 };
@@ -601,7 +601,7 @@ static struct resource nuc970_gdma_resource[] = {
                 .start = IRQ_GDMA1,
                 .end   = IRQ_GDMA1,
                 .flags = IORESOURCE_IRQ,
-        }				
+        }
 };
 
 
@@ -619,7 +619,7 @@ static struct platform_device nuc970_device_gdma = {
 	.name			= "nuc970-dma-m2m",
 	.id			= -1,
     .num_resources	= ARRAY_SIZE(nuc970_gdma_resource),
-    .resource	= nuc970_gdma_resource,	
+    .resource	= nuc970_gdma_resource,
 	.dev			= {
 	.platform_data	= &nuc970_dma_m2m_data,
 	},
@@ -672,10 +672,10 @@ struct platform_device nuc970_device_audio_pcm = {
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
-#ifdef CONFIG_SENSOR_OV7725	
+#ifdef CONFIG_SENSOR_OV7725
 	{I2C_BOARD_INFO("ov7725",  0x21),},
 #endif
-#ifdef CONFIG_SENSOR_OV5640	
+#ifdef CONFIG_SENSOR_OV5640
 	{I2C_BOARD_INFO("ov5640",  0x3c),},
 #endif
 #ifdef CONFIG_SENSOR_NT99141
@@ -683,7 +683,7 @@ static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 #endif
 #ifdef CONFIG_SENSOR_NT99050
 	{I2C_BOARD_INFO("nt99050", 0x21),},
-#endif	
+#endif
 #ifdef CONFIG_SND_SOC_NAU8822
 	{I2C_BOARD_INFO("nau8822", 0x1a),},
 #endif
@@ -1011,6 +1011,74 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
+#ifdef CONFIG_SCUART_NUC970
+/* Initial serial platform data */
+static struct plat_nuc970serial_port nuc970_scuart_data[] = {
+        [0] = {
+		.membase	= NUC970_VA_SC,
+		.mapbase	= NUC970_PA_SC,
+		.irq 		= IRQ_SMC0,
+		.uartclk 	= 12000000,
+
+        },
+        [1] = {
+		.membase	= (NUC970_VA_SC + 0x400),
+		.mapbase	= (NUC970_PA_SC + 0x400),
+		.irq 		= IRQ_SMC1,
+		.uartclk 	= 12000000,
+
+        },
+        {},
+};
+#endif
+
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
+
+#ifdef CONFIG_NUC970_SC
+static struct resource nuc970_sc_resource[] = {
+        [0] = {
+                .start = IRQ_SMC0,
+                .end   = IRQ_SMC0,
+                .flags = IORESOURCE_IRQ,
+        },
+        [1] = {
+                .start = IRQ_SMC1,
+                .end   = IRQ_SMC1,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+#endif
+
+struct platform_device nuc970_device_sc0 = {
+        .name		  = "nuc970-sc",
+        .id		  = 0,
+#ifdef CONFIG_NUC970_SC
+        .num_resources	  = ARRAY_SIZE(nuc970_sc_resource),
+        .resource	  = nuc970_sc_resource,
+#endif
+#ifdef CONFIG_SCUART_NUC970
+        .dev			= {
+                .platform_data	= &nuc970_scuart_data[0],
+        },
+#endif
+};
+struct platform_device nuc970_device_sc1 = {
+        .name		  = "nuc970-sc",
+        .id		  = 1,
+#ifdef CONFIG_NUC970_SC
+        .num_resources	  = ARRAY_SIZE(nuc970_sc_resource),
+        .resource	  = nuc970_sc_resource,
+#endif
+#ifdef CONFIG_SCUART_NUC970
+        .dev			= {
+                .platform_data	= &nuc970_scuart_data[1],
+        },
+#endif
+};
+
+#endif
+
+
 #ifdef CONFIG_NUC970_ETIMER
 static struct resource nuc970_etimer_resource[] = {
         [0] = {
@@ -1067,23 +1135,23 @@ struct platform_device nuc970_device_pinctrl = {
 };
 #endif
 
-#ifdef CONFIG_GPIO_NUC970 
+#ifdef CONFIG_GPIO_NUC970
 #ifdef CONFIG_I2C_ALGOBIT
-static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {   
-    .sda_pin = NUC970_PB1,   
-    .scl_pin = NUC970_PB0,   
-    .udelay = 1, 
-    .timeout = 100,   
+static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {
+    .sda_pin = NUC970_PB1,
+    .scl_pin = NUC970_PB0,
+    .udelay = 1,
+    .timeout = 100,
     .sda_is_open_drain = 0,   //not support open drain mode
     .scl_is_open_drain = 0,   //not support open drain mode
-};   
-  
-static struct platform_device i2c_gpio = {   
-    .name = "i2c-gpio",   
-    .id = 0,   
-    .dev = {   
-        .platform_data = &i2c_gpio_adapter_data,   
-        },   
+};
+
+static struct platform_device i2c_gpio = {
+    .name = "i2c-gpio",
+    .id = 0,
+    .dev = {
+        .platform_data = &i2c_gpio_adapter_data,
+        },
 };
 #endif
 static struct resource nuc970_gpio_resource[] = {
@@ -1100,7 +1168,7 @@ struct platform_device nuc970_device_gpio = {
 	.num_resources = ARRAY_SIZE(nuc970_gpio_resource),
 	.resource = nuc970_gpio_resource,
 };
-   
+
 #endif
 
 static struct platform_device *nuc970_public_dev[] __initdata = {
@@ -1236,6 +1304,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_I2C_ALGOBIT
 	&i2c_gpio,
+#endif
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
+	&nuc970_device_sc0,
+	&nuc970_device_sc1,
 #endif
 };
 

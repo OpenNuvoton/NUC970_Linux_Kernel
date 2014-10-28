@@ -35,7 +35,7 @@ choice
 	config NUC970_UART1_FC_PE
 		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5"
 	config NUC970_UART1_FF_PE
-		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"	
+		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"
 endchoice
 
 config NUC970_UART2
@@ -93,7 +93,7 @@ config NUC970_UART5
 	depends on SERIAL_NUC970=y
 	help
 	  This selects NUC970 uart5 driver
-	  
+
 config NUC970_UART6
 	bool "NUC970 UART6 support"
 	depends on SERIAL_NUC970=y
@@ -216,6 +216,37 @@ config SERIAL_NUC970_CONSOLE
 	---help---
 	  If you say Y here, it will be possible to use a serial port as the
 	  system console.
+
+
+config SCUART_NUC970
+	bool "NUC970 Smartcard UART Mode support"
+	select SERIAL_CORE
+	---help---
+	  This selects NUC970 smartcard uart mode driver.
+
+config NUC970_SCUART0
+	bool "NUC970 SCUART0 support"
+	depends on SCUART_NUC970=y
+	help
+	  This selects NUC970 scuart0 driver
+choice
+	prompt "NUC970 SCUART0 pin selection"
+	default NUC970_SCUART0_PG
+	depends on NUC970_SCUART0
+	help
+	  Select SCUART0 multi-function pin.
+
+	config NUC970_SCUART0_PG
+		bool "Tx:PG11, Rx:PG12"
+	config NUC970_SCUART0_PI
+		bool "Tx:PI12, Rx:PI13"
+endchoice
+
+config NUC970_SCUART1
+	bool "NUC970 SCUART1 support"
+	depends on SCUART_NUC970=y
+	help
+	  This selects NUC970 scuart1 driver
 
 config SERIAL_AMBA_PL010
 	tristate "ARM AMBA PL010 serial port support"
@@ -430,7 +461,7 @@ config SERIAL_SAMSUNG_UARTS
 	help
 	  Select the number of available UART ports for the Samsung S3C
 	  serial driver
-	
+
 config SERIAL_SAMSUNG_DEBUG
 	bool "Samsung SoC serial debug"
 	depends on SERIAL_SAMSUNG && DEBUG_LL
@@ -867,8 +898,8 @@ config PDC_CONSOLE
 	depends on PARISC && !SERIAL_MUX && VT
 	default n
 	help
-	  Saying Y here will enable the software based PDC console to be 
-	  used as the system console.  This is useful for machines in 
+	  Saying Y here will enable the software based PDC console to be
+	  used as the system console.  This is useful for machines in
 	  which the hardware based console has not been written yet.  The
 	  following steps must be competed to use the PDC console:
 
@@ -1059,7 +1090,7 @@ config SERIAL_CPM
 	depends on CPM2 || 8xx
 	select SERIAL_CORE
 	help
-	  This driver supports the SCC and SMC serial ports on Motorola 
+	  This driver supports the SCC and SMC serial ports on Motorola
 	  embedded PowerPC that contain a CPM1 (8xx) or CPM2 (8xxx)
 
 config SERIAL_CPM_CONSOLE
