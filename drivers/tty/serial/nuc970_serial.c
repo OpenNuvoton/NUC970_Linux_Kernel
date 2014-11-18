@@ -1126,6 +1126,9 @@ static int nuc970serial_probe(struct platform_device *pdev)
 static int nuc970serial_remove(struct platform_device *dev)
 {
 	int i;
+	struct uart_port *port = platform_get_drvdata(dev);
+
+	free_irq(port->irq, port);
 
 	for (i = 0; i < UART_NR; i++) {
 		struct uart_nuc970_port *up = &nuc970serial_ports[i];
