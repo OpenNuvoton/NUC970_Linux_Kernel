@@ -419,6 +419,7 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
             /*
              * Handle a read
              */
+            nuc970_sd_write(REG_SDTMOUT, 0x3fffff);
             host->total_length = 0;
             nuc970_sd_write(REG_DMACSAR2, host->physical_address);
             nuc970_sd_debug("SDH - Reading %d bytes [phy_addr = 0x%x]\n", block_length * blocks, host->physical_address);
