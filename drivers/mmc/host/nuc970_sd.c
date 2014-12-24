@@ -943,7 +943,7 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     sd_host = host;
     host->mmc = mmc;
     host->bus_mode = 0;
-    mmc->caps |= (MMC_CAP_4_BIT_DATA|MMC_CAP_SDIO_IRQ);
+    mmc->caps |= (MMC_CAP_4_BIT_DATA|MMC_CAP_SDIO_IRQ|MMC_CAP_SD_HIGHSPEED|MMC_CAP_MMC_HIGHSPEED);
 
     host->buffer = dma_alloc_coherent(&pdev->dev, MCI_BUFSIZE, &host->physical_address, GFP_KERNEL);
     if (!host->buffer) {
