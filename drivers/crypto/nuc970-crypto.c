@@ -64,9 +64,8 @@ struct nuc970_ctx {
 	u32     keysize;
 	struct nuc970_aes_regs  *aes_regs;
 	struct nuc970_tdes_regs  *tdes_regs;
-	u32		aes_ctrl;
-	u32		tdes_ctrl;
-	int		sha_remain_bytes;
+	int		use_mtp_key;
+	int		hmac_key_len;
 	int     is_first_block;
 };
 
@@ -121,6 +120,12 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	crpt_regs->CRPT_AES_CTL = ctx->keysize | ctx->mode | AES_INSWAP | AES_OUTSWAP |
 	                          AES_DMAEN | (ctx->channel << 24);
 
+	if (ctx->use_mtp_key)
+	{
+		//printk("AES using MTP key.\n");
+		crpt_regs->CRPT_AES_CTL |= AES_EXTERNAL_KEY;
+	}
+
 	if (ctx->is_first_block)
 		ctx->is_first_block = 0;
 	else
@@ -135,7 +140,7 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	
 	while ((req_len > 0) && in_sg)
 	{
-		dma_len = min(in_sg->length, req_len);
+		dma_len = min((int)in_sg->length, req_len);
 		
 		aes_regs->count = dma_len;
 		aes_regs->src_addr = nuc970_crdev.aes_inbuf_dma_addr;
@@ -211,6 +216,13 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 		case AES_KEYSIZE_256:
 			ctx->keysize = AES_KEYSZ_256;
 			break;
+			
+		case 0:
+			if (key == 0)
+				ctx->use_mtp_key = 1;
+			else
+				ctx->use_mtp_key = 0;
+			break;
 
 		default:
 			printk("[%s]: Unsupported keylen %d!\n", __func__, keylen);
@@ -252,8 +264,8 @@ static int nuc970_aes_init(struct crypto_tfm *tfm)
 	
 	ctx->mode = cryp_alg->algomode;
 	ctx->channel = chn;
-	ctx->aes_ctrl = 0;
 	ctx->aes_regs = (struct nuc970_aes_regs *)((u32)nuc970_crdev.regs + 0x110 + (0x3c * chn));
+	ctx->use_mtp_key = 0;
 	ctx->is_first_block = 1;
 
 	spin_unlock(&nuc970_crdev.aes_lock);
@@ -314,7 +326,7 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	
 	while ((req_len > 0) && in_sg)
 	{
-		dma_len = min(in_sg->length, req_len);
+		dma_len = min((int)in_sg->length, req_len);
 		
 		tdes_regs->count = dma_len;
 		tdes_regs->src_addr = nuc970_crdev.des_inbuf_dma_addr;
@@ -422,7 +434,6 @@ static int nuc970_des_init(struct crypto_tfm *tfm)
 	
 	ctx->mode = cryp_alg->algomode;
 	ctx->channel = chn;
-	ctx->tdes_ctrl = 0;
 	ctx->tdes_regs = (struct nuc970_tdes_regs *)((u32)nuc970_crdev.regs + 0x208 + (0x40 * chn));
 	ctx->is_first_block = 1;
 
@@ -933,7 +944,7 @@ static struct cryp_algo_template nuc970_crypto_algs[] = {
 #define SHA_BUFFER_LEN		PAGE_SIZE
 
 
-void  nuc970_dump_digest()
+void  nuc970_dump_digest(void)
 {
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 	int  i;
@@ -955,19 +966,23 @@ static int do_sha(struct ahash_request *req, int is_last)
 
 	in_sg = req->src;
 	req_len = req->nbytes;
-	
+
+	//printk("do_sha - keylen = %d, req_len = %d\n", ctx->hmac_key_len, req_len); 
+		
 	while ((req_len > 0) && in_sg)
 	{
-		dma_len = min(in_sg->length, req_len);
+		dma_len = min((int)in_sg->length, req_len);
 		
-		crpt_regs->CRPT_HMAC_DMACNT = dma_len;
-		crpt_regs->CRPT_HMAC_SADDR = nuc970_crdev.hmac_inbuf_dma_addr;
-
-		if (sg_copy_to_buffer(in_sg, 1, nuc970_crdev.hmac_inbuf, dma_len) != dma_len)
+		
+		if (sg_copy_to_buffer(in_sg, 1, &(nuc970_crdev.hmac_inbuf[ctx->hmac_key_len]), dma_len) != dma_len)
 		{
 			printk("sg in buffer error!\n");
 			break;
 		}	
+
+		crpt_regs->CRPT_HMAC_DMACNT = dma_len + ctx->hmac_key_len;
+		crpt_regs->CRPT_HMAC_SADDR = nuc970_crdev.hmac_inbuf_dma_addr;
+		ctx->hmac_key_len = 0; 
 		
 		in_sg = sg_next(in_sg);
 		
@@ -1034,18 +1049,22 @@ static int nuc970_sha_final(struct ahash_request *req)
 	return 0;
 }
 
-static int nuc970_sha_init(struct ahash_request *req)
+static int nuc970_hmac_sha_init(struct ahash_request *req, int is_hmac)
 {
 	struct crypto_ahash *tfm = crypto_ahash_reqtfm(req);
 	struct nuc970_ctx *ctx = crypto_tfm_ctx(req->base.tfm);
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 	
 	crpt_regs->CRPT_HMAC_CTL = HMAC_STOP;
-	//printk("nuc970_sha_init: digest size: %d\n", crypto_ahash_digestsize(tfm));
+	//printk("nuc970_sha_init: digest size: %d %s\n", crypto_ahash_digestsize(tfm), is_hmac ? "(HMAC)" : "");
 	crpt_regs->CRPT_HMAC_CTL = HMAC_INSWAP | HMAC_OUTSWAP;
-	crpt_regs->CRPT_HMAC_KEYCNT = 0;
+	
+	if (is_hmac)
+		crpt_regs->CRPT_HMAC_CTL |= HMAC_EN;
+	else
+		crpt_regs->CRPT_HMAC_KEYCNT = 0;
+	
 	ctx->is_first_block = 1;
-	ctx->sha_remain_bytes = 0;
 
 	switch (crypto_ahash_digestsize(tfm)) 
 	{
@@ -1077,6 +1096,34 @@ static int nuc970_sha_init(struct ahash_request *req)
 	return 0;
 }
 
+
+static int nuc970_sha_init(struct ahash_request *req)
+{
+	return nuc970_hmac_sha_init(req, 0);
+}
+
+static int nuc970_hmac_init(struct ahash_request *req)
+{
+	return nuc970_hmac_sha_init(req, 1);
+}
+
+static int nuc970_hmac_setkey(struct crypto_ahash *tfm, const u8 *key, unsigned int keylen)
+{
+	struct nuc970_ctx *ctx = crypto_ahash_ctx(tfm);
+	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
+
+	//printk("[%s],keylen=%d\n", __func__, keylen);
+	
+	memcpy(nuc970_crdev.hmac_inbuf, key, keylen);
+	
+	ctx->hmac_key_len = keylen;
+
+	crpt_regs->CRPT_HMAC_KEYCNT = keylen;
+
+	return 0;
+}
+
+
 static int nuc970_sha_finup(struct ahash_request *req)
 {
 	int err1, err2;
@@ -1099,11 +1146,22 @@ static int nuc970_sha_finup(struct ahash_request *req)
 static int nuc970_sha_digest(struct ahash_request *req)
 {
 	//printk("nuc970_sha_digest.\n");
-	return nuc970_sha_init(req) ?: nuc970_sha_finup(req);
+	return nuc970_hmac_sha_init(req, 0) ?: nuc970_sha_finup(req);
 }
+
+static int nuc970_hmac_digest(struct ahash_request *req)
+{
+	//printk("nuc970_sha_digest.\n");
+	return nuc970_hmac_sha_init(req, 1) ?: nuc970_sha_finup(req);
+}
+
 
 static int nuc970_sha_cra_init(struct crypto_tfm *tfm)
 {
+	struct nuc970_ctx  *ctx = crypto_tfm_ctx(tfm);
+
+	ctx->hmac_key_len = 0;
+	
 	//printk("nuc970_sha_cra_init.\n");
 
 	//spin_lock(&nuc970_crdev.sha_lock);
@@ -1140,9 +1198,212 @@ static struct ahash_alg nuc970_hash_algs[] = {
 		}
 	}
 },
+{
+	.init		= nuc970_sha_init,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_sha_digest,
+	.halg = {
+		.digestsize	= SHA224_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "sha224",
+			.cra_driver_name	= "nuc970-sha224",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA224_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_sha_init,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_sha_digest,
+	.halg = {
+		.digestsize	= SHA256_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "sha256",
+			.cra_driver_name	= "nuc970-sha256",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA256_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_sha_init,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_sha_digest,
+	.halg = {
+		.digestsize	= SHA384_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "sha384",
+			.cra_driver_name	= "nuc970-sha384",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA384_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_sha_init,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_sha_digest,
+	.halg = {
+		.digestsize	= SHA512_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "sha512",
+			.cra_driver_name	= "nuc970-sha512",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA512_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_hmac_init,
+	.setkey		= nuc970_hmac_setkey,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_hmac_digest,
+	.halg = {
+		.digestsize	= SHA1_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "hmac-sha1",
+			.cra_driver_name	= "nuc970-hmac-sha1",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA1_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_hmac_init,
+	.setkey		= nuc970_hmac_setkey,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_hmac_digest,
+	.halg = {
+		.digestsize	= SHA224_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "hmac-sha224",
+			.cra_driver_name	= "nuc970-hmac-sha224",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA224_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_hmac_init,
+	.setkey		= nuc970_hmac_setkey,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_hmac_digest,
+	.halg = {
+		.digestsize	= SHA256_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "hmac-sha256",
+			.cra_driver_name	= "nuc970-hmac-sha256",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA256_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_hmac_init,
+	.setkey		= nuc970_hmac_setkey,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_hmac_digest,
+	.halg = {
+		.digestsize	= SHA384_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "hmac-sha384",
+			.cra_driver_name	= "nuc970-hmac-sha384",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA384_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
+{
+	.init		= nuc970_hmac_init,
+	.setkey		= nuc970_hmac_setkey,
+	.update		= nuc970_sha_update,
+	.final		= nuc970_sha_final,
+	.finup		= nuc970_sha_finup,
+	.digest		= nuc970_hmac_digest,
+	.halg = {
+		.digestsize	= SHA512_DIGEST_SIZE,
+		.base	= {
+			.cra_name		= "hmac-sha512",
+			.cra_driver_name	= "nuc970-hmac-sha512",
+			.cra_priority	= 100,
+			.cra_flags		= CRYPTO_ALG_TYPE_AHASH | CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK,
+			.cra_blocksize	= SHA512_BLOCK_SIZE,
+			.cra_ctxsize	= sizeof(struct nuc970_ctx),
+			.cra_alignmask	= 0,
+			.cra_module		= THIS_MODULE,
+			.cra_init		= nuc970_sha_cra_init,
+			.cra_exit		= nuc970_sha_cra_exit,
+		}
+	}
+},
 };
 
-static void nuc970_crypto_remove(struct platform_device *pdev)
+static int nuc970_crypto_remove(struct platform_device *pdev)
 {
 	int  i;
 	struct device *dev = &pdev->dev;
@@ -1164,6 +1425,7 @@ static void nuc970_crypto_remove(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	release_mem_region(res->start, resource_size(res));
+	return 0;
 }
 
 static int nuc970_crypto_probe(struct platform_device *pdev)

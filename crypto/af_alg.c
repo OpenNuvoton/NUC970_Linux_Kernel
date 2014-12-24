@@ -214,6 +214,25 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 			goto unlock;
 
 		err = alg_setkey(sk, optval, optlen);
+		break;
+		
+	case ALG_USE_REG_KEY:
+		if (sock->state == SS_CONNECTED)
+			goto unlock;
+		if (!type->setkey)
+			goto unlock;
+
+		alg_setkey(sk, 1, 0);
+		break;
+
+	case ALG_USE_MTP_KEY:
+		if (sock->state == SS_CONNECTED)
+			goto unlock;
+		if (!type->setkey)
+			goto unlock;
+
+		alg_setkey(sk, 0, 0);
+		break;
 	}
 
 unlock:
