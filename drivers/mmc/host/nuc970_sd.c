@@ -664,17 +664,19 @@ static void nuc970_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
         case MMC_POWER_ON: // enable 74 clocks
             __raw_writel(0, REG_SDECR);
             nuc970_sd_write(REG_FMICSR, 0x2);
-            if ((ios->clock <=400000) && (ios->clock != 0))
+
+            if (ios->clock == 0)
+                return;
+                
+            if (ios->clock <= 400000)
             {
+                clk_set_rate(host->upll_clk, 100000000);
                 clk_set_rate(host->sd_clk, ios->clock);
                 nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_CLK74_OE);
                 while (nuc970_sd_read(REG_SDCSR) & SDCSR_CLK74_OE);
             }
             else
-            {
-                clk_set_rate(host->upll_clk, 88000000);
                 clk_set_rate(host->sd_clk, ios->clock);
-            }
             break;
         default:
             WARN_ON(1);
