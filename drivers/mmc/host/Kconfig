@@ -423,6 +423,21 @@ choice
 	bool "Port I"
 endchoice
 
+config MMC_NUC970_EMMC
+	tristate "Nuvoton NUC970 eMMC support"
+	depends on MACH_NUC970 && !MTD_NAND_NUC970
+
+choice
+    prompt "NUC970 eMMC pin selection"
+    default NUC970_EMMC_PC
+    depends on MMC_NUC970_EMMC
+	
+    config NUC970_EMMC_PC
+	bool "Port C"
+    config NUC970_EMMC_PI
+	bool "Port I"
+endchoice
+
 config MMC_S3C
 	tristate "Samsung S3C SD/MMC Card Interface support"
 	depends on ARCH_S3C24XX

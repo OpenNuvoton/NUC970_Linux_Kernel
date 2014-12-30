@@ -525,7 +525,7 @@ config MTD_NAND_NUC900
 
 config MTD_NAND_NUC970
 	tristate "Nuvoton NUC970 MTD NAND"
-	depends on ARCH_NUC970
+	depends on ARCH_NUC970 && !MMC_NUC970_EMMC
 	help
 	  This enables the driver for the NAND Flash on NUC970.
 

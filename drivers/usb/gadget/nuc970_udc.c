@@ -406,12 +406,12 @@ void paser_irq_stat(int irq, struct nuc970_udc *dev)
         case USB_FLT_DET:
             if (__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000)
             {
-                pr_devel("plug in\n");
+                printk("plug in\n");
                 nuc970_udc_enable(dev);
             }
             else
             {
-                pr_devel("plug out\n");
+                printk("plug out\n");
                 nuc970_udc_disable(dev);
             }
             break;
