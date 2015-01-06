@@ -328,7 +328,7 @@ static void nuc970_sd_disable(struct nuc970_sd_host *host)
     nuc970_sd_write(REG_DMACCSR, DMACCSR_DMACEN | DMACCSR_SW_RST); //enable DMAC for FMI
     nuc970_sd_write(REG_FMICSR, FMICSR_SW_RST); /* Enable SD functionality of FMI */
     nuc970_sd_write(REG_SDISR, 0xffffffff);
-    nuc970_sd_write(REG_FMICSR, nuc970_sd_read(REG_SDCSR) & ~FMICSR_SD_EN);
+    nuc970_sd_write(REG_FMICSR, nuc970_sd_read(REG_FMICSR) & ~FMICSR_SD_EN);
 }
 
 /*

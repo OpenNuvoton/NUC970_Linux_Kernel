@@ -431,7 +431,7 @@ choice
     prompt "NUC970 eMMC pin selection"
     default NUC970_EMMC_PC
     depends on MMC_NUC970_EMMC
-	
+
     config NUC970_EMMC_PC
 	bool "Port C"
     config NUC970_EMMC_PI

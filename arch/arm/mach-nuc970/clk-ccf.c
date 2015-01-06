@@ -456,6 +456,7 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[usbd_gate], "usbd_hclk", NULL);
 	clk_register_clkdev(clk[fmi_gate], "fmi_hclk", NULL);
 	clk_register_clkdev(clk[nand_gate], "nand_hclk", NULL);
+    clk_register_clkdev(clk[emmc_gate], "emmc_hclk", NULL);
 	clk_register_clkdev(clk[crypto_gate], "crypto_hclk", NULL);
 	clk_register_clkdev(clk[jpeg_gate], "jpeg_hclk", NULL);
 	clk_register_clkdev(clk[jpeg_eclk_div], "jpeg_eclk_div", NULL);
@@ -495,6 +496,12 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[sdh_eclk_mux], "sdh_eclk_mux", NULL);
 	clk_register_clkdev(clk[sdh_eclk_div], "sdh_eclk_div", NULL);
 	clk_register_clkdev(clk[sdh_eclk_gate], "sdh_eclk", NULL);
+    
+    clk_register_clkdev(clk[emmc_aplldiv], "emmc_aplldiv", NULL);
+	clk_register_clkdev(clk[emmc_uplldiv], "emmc_uplldiv", NULL);
+	clk_register_clkdev(clk[emmc_eclk_mux], "emmc_eclk_mux", NULL);
+	clk_register_clkdev(clk[emmc_eclk_div], "emmc_eclk_div", NULL);
+	clk_register_clkdev(clk[emmc_eclk_gate], "emmc_eclk", NULL);
 	
 	clk_register_clkdev(clk[adc_aplldiv], "adc_aplldiv", NULL);
 	clk_register_clkdev(clk[adc_uplldiv], "adc_uplldiv", NULL);

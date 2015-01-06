@@ -26,18 +26,18 @@
 #define REG_NAND_DMACISR	(FMI_BA+0x414)  /* DMAC Interrupt Status Register */
 
 #define REG_NAND_FMICSR		(FMI_BA+0x800)   /* Global Control and Status Register */
-#define REG_NAND_FMIIER	    (FMI_BA+0x804)   /* Global Interrupt Control Register */
-#define REG_NAND_FMIISR	    (FMI_BA+0x808)   /* Global Interrupt Status Register */
+#define REG_NAND_FMIIER	    	(FMI_BA+0x804)   /* Global Interrupt Control Register */
+#define REG_NAND_FMIISR	    	(FMI_BA+0x808)   /* Global Interrupt Status Register */
 
 /* eMMC Registers */
-#define REG_NAND_SDCSR	    (FMI_BA+0x820)   /* SD control and status register */
-#define REG_NAND_SDARG	    (FMI_BA+0x824)   /* SD command argument register */
-#define REG_NAND_SDIER		(FMI_BA+0x828)   /* SD interrupt enable register */
-#define REG_NAND_SDISR		(FMI_BA+0x82C)   /* SD interrupt status register */
-#define REG_NAND_SDRSP0		(FMI_BA+0x830)   /* SD receive response token register 0 */
-#define REG_NAND_SDRSP1		(FMI_BA+0x834)   /* SD receive response token register 1 */
-#define REG_NAND_SDBLEN		(FMI_BA+0x838)   /* SD block length register */
-#define REG_NAND_SDTMOUT	(FMI_BA+0x83C)   /* SD block length register */
+#define REG_EMMCCSR	    	(FMI_BA+0x820)   /* SD control and status register */
+#define REG_EMMCARG	    	(FMI_BA+0x824)   /* SD command argument register */
+#define REG_EMMCIER		(FMI_BA+0x828)   /* SD interrupt enable register */
+#define REG_EMMCISR		(FMI_BA+0x82C)   /* SD interrupt status register */
+#define REG_EMMCRSP0		(FMI_BA+0x830)   /* SD receive response token register 0 */
+#define REG_EMMCRSP1		(FMI_BA+0x834)   /* SD receive response token register 1 */
+#define REG_EMMCBLEN		(FMI_BA+0x838)   /* SD block length register */
+#define REG_EMMCTMOUT		(FMI_BA+0x83C)   /* SD block length register */
 
 /* NAND-type Flash Registers */
 #define REG_SMCSR	        (FMI_BA+0x8A0)   /* NAND Flash Control and Status Register */
@@ -82,5 +82,54 @@
 #define REG_SMRA0			(FMI_BA+0xA00)  /* Smart-Media Redundant Area Register */
 #define REG_SMRA1			(FMI_BA+0xA04)  /* Smart-Media Redundant Area Register */
 
+/* FMI Global Control and Status Register(FMICSR) */
+#define FMICSR_SWRST        (1)
+#define FMICSR_EMMCEN       (1<<1)
+
+/* FMI Global Interrupt Control Register(FMIIER) */
+#define FMIIER_DTAIE        (1)
+
+/* FMI Global Interrupt Status Register (FMIISR) */
+#define FMIISR_DTAIF        (1)
+
+/* EMMC Control and Status Register (EMMCCSR) */
+#define EMMCCSR_CO_EN         (1)
+#define EMMCCSR_RI_EN         (1<<1)
+#define EMMCCSR_DI_EN         (1<<2)
+#define EMMCCSR_DO_EN         (1<<3)
+#define EMMCCSR_R2_EN         (1<<4)
+#define EMMCCSR_CLK74_OE      (1<<5)
+#define EMMCCSR_CLK8_OE       (1<<6)
+#define EMMCCSR_SW_RST        (1<<14)
+#define EMMCCSR_DBW           (1<<15)
+
+/* EMMC Interrupt Control Register (EMMCIER) */
+#define EMMCIER_BLKD_IE       (1)
+#define EMMCIER_CRC_IE        (1<<1)
+#define EMMCIER_RITO_IE       (1<<12)
+#define EMMCIER_DITO_IE       (1<<13)
+
+/* EMMC Interrupt Status Register (EMMCISR) */
+#define EMMCISR_BLKD_IF       (1)
+#define EMMCISR_CRC_IF        (1<<1)
+#define EMMCISR_CRC_7         (1<<2)
+#define EMMCISR_CRC_16        (1<<3)
+#define EMMCISR_SDDAT0        (1<<7)
+#define EMMCISR_RITO_IF       (1<<12)
+#define EMMCISR_DITO_IF       (1<<13)
+
+/* DMAC Control and Status Register (DMACCSR) */
+#define DMACCSR_DMAC_EN     (1)
+#define DMACCSR_SWRST       (1<<1)
+#define DMACCSR_SGEN        (1<<3)
+#define DMACCSR_FMIBUSY     (1<<9)
+
+/* DMAC Interrupt Enable Register (DMACIER) */
+#define DMACIER_TABORTIE   (1)
+#define DMACIER_WEOTIE     (1<<1)
+
+/* DMAC Interrupt Status Register (DMACISR) */
+#define DMACISR_TABORTIF   (1)
+#define DMACISR_WEOTIF     (1<<1)
 
 #endif

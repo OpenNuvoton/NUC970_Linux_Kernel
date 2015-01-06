@@ -1425,7 +1425,7 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
     else
     {
         req = list_entry(ep->queue.next, struct nuc970_request, queue);
-        pr_devel("req = %x\n", req);
+        //pr_devel("req = %x\n", req);
     }
 
     temp = __raw_readl(controller.reg + REG_USBD_SETUP1_0);

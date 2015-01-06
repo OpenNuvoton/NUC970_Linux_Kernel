@@ -412,7 +412,7 @@ struct platform_device nuc970_device_sdh = {
 #endif
 
 /* NAND, eMMC Controller */
-#ifdef CONFIG_MTD_NAND_NUC970
+#if defined (CONFIG_MTD_NAND_NUC970) || defined (CONFIG_MMC_NUC970_EMMC)
 static struct resource nuc970_fmi_resource[] = {
         [0] = {
                 .start = NUC970_PA_FMI,
@@ -1239,7 +1239,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_MMC_NUC970_SD
 	&nuc970_device_sdh,
 #endif
-#ifdef CONFIG_MTD_NAND_NUC970
+#if defined (CONFIG_MTD_NAND_NUC970) || defined (CONFIG_MMC_NUC970_EMMC)
 	&nuc970_device_fmi,
 #endif
 #ifdef CONFIG_JPEG_CODEC
