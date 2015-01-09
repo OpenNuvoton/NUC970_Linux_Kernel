@@ -1,13 +1,13 @@
 config VIDEO_NUC970
-	tristate "NUVOTON NUC970 Video-In Support"
+	tristate "Nuvoton NUC970 Video-In Support"
 	depends on I2C && VIDEO_DEV 
 	select VIDEO_BUF
 	select VIDEOBUF_DMA_CONTIG 
 	---help---
-	Support for built-in video-in interface for AVID Daytona SoC.
+	Support for built-in video-in interface for NUC970.
 
 choice
-	prompt "NUVOTON NUC970 Image Sensor Selection"
+	prompt "Nuvoton NUC970 Image Sensor Selection"
 	depends on VIDEO_NUC970
 	default SENSOR_NT99141
 

@@ -18,10 +18,10 @@ config IRTTY_SIR
 	  If unsure, say Y.
 
 config NUC970_SIR
-	tristate "nuc970 sir"
+	tristate "NUC970 SIR on UART"
 	depends on IRDA && TTY
 	help
-	  .
+      Enable SIR function device on NUC970 UART devcies.
 
 config BFIN_SIR
 	tristate "Blackfin SIR on UART"

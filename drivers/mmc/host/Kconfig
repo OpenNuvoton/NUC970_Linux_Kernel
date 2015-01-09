@@ -425,7 +425,7 @@ endchoice
 
 config MMC_NUC970_EMMC
 	tristate "Nuvoton NUC970 eMMC support"
-	depends on MACH_NUC970 && !MTD_NAND_NUC970
+	depends on MACH_NUC970 && NUC970_FMI_EMMC
 
 choice
     prompt "NUC970 eMMC pin selection"
