@@ -151,5 +151,8 @@
 #define REG_GPIO_DBNCECON	(GPIO_BA+0x3F0)              
 #define REG_GPIO_ISR		  (GPIO_BA+0x3FC)
 
+#define GPIO_OFFSET 0x20
+#define	DRIVER_NAME "nuc970-gpio"
+#define NUMGPIO 0x20 * 10	//(PortA~Portj)
 
 #endif /*  __ASM_ARCH_REGS_GPIO_H */
