@@ -187,7 +187,7 @@ static void nuc970_gpio_core_to_free(struct gpio_chip *chip, unsigned offset)
 
 static int nuc970_gpio_core_to_irq(struct gpio_chip *chip, unsigned offset)
 {
-	unsigned int irqno= IRQ_GPIO_START+offset;;
+	unsigned int irqno= IRQ_GPIO_START+offset;
 	switch(offset)
 	{
 		case NUC970_PH0:

@@ -92,7 +92,7 @@ static void nuc970_irq_gpio_ack(struct irq_data *d)
 
 static void nuc970_irq_gpio_unmask(struct irq_data *d)
 {
-	volatile unsigned int port,num;
+	unsigned int port,num;
 	port =(d->irq-IRQ_GPIO_START)/GPIO_OFFSET;
 	num  =(d->irq-IRQ_GPIO_START)%GPIO_OFFSET;
 	__raw_writel(0x1<<num,(volatile unsigned int *)(Port[port]+0x18));
@@ -101,7 +101,7 @@ static void nuc970_irq_gpio_unmask(struct irq_data *d)
 
 static int nuc970_irq_gpio_type(struct irq_data *d, unsigned int type)
 {
-	volatile unsigned int port,num;
+	unsigned int port,num;
 	port =(d->irq-IRQ_GPIO_START)/GPIO_OFFSET;
 	num  =(d->irq-IRQ_GPIO_START)%GPIO_OFFSET;
 
@@ -178,7 +178,7 @@ static const unsigned int EXT[16]={
 
 static void nuc970_irq_ext_mask(struct irq_data *d)
 {
-	printk("[%-20s] : Enter... d->irq=%d\n", __FUNCTION__,d->irq);
+	//printk("[%-20s] : Enter... d->irq=%d\n", __FUNCTION__,d->irq);
 	if(d->irq==IRQ_EXT0_H0 || d->irq==IRQ_EXT0_F11)
 		__raw_writel(1<<IRQ_EXT0, REG_AIC_MDCR);
 	else if(d->irq==IRQ_EXT1_H1 || d->irq==IRQ_EXT1_F12)
@@ -225,7 +225,7 @@ static void nuc970_irq_ext_unmask(struct irq_data *d)
 
 static int nuc970_irq_ext_type(struct irq_data *d, unsigned int type)
 {
-	volatile unsigned int port,num;
+	unsigned int port,num;
 	port =(EXT[d->irq-EXT0_BASE])/GPIO_OFFSET;
 	num  =(EXT[d->irq-EXT0_BASE])%GPIO_OFFSET;
 	if (type == IRQ_TYPE_PROBE) {
@@ -245,8 +245,8 @@ static int nuc970_irq_ext_type(struct irq_data *d, unsigned int type)
 	}else
 		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) & ~(0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
 
-	printk("Port[%d]+0x10=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x10)));
-	printk("Port[%d]+0x14=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x14)));
+	//printk("Port[%d]+0x10=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x10)));
+	//printk("Port[%d]+0x14=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x14)));
 	return 0;
 }
 
@@ -365,7 +365,7 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			}
 			break;
 	}
-	printk("[%-20s] : Leave...\n", __FUNCTION__);
+	//printk("[%-20s] : Leave...\n", __FUNCTION__);
 }
 #endif
 
