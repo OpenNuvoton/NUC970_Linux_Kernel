@@ -41,7 +41,12 @@
 
 void nuc970_restart(char mode, const char *cmd)
 {
-	__raw_writel(1, REG_AHBIPRST);	// System reset...
+	//UnlockReg
+	__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
+	__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
+	__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
+
+	__raw_writel(1, REG_AHBIPRST);      // System reset...
 }
 
 EXPORT_SYMBOL(nuc970_restart);
