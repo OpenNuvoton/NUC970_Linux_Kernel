@@ -178,8 +178,7 @@ struct nuc970_pinctrl_group {
 	const unsigned func;
 };
 
-static const unsigned emac0_0_pins[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09}; // Port A
-static const unsigned emac0_1_pins[] = {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59}; // Port F
+static const unsigned emac0_pins[] = {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59}; // Port F
 static const unsigned emac1_pins[] = {0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B}; // Port E
 static const unsigned pps0_pin[] = {0x5E};
 static const unsigned pps1_pin[] = {0x4D};
@@ -357,15 +356,9 @@ static const unsigned ebi_1_pin[] = {0x7E, 0x7F, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0
 
 static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 	{
-		.name = "emac0_0_grp",
-		.pins = emac0_0_pins,
-		.num_pins = ARRAY_SIZE(emac0_0_pins),
-		.func = 0x1,
-	},
-	{
-		.name = "emac0_1_grp",
-		.pins = emac0_1_pins,
-		.num_pins = ARRAY_SIZE(emac0_1_pins),
+		.name = "emac0_grp",
+		.pins = emac0_pins,
+		.num_pins = ARRAY_SIZE(emac0_pins),
 		.func = 0x1,
 	},
 	{
@@ -1279,7 +1272,7 @@ struct nuc970_pmx_func {
 	const unsigned num_groups;
 };
 
-static const char * const emac0_groups[] = {"emac0_0_grp", "emac0_1_grp"};
+static const char * const emac0_groups[] = {"emac0_grp"};
 static const char * const emac1_groups[] = {"emac1_grp"};
 static const char * const pps0_groups[] = {"pps0_grp"};
 static const char * const pps1_groups[] = {"pps1_grp"};
@@ -1866,19 +1859,11 @@ static struct pinctrl_desc nuc970_pinctrl_desc = {
 static const struct pinctrl_map nuc970_pinmap[] = {
 	{
 		.dev_name = "nuc970-emac0",
-		.name = "emac0-PA",
+		.name = PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "emac0",
-		.data.mux.group = "emac0_0_grp",
-	},
-	{
-		.dev_name = "nuc970-emac0",
-		.name = "emac0-PF",
-		.type = PIN_MAP_TYPE_MUX_GROUP,
-		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "emac0",
-		.data.mux.group = "emac0_1_grp",
+		.data.mux.group = "emac0_grp",
 	},
 	{
 		.dev_name = "nuc970-emac1",

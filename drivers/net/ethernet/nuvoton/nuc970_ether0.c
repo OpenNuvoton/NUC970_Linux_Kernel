@@ -966,16 +966,20 @@ static void __init get_mac_address(struct net_device *dev)
 static int nuc970_mii_setup(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
+	struct platform_device *pdev;
 	struct phy_device *phydev;
 	int i, err = 0;
+
+	pdev = ether->pdev;
 
 	ether->mii_bus = mdiobus_alloc();
 	if (!ether->mii_bus) {
 		err = -ENOMEM;
+		dev_err(&pdev->dev, "mdiobus_alloc() failed\n");
 		goto out0;
 	}
 
-	ether->mii_bus->name = "nuc970_mii0";
+	ether->mii_bus->name = "nuc970_rmii0";
 	ether->mii_bus->read = &nuc970_mdio_read;
 	ether->mii_bus->write = &nuc970_mdio_write;
 	ether->mii_bus->reset = &nuc970_mdio_reset;
@@ -987,6 +991,7 @@ static int nuc970_mii_setup(struct net_device *dev)
 	ether->mii_bus->irq = kmalloc(sizeof(int) * PHY_MAX_ADDR, GFP_KERNEL);
 	if (!ether->mii_bus->irq) {
 		err = -ENOMEM;
+		dev_err(&pdev->dev, "kmalloc() failed\n");
 		goto out1;
 
 	}
@@ -997,12 +1002,16 @@ static int nuc970_mii_setup(struct net_device *dev)
 
 	platform_set_drvdata(ether->pdev, ether->mii_bus);
 
-	if (mdiobus_register(ether->mii_bus))
+	if (mdiobus_register(ether->mii_bus)) {
+		dev_err(&pdev->dev, "mdiobus_register() failed\n");
 		goto out2;
+	}
 
 	phydev = phy_find_first(ether->mii_bus);
-	if(phydev == NULL)
-		goto out2;
+	if(phydev == NULL) {
+		dev_err(&pdev->dev, "phy_find_first() failed\n");
+		goto out3;
+	}
 
 	phydev = phy_connect(dev, dev_name(&phydev->dev),
 			     &adjust_link,
@@ -1010,6 +1019,7 @@ static int nuc970_mii_setup(struct net_device *dev)
 
 	if(IS_ERR(phydev)) {
 		err = PTR_ERR(phydev);
+		dev_err(&pdev->dev, "phy_connect() failed\n");
 		goto out3;
 	}
 
@@ -1034,7 +1044,6 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 {
 	struct nuc970_ether *ether;
 	struct net_device *dev;
-	struct pinctrl *p = NULL;
 	int error;
 
 	dev = alloc_etherdev(sizeof(struct nuc970_ether));
@@ -1090,17 +1099,6 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	clk_prepare(ether->clk);
 	clk_enable(ether->clk);
 
-#if defined (CONFIG_NUC970_ETH0_PA)
-	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PA");
-#elif defined (CONFIG_NUC970_ETH0_PF)
-	p = devm_pinctrl_get_select(&pdev->dev, "emac0-PF");
-#endif
-	if(IS_ERR(p)) {
-		dev_err(&pdev->dev, "unable to reserve pin\n");
-		error = PTR_ERR(p);
-		goto err2;
-	}
-
 	ether->pdev = pdev;
 	ether->msg_enable = NETIF_MSG_LINK;
 
@@ -1131,7 +1129,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 
 	error = register_netdev(dev);
 	if (error != 0) {
-		dev_err(&pdev->dev, "Regiter EMC nuc970 FAILED\n");
+		dev_err(&pdev->dev, "register_netdev() failed\n");
 		error = -ENODEV;
 		goto err2;
 	}
