@@ -773,15 +773,28 @@ static struct flash_platform_data nuc970_spi0_flash_data = {
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 100000000,
+                .max_speed_hz = 75000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi0_flash_data,
                 .mode = SPI_MODE_0,
         },
 };
+#endif
 
-static struct nuc970_spi_info nuc970_spiflash0_data = {
+#ifdef CONFIG_SPI_SPIDEV
+static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
+        {
+                .modalias = "spidev",
+                .max_speed_hz = 75000000,
+                .bus_num = 0,
+                .chip_select = 0,
+                .mode = SPI_MODE_0,
+        },
+};
+#endif
+
+static struct nuc970_spi_info nuc970_spi0_platform_data = {
         .num_cs		= 1,
         .lsb		= 0,
         .txneg		= 1,
@@ -792,7 +805,6 @@ static struct nuc970_spi_info nuc970_spiflash0_data = {
         .txbitlen	= 8,
         .bus_num	= 0,
 };
-#endif
 
 static struct resource nuc970_spi0_resource[] = {
         [0] = {
@@ -812,9 +824,9 @@ struct platform_device nuc970_device_spi0 = {
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_spi0_resource),
         .resource	  = nuc970_spi0_resource,
-#ifdef CONFIG_MTD_M25P80
+#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV)
         .dev		= {
-                .platform_data = &nuc970_spiflash0_data,
+                .platform_data = &nuc970_spi0_platform_data,
     }
 #endif
 };
@@ -841,15 +853,28 @@ static struct flash_platform_data nuc970_spi1_flash_data = {
 static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 100000000,
+                .max_speed_hz = 75000000,
                 .bus_num = 1,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi1_flash_data,
                 .mode = SPI_MODE_0,
         },
 };
+#endif
 
-static struct nuc970_spi_info nuc970_spiflash1_data = {
+#ifdef CONFIG_SPI_SPIDEV
+static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
+        {
+                .modalias = "spidev",
+                .max_speed_hz = 75000000,
+                .bus_num = 1,
+                .chip_select = 0,
+                .mode = SPI_MODE_0,
+        },
+};
+#endif
+
+static struct nuc970_spi_info nuc970_spi1_platform_data = {
         .num_cs		= 1,
         .lsb		= 0,
         .txneg		= 1,
@@ -860,7 +885,6 @@ static struct nuc970_spi_info nuc970_spiflash1_data = {
         .txbitlen	= 8,
         .bus_num	= 1,
 };
-#endif
 
 static struct resource nuc970_spi1_resource[] = {
         [0] = {
@@ -880,9 +904,9 @@ struct platform_device nuc970_device_spi1 = {
         .id		  = -1,
         .num_resources	  = ARRAY_SIZE(nuc970_spi1_resource),
         .resource	  = nuc970_spi1_resource,
-#ifdef CONFIG_MTD_M25P80 
+#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV)
         .dev		= {                
-                .platform_data = &nuc970_spiflash1_data,
+                .platform_data = &nuc970_spi1_platform_data,
 		}
 #endif
 };
@@ -1358,7 +1382,7 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	platform_add_devices(device, size);
 	platform_add_devices(nuc970_public_dev, ARRAY_SIZE(nuc970_public_dev));
 
-#ifdef CONFIG_MTD_M25P80
+#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV)
  	/* register spi devices */
 #ifdef CONFIG_SPI_NUC970_P0
 	spi_register_board_info(nuc970_spi0_board_info, ARRAY_SIZE(nuc970_spi0_board_info));

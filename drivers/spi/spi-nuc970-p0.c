@@ -173,17 +173,6 @@ static void nuc970_spi0_gobusy(struct nuc970_spi *hw)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static int nuc970_spi0_setupxfer(struct spi_device *spi,
-				 struct spi_transfer *t)
-{
-	return 0;
-}
-
-static int nuc970_spi0_setup(struct spi_device *spi)
-{
-	return 0;
-}
-
 static inline unsigned int hw_txbyte(struct nuc970_spi *hw, int count)
 {
 	return hw->tx ? hw->tx[count] : 0;
@@ -235,6 +224,24 @@ static irqreturn_t nuc970_spi0_irq(int irq, void *dev)
 
 	complete(&hw->done);
 	return IRQ_HANDLED;
+}
+
+static void nuc970_set_clock_polarity(struct nuc970_spi *hw, unsigned int polarity)
+{
+	unsigned int val;
+	unsigned long flags;
+
+	spin_lock_irqsave(&hw->lock, flags);
+
+	val = __raw_readl(hw->regs + REG_CNTRL);
+
+	if (polarity)
+		val |= SELECTPOL;
+	else
+		val &= ~SELECTPOL;
+	__raw_writel(val, hw->regs + REG_CNTRL);
+
+	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
 static void nuc970_tx_edge(struct nuc970_spi *hw, unsigned int edge)
@@ -328,6 +335,90 @@ static void nuc970_enable_int(struct nuc970_spi *hw)
 static void nuc970_set_divider(struct nuc970_spi *hw)
 {
 	__raw_writel(hw->pdata->divider, hw->regs + REG_DIVIDER);
+}
+
+static int nuc970_spi0_update_state(struct spi_device *spi,
+				    struct spi_transfer *t)
+{
+    struct nuc970_spi *hw = (struct nuc970_spi *)to_hw(spi);
+    unsigned int clk;
+    unsigned int div;
+    unsigned int bpw;
+	unsigned int hz;
+    
+    bpw = t ? t->bits_per_word : spi->bits_per_word;
+	hz  = t ? t->speed_hz : spi->max_speed_hz;
+    
+    if(bpw)
+        hw->pdata->txbitlen = spi->bits_per_word;
+    
+    if(hz) {
+        clk = clk_get_rate(hw->clk);
+        div = DIV_ROUND_UP(clk, hz * 2) - 1;
+        hw->pdata->divider = div;
+    }
+        
+    //Mode 0: CPOL=0, CPHA=0; active high
+    //Mode 1: CPOL=0, CPHA=1 ;active low
+    //Mode 2: CPOL=1, CPHA=0 ;active low
+    //Mode 3: POL=1, CPHA=1;active high
+    if (spi->mode & SPI_CPOL)
+        hw->pdata->clkpol = 1;
+    else
+        hw->pdata->clkpol = 0;
+    
+    if ((spi->mode == SPI_MODE_0) || (spi->mode == SPI_MODE_3)) {
+        hw->pdata->txneg = 1;
+        hw->pdata->rxneg = 0;
+    } else {
+        hw->pdata->txneg = 0;
+        hw->pdata->rxneg = 1;
+    }
+    
+    if (spi->mode & SPI_LSB_FIRST)
+        hw->pdata->lsb = 1;
+    else
+        hw->pdata->lsb = 0;
+    
+    return 0;
+}
+
+static int nuc970_spi0_setupxfer(struct spi_device *spi,
+				 struct spi_transfer *t)
+{	
+    struct nuc970_spi *hw = (struct nuc970_spi *)to_hw(spi);
+    int ret;
+          
+    ret = nuc970_spi0_update_state(spi, t);
+    if (ret)
+		return ret;
+   
+    nuc970_spi0_setup_txbitlen(hw, hw->pdata->txbitlen);
+    nuc970_tx_edge(hw, hw->pdata->txneg);
+    nuc970_rx_edge(hw, hw->pdata->rxneg);
+    nuc970_set_clock_polarity(hw, hw->pdata->clkpol);
+    nuc970_send_first(hw, hw->pdata->lsb);
+    
+    return 0;
+}
+
+static int nuc970_spi0_setup(struct spi_device *spi)
+{
+	struct nuc970_spi *hw = (struct nuc970_spi *)to_hw(spi);
+    int ret;
+    
+    ret = nuc970_spi0_update_state(spi, NULL);
+    if (ret)
+		return ret;
+    
+    spin_lock(&hw->bitbang.lock);
+	if (!hw->bitbang.busy) {       
+        nuc970_set_divider(hw);
+        nuc970_slave_select(spi, 0);
+    }
+    spin_unlock(&hw->bitbang.lock);
+    
+    return 0;
 }
 
 static void nuc970_init_spi(struct nuc970_spi *hw)
@@ -470,11 +561,8 @@ static int nuc970_spi0_remove(struct platform_device *dev)
 	struct nuc970_spi *hw = platform_get_drvdata(dev);
 
 	free_irq(hw->irq, hw);
-
 	platform_set_drvdata(dev, NULL);
-
 	spi_bitbang_stop(&hw->bitbang);
-
 
 	clk_disable(hw->clk);
 	clk_put(hw->clk);
