@@ -17,8 +17,6 @@
 #ifndef __ASM_ARCH_SPI_H
 #define __ASM_ARCH_SPI_H
 
-extern void mfp_set_groupg(struct device *dev);
-
 struct nuc970_spi_info {
 	unsigned int num_cs;
 	unsigned int lsb;
@@ -28,11 +26,8 @@ struct nuc970_spi_info {
 	unsigned int sleep;
 	unsigned int txnum;
 	unsigned int txbitlen;
+    unsigned int clkpol;
 	int bus_num;
-};
-
-struct nuc970_spi_chip {
-	unsigned char bits_per_word;
 };
 
 #endif /* __ASM_ARCH_SPI_H */
