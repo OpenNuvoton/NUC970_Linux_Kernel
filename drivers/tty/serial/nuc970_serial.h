@@ -60,6 +60,8 @@
 
 #define UART_REG_IRCR	0x28
 
+#define UART_REG_ALT_CSR 0x2C
+
 #define UART_FUN_SEL    0x30
 #define FUN_SEL_UART    0x00000000
 #define FUN_SEL_LIN     0x00000001

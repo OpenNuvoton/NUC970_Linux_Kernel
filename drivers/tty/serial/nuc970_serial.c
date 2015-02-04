@@ -90,30 +90,36 @@ static inline void serial_out(struct uart_nuc970_port *p, int offset, int value)
 
 static void rs485_start_rx(struct uart_nuc970_port *port)
 {
+	#if 0
+	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
+
 	if(port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
 	{
 		// Set logical level for RTS pin equal to high 
-		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) & ~0x200) );
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) & ~0x200) );
 }
 	else
 {
 		// Set logical level for RTS pin equal to low 
-		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) | 0x200) );
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) | 0x200) );
 	}
+	#endif
 }
 
 static void rs485_stop_rx(struct uart_nuc970_port *port)
 {
+	#if 0
 	if(port->rs485.flags & SER_RS485_RTS_ON_SEND)
 	{
 		// Set logical level for RTS pin equal to high 
-		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) & ~0x200) );
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) & ~0x200) );
 	}
 	else
 	{
 		// Set logical level for RTS pin equal to low 
-		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_IER) | 0x200) );
+		serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) | 0x200) );
 	}
+	#endif
 
 }
 
@@ -397,6 +403,7 @@ static void nuc970serial_shutdown(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	//unsigned long flags;
+	free_irq(port->irq, port);
 
 	/*
 	 * Disable interrupts from this port
@@ -595,7 +602,20 @@ void nuc970serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs48
 	if(rs485conf->flags & SER_RS485_ENABLED)
 	{
 		serial_out(p, UART_FUN_SEL, (serial_in(p, UART_FUN_SEL) | FUN_SEL_RS485) );
-		rs485_start_rx(p);	// stay in Rx mode 	
+	
+		//rs485_start_rx(p);	// stay in Rx mode 	
+
+		if(rs485conf->flags & SER_RS485_RTS_ON_SEND)
+		{
+			serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) & ~0x200) );
+		}
+		else
+		{
+			serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) | 0x200) );
+		}
+		
+		// set auto direction mode
+		serial_out(p,UART_REG_ALT_CSR,(serial_in(p, UART_REG_ALT_CSR) | (1 << 10)) );
 	}
 
 	spin_unlock(&port->lock);
