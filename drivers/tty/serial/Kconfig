@@ -36,6 +36,14 @@ choice
 		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5"
 	config NUC970_UART1_FF_PE
 		bool "Tx:PE2, Rx:PE3, RTS:PE4, CTS:PE5, DTR:PE6, DSR:PE7, nRI:PE8, nCD:PE9"
+	config NUC970_UART1_PH
+		bool "Tx:PH4, Rx:PH5"
+	config NUC970_UART1_FC_PH
+		bool "Tx:PH4, Rx:PH5, RTS:PH6, CTS:PH7"
+	config NUC970_UART1_PI
+		bool "Tx:PI5, Rx:PI6"
+	config NUC970_UART1_FC_PI
+		bool "Tx:PI5, Rx:PI6, RTS:PI7, CTS:PI8"
 endchoice
 
 config NUC970_UART2

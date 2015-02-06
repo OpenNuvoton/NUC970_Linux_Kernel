@@ -607,11 +607,11 @@ void nuc970serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs48
 
 		if(rs485conf->flags & SER_RS485_RTS_ON_SEND)
 		{
-			serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) & ~0x200) );
+			serial_out(p, UART_REG_MCR, (serial_in(p, UART_REG_MCR) & ~0x200) );
 		}
 		else
 		{
-			serial_out(port, UART_REG_MCR, (serial_in(port, UART_REG_MCR) | 0x200) );
+			serial_out(p, UART_REG_MCR, (serial_in(p, UART_REG_MCR) | 0x200) );
 		}
 		
 		// set auto direction mode
@@ -838,6 +838,14 @@ if(pdev->id == 1)
     p = devm_pinctrl_get_select(&pdev->dev, "uart1-fc-PE");
 #elif defined (CONFIG_NUC970_UART1_FF_PE)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart1-ff-PE");
+#elif defined (CONFIG_NUC970_UART1_PH)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-PH");
+#elif defined (CONFIG_NUC970_UART1_FC_PH)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-fc-PH");
+#elif defined (CONFIG_NUC970_UART1_PI)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-PI");
+#elif defined (CONFIG_NUC970_UART1_FC_PI)
+    p = devm_pinctrl_get_select(&pdev->dev, "uart1-fc-PI");
 #endif
 
 	if (IS_ERR(p))
@@ -866,7 +874,7 @@ else if(pdev->id == 4)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart4-PC");
 #elif defined (CONFIG_NUC970_UART4_FC_PC)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart4-fc-PC");
-#elif defined (CONFIG_NUC970_UART4_FH)
+#elif defined (CONFIG_NUC970_UART4_PH)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart4-PH");
 #elif defined (CONFIG_NUC970_UART4_FC_PH)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart4-fc-PH");
