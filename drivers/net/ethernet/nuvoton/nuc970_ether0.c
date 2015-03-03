@@ -94,6 +94,7 @@
 #define ENSTART			0x01
 #define ENRXINTR		0x01
 #define ENRXGD			(0x01 << 4)
+#define ENRDU			(0x01 << 10)
 #define ENRXBERR		(0x01 << 11)
 #define ENTXINTR		(0x01 << 16)
 #define ENTXCP			(0x01 << 18)
@@ -449,7 +450,7 @@ static void nuc970_enable_mac_interrupt(struct net_device *dev)
 {
 	unsigned int val;
 
-	val = ENTXINTR | ENRXINTR | ENRXGD | ENTXCP;
+	val = ENTXINTR | ENRXINTR | ENRXGD | ENTXCP | ENRDU;
 	val |= ENTXBERR | ENRXBERR | ENTXABT;
 
 	__raw_writel(val,  REG_MIEN);
@@ -539,7 +540,7 @@ static void nuc970_reset_mac(struct net_device *dev, int need_free)
 static int nuc970_mdio_write(struct mii_bus *bus, int phy_id, int regnum,
 		u16 value)
 {
-	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT);
+	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT * 100);
 
 	__raw_writel(value,  REG_MIID);
 	__raw_writel((phy_id << 0x08) | regnum | PHYBUSY | MDCON | PHYWR,  REG_MIIDA);
@@ -558,7 +559,7 @@ static int nuc970_mdio_write(struct mii_bus *bus, int phy_id, int regnum,
 
 static int nuc970_mdio_read(struct mii_bus *bus, int phy_id, int regnum)
 {
-	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT);
+	unsigned long timeout = jiffies + msecs_to_jiffies(MII_TIMEOUT * 100);
 
 
 	__raw_writel((phy_id << 0x08) | regnum | PHYBUSY | MDCON,  REG_MIIDA);
@@ -597,9 +598,7 @@ static int nuc970_ether_close(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 	struct platform_device *pdev;
-
 	pdev = ether->pdev;
-
 
 	netif_stop_queue(dev);
 	napi_disable(&ether->napi);
@@ -690,8 +689,6 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		txbd->mode = 0x0;
 		txbd->buffer = (unsigned int)NULL;
 
-		netif_wake_queue(dev);
-
 		entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 	}
 
@@ -700,7 +697,9 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 	} else if (status & MISTA_TXBERR) {
 		dev_err(&pdev->dev, "emc bus error interrupt\n");
 		nuc970_reset_mac(dev, 1);
-	} else if (status & MISTA_TDU) {
+	}
+
+	if (netif_queue_stopped(dev)) {
 		netif_wake_queue(dev);
 	}
 
@@ -713,18 +712,18 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 	struct nuc970_rxbd *rxbd;
 	struct net_device *dev = ether->ndev;
 	struct sk_buff *skb, *s;
-	unsigned int length, status, val, entry;
+	unsigned int length, status;
 	int rx_cnt = 0;
+	int complete = 0;
 
 	rxbd = (ether->rdesc + ether->cur_rx);
 
 	while(rx_cnt < budget) {
 
-		val = __raw_readl(REG_CRXDSA);
-		entry = ether->rdesc_phys + sizeof(struct nuc970_rxbd) * (ether->cur_rx);
-
-		if (val == entry)
+		if((rxbd->sl & RX_OWEN_DMA) == RX_OWEN_DMA) {
+			complete = 1;
 			break;
+		}
 		s = rx_skb[ether->cur_rx];
 		status = rxbd->sl;
 		length = status & 0xFFFF;
@@ -779,13 +778,13 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 	}
 
-	if(rx_cnt < budget)
+	if(complete) {
 		__napi_complete(napi);
-
+		__raw_writel(__raw_readl(REG_MIEN) | ENRXINTR,  REG_MIEN);
+	}
 rx_out:
 
 	ETH_TRIGGER_RX;
-	__raw_writel(__raw_readl(REG_MIEN) | ENRXINTR,  REG_MIEN);
 	return(rx_cnt);
 }
 
