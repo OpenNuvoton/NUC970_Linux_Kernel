@@ -80,20 +80,17 @@ struct nuc970_nand_ecclayout {
 static struct nuc970_nand_ecclayout nuc970_nand_SYSTEM_oob;
 static struct nuc970_nand_ecclayout nuc970_nand_EXECUTE_oob;
 
+#ifndef CONFIG_MTD_CMDLINE_PARTS
 static struct mtd_partition partitions[] = {
-/*************************************/
-/* Notice: Don't modify this section */
-/* Keep SYSTEM partition in first    */
-/* The size will auto-produce        */
-/*************************************/
     {
         .name = "u-boot",
         .offset = 0,
+        .size = 1 * 1024 * 1024,
         .ecclayout = (struct nand_ecclayout*)&nuc970_nand_SYSTEM_oob
     },
     {
         .name = "Kernel",
-        .size = 10 * 1024 * 1024,
+        .size = 20 * 1024 * 1024,
         .offset = MTDPART_OFS_APPEND,
         .ecclayout = (struct nand_ecclayout*)&nuc970_nand_EXECUTE_oob
     },
@@ -103,6 +100,7 @@ static struct mtd_partition partitions[] = {
         .size = MTDPART_SIZ_FULL
     }
 };
+#endif
 
 struct nuc970_nand_info {
     struct nand_hw_control  controller;
@@ -821,6 +819,7 @@ static inline int _nuc970_nand_dma_transfer(struct mtd_info *mtd, const u_char *
     }
 
     writel( nand->m_i32SMRASize , REG_SMREACTL );
+
     writel( readl(REG_SMIER) & (~0x4), REG_SMIER );
     writel ( 0x4, REG_SMISR );
 
@@ -885,6 +884,7 @@ static inline int _nuc970_nand_dma_transfer(struct mtd_info *mtd, const u_char *
 static void nuc970_read_buf_dma(struct mtd_info *mtd, u_char *buf, int len)
 {
     ENTER();
+
     if ( nuc970_wait_sem(mtd) < 0 )
         return;
 
@@ -1154,7 +1154,7 @@ static int nuc970_nand_read_page_hwecc_oob_first(struct mtd_info *mtd, struct na
         LEAVE();
         return -1;
     }
-
+//printk("smcsr 0x%x\n", readl(REG_SMCSR));
     //nuc970_choice_bch_algo ( mtd, page );
 
     /* At first, read the OOB area  */
@@ -1481,12 +1481,12 @@ static int nuc970_nand_probe(struct platform_device *pdev)
             printk("EXECUTE: USE %s HWECC algorithm(SMRA size: %d, Parity number:%d bytes)\n",
                     g_pcBCHAlgoIdx[i32eBCHAlgo], nuc970_nand_EXECUTE_oob.m_SMRASize, g_i32ParityNum[ePageSize][i32eBCHAlgo] );
         }
-        // System area
-        partitions[0].size = 1<<(chip->phys_erase_shift+2);       // 4 block
     }
 
+#ifndef CONFIG_MTD_CMDLINE_PARTS
     nuc970_nand->parts = (struct mtd_partition*)partitions;
     nuc970_nand->nr_parts = ARRAY_SIZE(partitions);
+#endif
 
     nuc970_nand->m_i32SMRASize  = mtd->oobsize;
 //chp    nuc970_nand->eBCHAlgo = nuc970_hwecc_choice_bch_algorithm ( ePageSize,   mtd->oobsize,  0 );
@@ -1525,6 +1525,9 @@ static int nuc970_nand_probe(struct platform_device *pdev)
             ;
     }
 
+    /* add mtd-id. The string should same as uboot definition */
+    mtd->name = "nand0";
+
     /* second phase scan */
     if ( nand_scan_tail( &(nuc970_nand->mtd) ) ) {
         retval = -ENXIO;
@@ -1546,7 +1549,7 @@ static int nuc970_nand_probe(struct platform_device *pdev)
 
     dump_regs(__LINE__);
 
-    printk("fmi-sm: registered successfully! \n");
+    printk("fmi-sm: registered successfully! mtdid=%s\n", mtd->name);
     return retval;
 fail3:
 fail2:
