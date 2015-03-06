@@ -28,6 +28,7 @@
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-crypto.h>
+#include <mach/regs-mtp.h>
 
 /* Static structures */
 
@@ -39,6 +40,7 @@ struct nuc970_crypto_dev {
 	spinlock_t 	 aes_lock;
 	spinlock_t 	 des_lock;
 	spinlock_t 	 sha_lock;
+	spinlock_t 	 mtp_lock;
 	
 	u8			 aes_channels;
 	u8           des_channels;
@@ -73,6 +75,174 @@ struct cryp_algo_template {
 	u32   algomode;
 	struct crypto_alg crypto;
 };
+
+
+static void dump_mtp_status(void)
+{
+    printk("MTP_STATUS: 0x%x\n", MTP->MTP_STATUS);
+    if (MTP->MTP_STATUS & MTP_STATUS_MTPEN)
+    	printk(" ENABLED");
+    if (MTP->MTP_STATUS & MTP_STATUS_KEYVALID)
+    	printk(" KEY_VALID");
+    if (MTP->MTP_STATUS & MTP_STATUS_NONPRG)
+    	printk(" NO_KEY");
+    if (MTP->MTP_STATUS & MTP_STATUS_LOCKED)
+    	printk(" LOCKED");
+    if (MTP->MTP_STATUS & MTP_STATUS_PRGFAIL)
+    	printk(" PROG_FAIL");
+    if (MTP->MTP_STATUS & MTP_STATUS_BUSY)
+    	printk(" BUSY");
+    printk("  PRGCNT=%d\n", MTP_KEY_PROG_COUNT);
+}
+
+
+int  MTP_Enable(void)
+{
+	u32	 loop;
+	
+	MTP->MTP_REGLCTL = 0x59;
+	MTP->MTP_REGLCTL = 0x16;
+	MTP->MTP_REGLCTL = 0x88;
+
+	MTP->MTP_KEYEN |= MTP_KEYEN_KEYEN;
+
+	for (loop = 0; loop < 0x100000; loop++)
+	{
+		if ((MTP->MTP_STATUS & MTP_STATUS_MTPEN) &&
+			!(MTP->MTP_STATUS & MTP_STATUS_BUSY))
+		{
+			if (MTP->MTP_STATUS & MTP_STATUS_NONPRG)
+			{
+				//printk("MTP enabled, no key programmed.\n");
+				return 0;
+			}
+
+			if (MTP->MTP_STATUS & MTP_STATUS_KEYVALID)
+			{
+				//printk("MTP enabled and key valid.\n");
+				return 0;
+			}
+		}
+	}
+	printk("MTP_Enable failed!");
+	dump_mtp_status();
+	return -1;
+}
+
+
+static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
+				 const u8 *key, unsigned int keylen)
+{
+	u32   *mtp_key = (u32 *)key;
+	int   i, loop;
+
+	if (keylen == 0)
+	{
+		if (MTP_Enable() < 0)
+			return -1;
+		
+		if (MTP->MTP_STATUS & MTP_STATUS_NONPRG)
+		{
+			printk("No key in MTP.\n");
+			return -1;
+		}
+
+		MTP->MTP_CTL |= (MTP->MTP_CTL & MTP_CTL_MODE_MASK) | MTP_CTL_MODE_LOCK;
+		MTP->MTP_PCYCLE = 0x60AE;
+	
+		MTP->MTP_PSTART = MTP_PSTART_PSTART;
+
+		for (loop = 0; loop < 0x100000; loop++)
+		{
+			if (MTP->MTP_PSTART == 0)
+				break;
+		}
+		if (loop >= 0x100000)
+		{
+			printk("Failed to start MTP!\n");
+			return -1;
+		}
+	
+		MTP_Enable();
+
+		if ((MTP->MTP_STATUS & (MTP_STATUS_MTPEN | MTP_STATUS_KEYVALID | MTP_STATUS_LOCKED)) !=
+		 				   (MTP_STATUS_MTPEN | MTP_STATUS_KEYVALID | MTP_STATUS_LOCKED))
+		{
+			printk("MTP lock failed!\n");
+			dump_mtp_status();
+			return -1;
+		}
+	}
+	else if (keylen == 1)
+	{
+		if (MTP_Enable() < 0)
+			return 0xFFFF;
+		return MTP->MTP_STATUS;
+	}
+	else
+	{
+		/*
+		 *  Program MTP key
+		 */		
+		//printk("%s called.\n", __func__);
+		//for (i = 0; i < 8; i++)
+		//	printk("MTP KEY %d = 0x%x\n", i, mtp_key[i]);
+		//printk("user data = 0x%x\n", mtp_key[8]);
+
+		if (MTP_Enable() < 0)
+			return -1;
+
+		MTP->MTP_CTL |= (MTP->MTP_CTL & MTP_CTL_MODE_MASK) | MTP_CLT_MODE_PROG;
+		MTP->MTP_PCYCLE = 0x60AE;
+		for (i = 0; i < 8; i++)
+			MTP->MTP_KEY[i] = mtp_key[i];
+	
+		MTP->MTP_USERDATA = mtp_key[8];
+	
+		MTP->MTP_PSTART = MTP_PSTART_PSTART;
+	
+		for (loop = 0; loop < 0x100000; loop++)
+		{
+			if (MTP->MTP_PSTART == 0)
+				break;
+		}
+		if (loop >= 0x100000)
+		{
+			printk("MTP_PSTART not cleared!\n");
+			dump_mtp_status();
+			return -1;
+		}
+	
+		if (MTP->MTP_STATUS & MTP_STATUS_PRGFAIL)
+		{
+			printk("MTP key program failed!\n");
+			dump_mtp_status();
+			return -1;
+		}
+	
+		MTP_Enable();
+		//printk("MPT key program OK, COUNT = %d\n", MTP_KEY_PROG_COUNT);
+	}
+	return 0;
+}
+
+
+static int nuc970_mtp_init(struct crypto_tfm *tfm)
+{
+    if (IS_ERR(clk_get(NULL, "mtpc"))) {
+        printk("nuc970_crypto_probe clk_get mtpc error!!\n");
+        return -1;
+    }
+	/* Enable MTP clock */
+    clk_prepare(clk_get(NULL, "mtpc"));	
+    clk_enable(clk_get(NULL, "mtpc"));
+	return 0;
+}
+
+static void nuc970_mtp_exit(struct crypto_tfm *tfm)
+{
+    clk_disable(clk_get(NULL, "mtpc"));
+}
 
 
 void dump_regs(void)
@@ -123,6 +293,17 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	if (ctx->use_mtp_key)
 	{
 		//printk("AES using MTP key.\n");
+
+    	if (IS_ERR(clk_get(NULL, "mtpc"))) {
+        	printk("clk_get mtpc error!!\n");
+        	return -1;
+    	}
+		/* Enable MTP clock */
+    	clk_prepare(clk_get(NULL, "mtpc"));	
+    	clk_enable(clk_get(NULL, "mtpc"));
+		
+		MTP_Enable();
+
 		crpt_regs->CRPT_AES_CTL |= AES_EXTERNAL_KEY;
 	}
 
@@ -217,8 +398,9 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 			ctx->keysize = AES_KEYSZ_256;
 			break;
 			
-		case 0:
-			if (key == 0)
+		case 1:
+			//printk("use_mtp_key = %d\n", *key);
+			if (*key == 1)
 				ctx->use_mtp_key = 1;
 			else
 				ctx->use_mtp_key = 0;
@@ -458,6 +640,28 @@ static void nuc970_des_exit(struct crypto_tfm *tfm)
 
 
 static struct cryp_algo_template nuc970_crypto_algs[] = {
+	{
+		.crypto = {
+			.cra_name = "mtp",
+			.cra_driver_name = "nuc970-mtp",
+			.cra_priority =	300,
+			.cra_flags = CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
+			.cra_blocksize = AES_BLOCK_SIZE,
+			.cra_ctxsize = sizeof(struct nuc970_ctx),
+			.cra_alignmask = 0xf,
+			.cra_type = &crypto_ablkcipher_type,
+			.cra_init = nuc970_mtp_init,
+			.cra_exit = nuc970_mtp_exit,
+			.cra_module = THIS_MODULE,
+			.cra_u = {
+				.ablkcipher = {
+					.min_keysize = 0,
+					.max_keysize = 36,
+					.setkey = nuc970_mtp_setkey,
+				}
+			}
+		}
+	},
 	{
 		.algomode = AES_ECB_MODE,
 		.crypto = {

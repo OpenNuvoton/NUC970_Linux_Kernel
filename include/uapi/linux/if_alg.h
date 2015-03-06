@@ -35,6 +35,10 @@ struct af_alg_iv {
 #define ALG_USE_MTP_KEY		101
 #define ALG_USE_REG_KEY     102
 
+#define ALG_MTP_PROGRAM     203
+#define ALG_MTP_LOCK        204
+#define ALG_MTP_STATUS      205
+
 /* Operations */
 #define ALG_OP_DECRYPT			0
 #define ALG_OP_ENCRYPT			1

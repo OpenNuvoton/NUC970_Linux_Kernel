@@ -181,8 +181,17 @@ static int alg_setkey(struct sock *sk, char __user *ukey,
 		return -ENOMEM;
 
 	err = -EFAULT;
-	if (copy_from_user(key, ukey, keylen))
-		goto out;
+	
+	if (keylen == 1)
+	{
+		/* for MTP or register key setting */
+		*key = (int)ukey;
+	}
+	else
+	{
+		if (copy_from_user(key, ukey, keylen))
+			goto out;
+	}
 
 	err = type->setkey(ask->private, key, keylen);
 
@@ -208,6 +217,7 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 
 	switch (optname) {
 	case ALG_SET_KEY:
+	case ALG_MTP_PROGRAM:
 		if (sock->state == SS_CONNECTED)
 			goto unlock;
 		if (!type->setkey)
@@ -222,7 +232,7 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 		if (!type->setkey)
 			goto unlock;
 
-		alg_setkey(sk, 1, 0);
+		err = alg_setkey(sk, 0, 1);
 		break;
 
 	case ALG_USE_MTP_KEY:
@@ -230,8 +240,23 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 			goto unlock;
 		if (!type->setkey)
 			goto unlock;
+		err = alg_setkey(sk, 1, 1);
+		break;
 
-		alg_setkey(sk, 0, 0);
+	case ALG_MTP_LOCK:
+		if (sock->state == SS_CONNECTED)
+			goto unlock;
+		if (!type->setkey)
+			goto unlock;
+		err = alg_setkey(sk, 0, 0);
+		break;
+
+	case ALG_MTP_STATUS:
+		if (sock->state == SS_CONNECTED)
+			goto unlock;
+		if (!type->setkey)
+			goto unlock;
+		err = alg_setkey(sk, 0, 1);
 		break;
 	}
 
