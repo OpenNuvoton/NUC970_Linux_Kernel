@@ -23,6 +23,7 @@
 #include <linux/watchdog.h>
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-gcr.h>
 #include <mach/regs-wdt.h>
 
 #define WTIS			(0x07 << 8)     /* wdt interval selection */
@@ -63,13 +64,32 @@ struct nuc970_wdt {
 
 static struct nuc970_wdt *nuc970_wdt;
 
+// UnLock register write protect
+static void Unlock_RegWriteProtect(void)
+{
+    do {
+        __raw_writel(0x59, REG_WRPRTR);
+        __raw_writel(0x16, REG_WRPRTR);
+        __raw_writel(0x88, REG_WRPRTR);
+    //wait for write-protection disabled indicator raised 
+    } while(!(__raw_readl(REG_WRPRTR) & 1));
+}
+
+// Lock register write protect
+static void Lock_RegWriteProtect(void)
+{
+    __raw_writel(0x0, REG_WRPRTR);
+}
+
 static int nuc970wdt_ping(struct watchdog_device *wdd)
 {
 	unsigned int val;
-
+	
+	Unlock_RegWriteProtect();
 	val = __raw_readl(REG_WDT_CR);
 	val |= WTR;
 	__raw_writel(val, REG_WDT_CR);
+	Lock_RegWriteProtect();
 	return 0;
 }
 
@@ -86,17 +106,17 @@ static int nuc970wdt_start(struct watchdog_device *wdd)
 	} else {
 		val |= 0x7 << 8;
 	}
-
+	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CR);
-
+	Lock_RegWriteProtect();
 	return 0;
 }
 
 static int nuc970wdt_stop(struct watchdog_device *wdd)
 {
-
+	Unlock_RegWriteProtect();
 	__raw_writel(0, REG_WDT_CR);
-
+	Lock_RegWriteProtect();
 	return 0;
 }
 
@@ -105,6 +125,7 @@ static int nuc970wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeo
 {
 	unsigned int val;
 
+	Unlock_RegWriteProtect();
 	val = __raw_readl(REG_WDT_CR);
 	val &= ~WTIS;
 	if(timeout < 2) {
@@ -116,7 +137,7 @@ static int nuc970wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeo
 	}
 
 	__raw_writel(val, REG_WDT_CR);
-
+	Lock_RegWriteProtect();
 	return 0;
 }
 
@@ -236,8 +257,8 @@ static void nuc970wdt_shutdown(struct platform_device *pdev)
 
 #ifdef CONFIG_PM
 static u32 reg_save;
-static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
-{
+static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state){
+
 	reg_save = __raw_readl(REG_WDT_CR);
 	nuc970wdt_stop(&nuc970_wdd);
 
@@ -246,7 +267,9 @@ static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
 
 static int nuc970wdt_resume(struct platform_device *dev)
 {
+	Unlock_RegWriteProtect();
 	__raw_writel(reg_save | WTR, REG_WDT_CR);
+	Lock_RegWriteProtect();	
 	return 0;
 }
 
