@@ -752,6 +752,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
 							1518, DMA_FROM_DEVICE);
 			rx_skb[ether->cur_rx] = skb;
+			rx_cnt++;
 
 		} else {
 			ether->stats.rx_errors++;
