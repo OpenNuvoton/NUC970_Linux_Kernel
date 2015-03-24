@@ -667,13 +667,6 @@ int __init nuc970_init_clocks(void)
 	clk_prepare(clk_get(NULL, "ddr_hclk"));
 	clk_enable(clk_get(NULL, "ddr_hclk"));		
 	
-	// ******** bug, need to fix ******
-	// enable USBD PHY to enable USBH
-	clk_prepare(clk_get(NULL, "usbd_hclk"));
-	clk_enable(clk_get(NULL, "usbd_hclk"));
-
-	__raw_writel((__raw_readl((void *)0xf0006704) | 0x200), (void *)0xf0006704);	
-	// ********************************
 
 	return 0;
 }
