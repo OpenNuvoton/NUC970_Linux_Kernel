@@ -773,7 +773,7 @@ static struct flash_platform_data nuc970_spi0_flash_data = {
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 75000000,
+                .max_speed_hz = 7500000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi0_flash_data,
@@ -786,7 +786,7 @@ static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "spidev",
-                .max_speed_hz = 75000000,
+                .max_speed_hz = 7500000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .mode = SPI_MODE_0,
