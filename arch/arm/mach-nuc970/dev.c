@@ -667,30 +667,15 @@ struct platform_device nuc970_device_audio_pcm = {
 #endif
 
 /* I2C */
-#ifdef CONFIG_I2C
+#ifdef CONFIG_I2C_BUS_NUC970_P0
 // port 0
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
 {
-#ifdef CONFIG_SENSOR_OV7725
-	{I2C_BOARD_INFO("ov7725",  0x21),},
-#endif
-#ifdef CONFIG_SENSOR_OV5640
-	{I2C_BOARD_INFO("ov5640",  0x3c),},
-#endif
-#ifdef CONFIG_SENSOR_NT99141
-	{I2C_BOARD_INFO("nt99141", 0x2a),},
-#endif
-#ifdef CONFIG_SENSOR_NT99050
-	{I2C_BOARD_INFO("nt99050", 0x21),},
-#endif
 #ifdef CONFIG_SND_SOC_NAU8822
 	{I2C_BOARD_INFO("nau8822", 0x1a),},
 #endif
 };
-#endif
-
-#ifdef CONFIG_I2C_BUS_NUC970_P0
 static struct resource nuc970_i2c0_resource[] = {
         [0] = {
                 .start = NUC970_PA_I2C0,
@@ -1202,6 +1187,21 @@ struct platform_device nuc970_device_pinctrl = {
 
 #ifdef CONFIG_GPIO_NUC970
 #ifdef CONFIG_I2C_ALGOBIT
+static struct i2c_board_info __initdata nuc970_i2c_clients2[] =
+{
+#ifdef CONFIG_SENSOR_OV7725
+	{I2C_BOARD_INFO("ov7725",  0x21),},
+#endif
+#ifdef CONFIG_SENSOR_OV5640
+	{I2C_BOARD_INFO("ov5640",  0x3c),},
+#endif
+#ifdef CONFIG_SENSOR_NT99141
+	{I2C_BOARD_INFO("nt99141", 0x2a),},
+#endif
+#ifdef CONFIG_SENSOR_NT99050
+	{I2C_BOARD_INFO("nt99050", 0x21),},
+#endif
+};
 static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {
     .sda_pin = NUC970_PB1,
     .scl_pin = NUC970_PB0,
@@ -1213,7 +1213,7 @@ static struct i2c_gpio_platform_data i2c_gpio_adapter_data = {
 
 static struct platform_device i2c_gpio = {
     .name = "i2c-gpio",
-    .id = 0,
+    .id = 2,
     .dev = {
         .platform_data = &i2c_gpio_adapter_data,
         },
@@ -1392,8 +1392,14 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 #endif
 #endif
 
-#ifdef CONFIG_I2C
+#ifdef CONFIG_I2C_BUS_NUC970_P0
 	i2c_register_board_info(0, nuc970_i2c_clients0, sizeof(nuc970_i2c_clients0)/sizeof(struct i2c_board_info));
+#endif
+
+#ifdef CONFIG_GPIO_NUC970
+#ifdef CONFIG_I2C_ALGOBIT
+	i2c_register_board_info(2, nuc970_i2c_clients2, sizeof(nuc970_i2c_clients2)/sizeof(struct i2c_board_info));
+#endif	
 #endif
 
 #ifdef CONFIG_PWM_NUC970

@@ -14,8 +14,8 @@
 #include <mach/regs-audio.h>
 
 /* bit definition of REG_ACTL_CON register */
-#define R_DMA_IRQ_EN			0x100000
-#define P_DMA_IRQ_EN			0x200000
+#define R_DMA_IRQ_EN			0x200000
+#define P_DMA_IRQ_EN			0x100000
 
 #define R_DMA_IRQ_SEL_EIGHTH	0xC000
 #define R_DMA_IRQ_SEL_QUARTER	0x8000
@@ -92,11 +92,11 @@
 
 struct nuc970_audio {
 	void __iomem *mmio;
-	spinlock_t lock;
+	spinlock_t irqlock, lock;
 	dma_addr_t dma_addr[2];
 	unsigned long buffersize[2];
 	unsigned long irq_num;
-	struct snd_pcm_substream *substream;
+	struct snd_pcm_substream *substream[2];
 	struct resource *res;
 	struct clk *clk;
 	struct device *dev;
@@ -105,4 +105,6 @@ struct nuc970_audio {
 
 extern struct nuc970_audio *nuc970_i2s_data;
 
+int nuc970_dma_create(struct nuc970_audio *nuc970_audio);
+int nuc970_dma_destroy(struct nuc970_audio *nuc970_audio);
 #endif /*end _NUC970_AUDIO_H */

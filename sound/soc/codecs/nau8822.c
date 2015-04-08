@@ -260,6 +260,8 @@ static const struct snd_kcontrol_new nau8822_snd_controls[] = {
 		   5, 1, 0),
 	SOC_SINGLE("ADC 128x Oversampling Switch", NAU8822_ADC_CONTROL,
 		   5, 1, 0),
+    SOC_SINGLE("Mic Bias", NAU8822_POWER_MANAGEMENT_1, 
+		   4, 1, 0),
 };
 
 /* Mixer #1: Output (OUT1, OUT2) Mixer: mix AUX, Input mixer output and DAC */

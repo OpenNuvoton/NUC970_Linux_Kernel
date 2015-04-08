@@ -147,7 +147,7 @@ static int nuc970_i2s_trigger(struct snd_pcm_substream *substream,
 {
         struct nuc970_audio *nuc970_audio = nuc970_i2s_data;
         int ret = 0;
-        unsigned long val, tmp, con;
+        unsigned long val, con;
 
         con = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 
@@ -157,13 +157,13 @@ static int nuc970_i2s_trigger(struct snd_pcm_substream *substream,
                 val = AUDIO_READ(nuc970_audio->mmio + ACTL_RESET);
                 con |= I2S_EN;
                 if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-                        tmp = P_DMA_RIA_IRQ;
-                        AUDIO_WRITE(nuc970_audio->mmio + ACTL_PSR, tmp);
+                        con |= P_DMA_IRQ_EN;
+                        AUDIO_WRITE(nuc970_audio->mmio + ACTL_PSR, P_DMA_RIA_IRQ);
 						
                         val |= AUDIO_PLAY;                        
                 } else {
-                        tmp = R_DMA_RIA_IRQ;
-                        AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, tmp);
+                        con |= R_DMA_IRQ_EN;
+                        AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, R_DMA_RIA_IRQ);
 						
                         val |= AUDIO_RECORD;
                 }
@@ -176,9 +176,11 @@ static int nuc970_i2s_trigger(struct snd_pcm_substream *substream,
                 val = AUDIO_READ(nuc970_audio->mmio + ACTL_RESET);
                 con &= ~I2S_EN;
                 if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+                        con &= ~P_DMA_IRQ_EN;
                         AUDIO_WRITE(nuc970_audio->mmio + ACTL_PSR, RESET_PRSR);
                         val &= ~AUDIO_PLAY;
                 } else {
+                        con &= ~R_DMA_IRQ_EN;
                         AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, RESET_PRSR);
                         val &= ~AUDIO_RECORD;
                 }
@@ -267,6 +269,7 @@ static int nuc970_i2s_drvprobe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	spin_lock_init(&nuc970_audio->lock);
+    spin_lock_init(&nuc970_audio->irqlock);
 
 	nuc970_audio->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!nuc970_audio->res) {
@@ -298,6 +301,10 @@ static int nuc970_i2s_drvprobe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto out3;
 	}
+    
+    ret = nuc970_dma_create(nuc970_audio);
+	if (ret != 0)
+		return ret;
 
 	nuc970_i2s_data = nuc970_audio;
 
@@ -323,7 +330,8 @@ out0:
 
 static int nuc970_i2s_drvremove(struct platform_device *pdev)
 {
-	snd_soc_unregister_component(&pdev->dev);
+	nuc970_dma_destroy(nuc970_i2s_data);
+    snd_soc_unregister_component(&pdev->dev);
 
 	clk_put(nuc970_i2s_data->clk);
 	iounmap(nuc970_i2s_data->mmio);
