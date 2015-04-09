@@ -93,13 +93,14 @@ static void nuc970_clockevent_setmode(enum clock_event_mode mode,
 static int nuc970_clockevent_setnextevent(unsigned long evt,
 		struct clock_event_device *clk)
 {
-	unsigned int val;
-
+	unsigned int tcsr, tdelta;
+    
+    tcsr = __raw_readl(REG_TMR_TCSR0);
+    tdelta = __raw_readl(REG_TMR_TICR0) - __raw_readl(REG_TMR_TDR0);
+    
 	__raw_writel(evt, REG_TMR_TICR0);
-
-	val = __raw_readl(REG_TMR_TCSR0);
-	val |= (COUNTEN | INTEN | PRESCALE);
-	__raw_writel(val, REG_TMR_TCSR0);
+    if(!(tcsr & COUNTEN) && ((tdelta > 2) || (tdelta == 0)))
+        __raw_writel(__raw_readl(REG_TMR_TCSR0) | COUNTEN, REG_TMR_TCSR0);
 
 	return 0;
 }
@@ -216,7 +217,7 @@ void __init nuc970_setup_default_serial_console(void)
 	nuc970_mfp_set_port_e(1, 0x9);
 }
 
-extern int nuc970_init_clocks();
+extern int nuc970_init_clocks(void);
 void __init nuc970_timer_init(void)
 {	
 	nuc970_init_clocks();
