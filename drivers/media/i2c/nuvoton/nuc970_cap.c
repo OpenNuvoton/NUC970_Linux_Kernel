@@ -99,6 +99,7 @@ MODULE_PARM_DESC(frame_timeout,
 		 "\nDefault value is "__MODULE_STRING(NUVOTON_FRAME_TIMEOUT)"."
 		 "\n");
 		 
+struct nuvoton_vin_device* nuvoton_cam;
 
 /* Declare static vars that will be used as parameters */
 //static u32 vid_limit	=  2;	
@@ -697,7 +698,7 @@ static int nuvoton_vidioc_queryctrl(struct file *file,void *priv,struct v4l2_que
 		}
 	#else
 		if (qc->id && qc->id == s->qctrl.id) {
-			memcpy(qc, &(s->qctrl), sizeof(qc));
+			memcpy((char *)qc, (char *)&(s->qctrl), sizeof(qc));
 			LEAVE();
 			return 0;
 		}
@@ -903,7 +904,6 @@ int nuvoton_vin_stream_interrupt(struct nuvoton_vin_device* cam){return 0;}
 u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum nuvoton_vin_io_method io)
 {
 	struct v4l2_pix_format* p = &(cam->sensor.pix_format);	
-	dma_addr_t pbuf;		
 	#if 0
 	struct v4l2_rect* r = &(cam->sensor.cropcap.bounds);
 	const size_t imagesize = cam->module_param.force_munmap ||
@@ -920,15 +920,9 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 		count = NUVOTON_MAX_FRAMES;
 
 	cam->nbuffers = (count);
-	while (cam->nbuffers > 0) {
-		if((buff = dma_alloc_writecombine(NULL, cam->nbuffers * PAGE_ALIGN(imagesize),
-							&pbuf, GFP_KERNEL))!=NULL)
-			break;
-		cam->nbuffers--;
-	}
 	for (i = 0; i < cam->nbuffers; i++) {
-		cam->frame[i].bufmem = buff + i*PAGE_ALIGN(imagesize);
-		cam->frame[i].pbuf = pbuf + i*PAGE_ALIGN(imagesize);
+		cam->frame[i].bufmem = cam->vir_addr + i*PAGE_ALIGN(imagesize);
+		cam->frame[i].pbuf = cam->phy_addr + i*PAGE_ALIGN(imagesize);
 		cam->frame[i].buf.index = i;
 		cam->frame[i].buf.m.userptr = (unsigned long)(buff + i*PAGE_ALIGN(imagesize));
 		cam->frame[i].buf.m.offset = i*PAGE_ALIGN(imagesize);
@@ -953,7 +947,7 @@ void nuvoton_vin_release_buffers(struct nuvoton_vin_device* cam)
 	ENTRY();
 
 	if (cam->nbuffers) {
-		vfree(cam->frame[0].bufmem);
+		//vfree(cam->frame[0].bufmem);
 		cam->nbuffers = 0;
 	}
 	cam->frame_current = NULL;
@@ -1547,7 +1541,7 @@ int nuvoton_vdi_device_register(void)
 	
 	if (!(cam = kzalloc(sizeof(struct nuvoton_vin_device), GFP_KERNEL)))
 			return -ENOMEM;
-
+        nuvoton_cam=cam;
 	if (!(cam->control_buffer = kzalloc(4, GFP_KERNEL))) {
 		VDEBUG("kmalloc() failed\n");
 		err = -ENOMEM;
@@ -1561,15 +1555,24 @@ int nuvoton_vdi_device_register(void)
 	}
 
 	capture_init(cam); /* Set capture init for nuvoton sensor interface */
-	
+	VDEBUG("capture_init().");	
 	//for sensor init
 	if(nuvoton_vin_probe(cam)<0){  //sensor probe;
 		VDEBUG("Initialization failed. I will retry on open().");
 		return -EAGAIN;
 	}
-	
-	VDEBUG("capture_init().");	
-	
+		
+	{
+		struct v4l2_rect* bounds = &(cam->sensor.cropcap.bounds);	
+		if((cam->vir_addr = dma_alloc_writecombine(NULL, 
+							NUVOTON_MAX_FRAMES * PAGE_ALIGN(bounds->width*bounds->height*2),
+							&cam->phy_addr, 
+							GFP_KERNEL))==NULL)	
+		{
+				printk("dma_alloc_writecombine failed\n");	
+				return -EAGAIN;
+		}
+	}
 	/* INIT */
 	
 	mutex_init(&cam->open_mutex);
@@ -1668,6 +1671,8 @@ out:
 static int nuvoton_cap_device_remove(struct platform_device *pdev)
 {
 	ENTRY();
+        if(nuvoton_cam!=NULL)
+           vfree(nuvoton_cam->vir_addr);
 	LEAVE();
 	return 0;
 }

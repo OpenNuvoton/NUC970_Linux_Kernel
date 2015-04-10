@@ -146,6 +146,8 @@ struct nuvoton_vin_device {
 	wait_queue_head_t wait_frame, wait_stream;
 
 	struct capture_parameter vpe; /*sensor interface for nuvoton */
+	dma_addr_t phy_addr;
+	void* vir_addr;
 };
 
 /*****************************************************************************/
