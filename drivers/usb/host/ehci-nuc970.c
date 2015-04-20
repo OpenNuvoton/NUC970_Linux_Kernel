@@ -44,16 +44,20 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 #if defined (CONFIG_NUC970_USBH_PWR_PE)
     	/* initial USBH_PPWR0 & USBH_PPWR1 pin -> PE.14 & PE.15 */
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pe");
-
-#elif defined (CONFIG_NUC970_USBH_PWR_PF)
-    	/* initial USBH_PPWR pin -> PF.10 */
-    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
-#endif
     	if (IS_ERR(p))
     	{
         	dev_err(&pdev->dev, "unable to reserve pin\n");
         	retval = PTR_ERR(p);
     	}
+#elif defined (CONFIG_NUC970_USBH_PWR_PF)
+    	/* initial USBH_PPWR pin -> PF.10 */
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
+#endif
 
 		/* Enable USB Host clock */
         clk_prepare(clk_get(NULL, "usb_eclk"));	

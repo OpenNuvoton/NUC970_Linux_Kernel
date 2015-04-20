@@ -115,6 +115,8 @@ choice
 	bool "PE.14 and PE.15 for USBH_PPWR0 and USBH_PPWR1"
     config NUC970_USBH_PWR_PF
 	bool "PF.10 for USBH_PPWR"
+    config NUC970_USBH_PWR_NONE
+	bool "Not used"
 endchoice
 
 
