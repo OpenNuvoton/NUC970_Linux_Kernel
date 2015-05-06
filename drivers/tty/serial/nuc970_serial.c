@@ -28,6 +28,7 @@
 #include <linux/tty.h>
 #include <linux/tty_flip.h>
 #include <linux/clk.h>
+#include <linux/serial_reg.h>
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 #include <linux/nmi.h>
@@ -317,9 +318,9 @@ static unsigned int nuc970serial_tx_empty(struct uart_port *port)
 	unsigned long flags;
 	unsigned int fsr;
 
-	spin_lock_irqsave(&up->port.lock, flags);
+	//spin_lock_irqsave(&up->port.lock, flags);
 	fsr = serial_in(up, UART_REG_FSR);
-	spin_unlock_irqrestore(&up->port.lock, flags);
+	//spin_unlock_irqrestore(&up->port.lock, flags);
 
 	return (fsr & (TE_FLAG | TX_EMPTY)) == (TE_FLAG | TX_EMPTY) ? TIOCSER_TEMT : 0;
 }
@@ -330,8 +331,12 @@ static unsigned int nuc970serial_get_mctrl(struct uart_port *port)
 	unsigned int status;
 	unsigned int ret = 0;
 
-	status = check_modem_status(up);
+	//status = check_modem_status(up);
+
+	status = serial_in(up, UART_REG_MSR);;
 	
+	if(status & 0x10)
+		ret |= TIOCM_CTS;
 
 	return ret;
 }
@@ -341,8 +346,27 @@ static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	unsigned char mcr = 0;
 
+	if (mctrl & TIOCM_RTS)
+	{
+		// set RTS high level trigger
+		mcr = serial_in(up, UART_REG_MCR);
+		mcr |= 0x200;
+		mcr &= ~(0x2);
+	}
 
+	if (up->mcr & UART_MCR_AFE)
+	{
+		// set RTS high level trigger
+		mcr = serial_in(up, UART_REG_MCR);
+		mcr |= 0x200;
+		mcr &= ~(0x2);
 
+		// enable CTS/RTS auto-flow control
+		serial_out(up, UART_REG_IER, (serial_in(up, UART_REG_IER) | (0x3000)));
+	}
+
+	// set CTS high level trigger
+	serial_out(up, UART_REG_MSR, (serial_in(up, UART_REG_MSR) | (0x100)));
 	serial_out(up, UART_REG_MCR, mcr);
 }
 
@@ -489,6 +513,13 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 		if (termios->c_iflag & IGNPAR)
 			up->port.ignore_status_mask |= RX_OVER_IF;
 	}
+
+	if (termios->c_cflag & CRTSCTS)
+		up->mcr |= UART_MCR_AFE;
+	else
+		up->mcr &= ~UART_MCR_AFE;
+
+	nuc970serial_set_mctrl(&up->port, up->port.mctrl);
 
 	serial_out(up, UART_REG_BAUD, quot | 0x30000000);
 	serial_out(up, UART_REG_LCR, lcr);		
