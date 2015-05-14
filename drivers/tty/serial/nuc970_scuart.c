@@ -181,9 +181,7 @@ static void receive_chars(struct uart_nuc970_port *up)
 
 	} while (!(status & SC_STATUS_RXEMPTY) && (max_count-- > 0));
 
-	spin_lock(&up->port.lock);
 	tty_flip_buffer_push(&up->port.state->port);
-	spin_unlock(&up->port.lock);
 }
 
 static void transmit_chars(struct uart_nuc970_port *up)
