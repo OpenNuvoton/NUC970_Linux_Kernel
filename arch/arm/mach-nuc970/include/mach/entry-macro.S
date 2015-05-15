@@ -14,7 +14,7 @@
  *
  */
 #include <mach/map.h>
-#include <mach/regs-irq.h>
+#include <mach/regs-aic.h>
 
 	.macro  get_irqnr_preamble, base, tmp
 	.endm

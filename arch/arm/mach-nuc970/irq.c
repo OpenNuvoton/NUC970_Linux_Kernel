@@ -30,11 +30,9 @@
 #include <asm/mach/irq.h>
 
 #include <mach/hardware.h>
-#include <mach/regs-irq.h>
+#include <mach/regs-aic.h>
 #include <mach/regs-gpio.h>
 #include <asm/gpio.h>
-
-
 
 static void nuc970_irq_mask(struct irq_data *d)
 {
@@ -58,7 +56,6 @@ static void nuc970_irq_unmask(struct irq_data *d)
 		__raw_writel(1 << (d->irq - 32), REG_AIC_MECRH);	
 }
 
-
 static struct irq_chip nuc970_irq_chip = {
 	.irq_ack	= nuc970_irq_ack,
 	.irq_mask	= nuc970_irq_mask,
@@ -66,7 +63,6 @@ static struct irq_chip nuc970_irq_chip = {
 };
 
 #ifdef CONFIG_GPIO_NUC970
-
 static const unsigned int Port[10]={
 				(unsigned int)REG_GPIOA_DIR,
 				(unsigned int)REG_GPIOB_DIR,
@@ -178,7 +174,6 @@ static const unsigned int EXT[16]={
 
 static void nuc970_irq_ext_mask(struct irq_data *d)
 {
-	//printk("[%-20s] : Enter... d->irq=%d\n", __FUNCTION__,d->irq);
 	if(d->irq==IRQ_EXT0_H0 || d->irq==IRQ_EXT0_F11)
 		__raw_writel(1<<IRQ_EXT0, REG_AIC_MDCR);
 	else if(d->irq==IRQ_EXT1_H1 || d->irq==IRQ_EXT1_F12)
@@ -196,7 +191,6 @@ static void nuc970_irq_ext_mask(struct irq_data *d)
 	else if(d->irq==IRQ_EXT7_H7 || d->irq==IRQ_EXT7_I2)
 		__raw_writel(1 <<IRQ_EXT7, REG_AIC_MDCR);
 }
-
 
 static void nuc970_irq_ext_ack(struct irq_data *d)
 {
@@ -245,8 +239,6 @@ static int nuc970_irq_ext_type(struct irq_data *d, unsigned int type)
 	}else
 		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) & ~(0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
 
-	//printk("Port[%d]+0x10=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x10)));
-	//printk("Port[%d]+0x14=0x%08x\n",port,__raw_readl((volatile unsigned int *)(Port[port]+0x14)));
 	return 0;
 }
 
@@ -365,7 +357,6 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			}
 			break;
 	}
-	//printk("[%-20s] : Leave...\n", __FUNCTION__);
 }
 #endif
 
@@ -381,7 +372,6 @@ void __init nuc970_init_irq(void)
 		set_irq_flags(irqno, IRQF_VALID);
 	}
 
-
 	#ifdef CONFIG_GPIO_NUC970
 	/*
 	 * Install handler for GPIO edge detect interrupts
@@ -393,7 +383,6 @@ void __init nuc970_init_irq(void)
 			irq_set_chip_and_handler(irqno, &nuc970_irq_gpio, handle_level_irq);
 			set_irq_flags(irqno, IRQF_VALID);
 		}
-
 
 	/*
 	 * Install handler for GPIO external interrupts
@@ -409,7 +398,4 @@ void __init nuc970_init_irq(void)
 			set_irq_flags(irqno, IRQF_VALID);
 	}
 	#endif
-
-
-
 }

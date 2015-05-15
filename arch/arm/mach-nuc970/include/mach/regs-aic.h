@@ -55,4 +55,8 @@
 #define     REG_AIC_SCCR    (AIC_BA+0x148)   /* Source Clear Command Register */
 #define     REG_AIC_SCCRH   (AIC_BA+0x14C)   /* Source Clear Command Register (High) */
 #define     REG_AIC_EOSCR   (AIC_BA+0x150)   /* End of service command register */
+
+#define AIC_ISNR		(0x120)
+#define AIC_IPER		(0x118)
+
 #endif /*  __ASM_ARCH_REGS_AIC_H */
