@@ -315,7 +315,7 @@ static irqreturn_t nuc970serial_interrupt(int irq, void *dev_id)
 static unsigned int nuc970serial_tx_empty(struct uart_port *port)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
-	unsigned long flags;
+	//unsigned long flags;
 	unsigned int fsr;
 
 	//spin_lock_irqsave(&up->port.lock, flags);

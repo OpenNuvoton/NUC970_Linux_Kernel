@@ -604,8 +604,29 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	clk_set_rate(fbi->clk, 4000000);
 #endif
 #ifdef CONFIG_E50A2V1_800X480
-	// set lcd clock to 12MHz
-	clk_set_rate(fbi->clk, 12000000);
+{
+    struct clk *clkmux, *clkuplldiv;
+    
+    clkmux = clk_get(NULL, "lcd_eclk_mux");
+    if (IS_ERR(clkmux)) {
+        printk(KERN_ERR "nuc970-lcd:failed to get lcd clock mux control\n");
+        ret = PTR_ERR(clkmux);
+        return ret;
+    }
+
+    clkuplldiv = clk_get(NULL, "lcd_uplldiv");
+    if (IS_ERR(clkuplldiv)) {
+        printk(KERN_ERR "nuc970-lcd:failed to get lcd clock divider control\n");
+        ret = PTR_ERR(clkuplldiv);
+        return ret;
+    }
+    
+    // select lcd clock from upll
+    clk_set_parent(clkmux, clkuplldiv);
+    
+	// set lcd clock to 20MHz
+	clk_set_rate(fbi->clk, 20000000);
+}
 #endif
 
 	clk_prepare(fbi->clk);	

@@ -85,7 +85,11 @@ int show_fiq_list(struct seq_file *p, int prec)
 void set_fiq_handler(void *start, unsigned int length)
 {
 #if defined(CONFIG_CPU_USE_DOMAINS)
+#ifdef CONFIG_CPU_NUC970
+    void *base = vectors_page;
+#else
 	void *base = (void *)0xffff0000;
+#endif
 #else
 	void *base = vectors_page;
 #endif

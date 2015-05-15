@@ -25,6 +25,7 @@
 ENTRY(__set_fiq_regs)
 	mov	r2, #PSR_I_BIT | PSR_F_BIT | FIQ_MODE
 	mrs	r1, cpsr
+	and	r1, #~PSR_F_BIT     @ enable F bit
 	msr	cpsr_c, r2	@ select FIQ mode
 	mov	r0, r0		@ avoid hazard prior to ARMv4
 	ldmia	r0!, {r8 - r12}
