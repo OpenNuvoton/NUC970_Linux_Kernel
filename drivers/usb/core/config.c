@@ -247,6 +247,20 @@ static int usb_parse_endpoint(struct device *ddev, int cfgno, int inum,
 
 	/*
 	 * Some buggy high speed devices have bulk endpoints using
+	 * maxpacket sizes larger than 64 under full-speed mode.  
+	 * Full speed HCDs may not
+	 * be able to handle that particular bug, so let's modify 
+	 * the maxpacket size to make it work.
+	 */
+	if (to_usb_device(ddev)->speed == USB_SPEED_FULL
+			&& usb_endpoint_xfer_bulk(d)) {
+
+		if (usb_endpoint_maxp(&endpoint->desc) > 64)
+			endpoint->desc.wMaxPacketSize = cpu_to_le16(64);
+	}
+
+	/*
+	 * Some buggy high speed devices have bulk endpoints using
 	 * maxpacket sizes other than 512.  High speed HCDs may not
 	 * be able to handle that particular bug, so let's warn...
 	 */
