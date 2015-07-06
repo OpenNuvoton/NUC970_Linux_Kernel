@@ -57,6 +57,13 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	dev_err(&pdev->dev, "unable to reserve pin\n");
         	retval = PTR_ERR(p);
     	}
+#else
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-none");
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
 #endif
 
 		/* Enable USB Host clock */

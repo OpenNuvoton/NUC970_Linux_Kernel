@@ -215,8 +215,9 @@ static const unsigned nand_3_pins[] = {0x64, 0x65};  // ncs1, rdy1
 static const unsigned emmc_0_pins[] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25};  // Port C
 static const unsigned emmc_1_pins[] = {0x85, 0x86, 0x87, 0x88, 0x89, 0x8A};  // Port I
 
-static const unsigned usbh_pe_pins[] = {0x4E, 0x4F, 0x71}; // ppwr0 & ppwr1
-static const unsigned usbh_pf_pin[] = {0x5A, 0x71}; // ppwr
+static const unsigned usbh_pe_pins[] = {0x4E, 0x4F, 0x71}; // ppwr0 & ppwr1, over-current
+static const unsigned usbh_pf_pin[] = {0x5A, 0x71};        // ppwr, over-current
+static const unsigned usbh_none_pin[] = {0x71};            // over-current
 static const unsigned usbd_pin[] = {0x70};  // vbvld
 
 static const unsigned i2c0_pins[] = {0x60, 0x61};
@@ -521,6 +522,12 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.name = "usbh_pf_grp",
 		.pins = usbh_pf_pin,
 		.num_pins = ARRAY_SIZE(usbh_pf_pin),
+		.func = 0x7,
+	},
+	{
+		.name = "usbh_none_grp",
+		.pins = usbh_none_pin,
+		.num_pins = ARRAY_SIZE(usbh_none_pin),
 		.func = 0x7,
 	},
 	{
@@ -1289,7 +1296,7 @@ static const char * const sd1_groups[] = {"sd1_0_grp", "sd1_1_grp", "sd1_2_grp"}
 static const char * const nand_groups[] = {"nand_0_grp", "nand_1_grp"};
 static const char * const nand_ctl1_groups[] = {"nand_2_grp", "nand_3_grp"};
 static const char * const emmc_groups[] = {"emmc_0_grp", "emmc_1_grp"};
-static const char * const usbh_ppwr_groups[] = {"usbh_pe_grp", "usbh_pf_grp" };
+static const char * const usbh_ppwr_groups[] = {"usbh_pe_grp", "usbh_pf_grp", "usbh_none_grp" };
 static const char * const usbd_groups[] = {"usbd_grp"};
 static const char * const i2c0_groups[] = {"i2c0_grp"};
 static const char * const i2c1_groups[] = {"i2c1_0_grp", "i2c1_1_grp", "i2c1_2_grp", "i2c1_3_grp"};
@@ -2168,6 +2175,14 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "usbh_ppwr",
 		.data.mux.group = "usbh_pf_grp",
+	},
+	{
+		.dev_name = "nuc970-ehci",
+		.name = "usbh-ppwr-none",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "usbh_ppwr",
+		.data.mux.group = "usbh_none_grp",
 	},
 	{
 		.dev_name = "nuc970-usbdev",
