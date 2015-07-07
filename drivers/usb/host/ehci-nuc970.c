@@ -57,16 +57,16 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	dev_err(&pdev->dev, "unable to reserve pin\n");
         	retval = PTR_ERR(p);
     	}
-#else
-        /* set over-current active high */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
-
-    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-none");
+#elif defined (CONFIG_NUC970_USBH_OC_ONLY)
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-oc");
     	if (IS_ERR(p))
     	{
         	dev_err(&pdev->dev, "unable to reserve pin\n");
         	retval = PTR_ERR(p);
     	}
+#else  //  CONFIG_NUC970_USBH_NONE
+        /* set over-current active high */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
 #endif
 
 		/* Enable USB Host clock */
