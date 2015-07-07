@@ -115,7 +115,7 @@ choice
 	bool "PE.14 and PE.15 for USBH_PPWR0/1, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_PF
 	bool "PF.10 for USBH_PPWR, PH.1 for USBH_OVRCUR"
-    config NUC970_USBH_PWR_OC_ONLY
+    config NUC970_USBH_OC_ONLY
 	bool "No USBH_PPWRx, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_NONE
 	bool "No USBH_PPWRx and USBH_OVRCUR"

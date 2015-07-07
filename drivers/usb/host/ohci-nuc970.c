@@ -104,8 +104,13 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         ohci = hcd_to_ohci(hcd);
         ohci_hcd_init(ohci);
 
+#ifdef  CONFIG_NUC970_USBH_PWR_NONE
+        /* set over-current active high */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
+#else
         /* set over-current active low */
         __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+#endif
 
         retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
 
