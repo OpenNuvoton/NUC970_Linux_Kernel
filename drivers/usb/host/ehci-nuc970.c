@@ -58,6 +58,9 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	retval = PTR_ERR(p);
     	}
 #else
+        /* set over-current active high */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
+
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-none");
     	if (IS_ERR(p))
     	{
