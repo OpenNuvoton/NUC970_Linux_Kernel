@@ -204,6 +204,12 @@ static const unsigned sd0_pins[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x
 static const unsigned sd1_0_pins[] = {0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8C, 0x8D}; // Port I
 static const unsigned sd1_1_pins[] = {0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49}; // Port E
 static const unsigned sd1_2_pins[] = {0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D}; // Port H
+static const unsigned sd01_0_pins[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 
+					0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8C, 0x8D}; // Port I
+static const unsigned sd01_1_pins[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 
+					0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49}; // Port E
+static const unsigned sd01_2_pins[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 
+					0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D}; // Port H
 
 static const unsigned nand_0_pins[] = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
 								0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E};  // Port C
@@ -474,6 +480,24 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.name = "sd1_2_grp",
 		.pins = sd1_2_pins,
 		.num_pins = ARRAY_SIZE(sd1_2_pins),
+		.func = 0x6,
+	},
+	{
+		.name = "sd01_0_grp",
+		.pins = sd01_0_pins,
+		.num_pins = ARRAY_SIZE(sd01_0_pins),
+		.func = 0x6,
+	},
+	{
+		.name = "sd01_1_grp",
+		.pins = sd01_1_pins,
+		.num_pins = ARRAY_SIZE(sd01_1_pins),
+		.func = 0x6,
+	},
+	{
+		.name = "sd01_2_grp",
+		.pins = sd01_2_pins,
+		.num_pins = ARRAY_SIZE(sd01_2_pins),
 		.func = 0x6,
 	},
 	{
@@ -1293,6 +1317,7 @@ static const char * const kpi_4col_groups[] = {"kpi_2_grp", "kpi_6_grp"};
 static const char * const kpi_8col_groups[] = {"kpi_3_grp", "kpi_7_grp"};
 static const char * const sd0_groups[] = {"sd0_grp"};
 static const char * const sd1_groups[] = {"sd1_0_grp", "sd1_1_grp", "sd1_2_grp"};
+static const char * const sd01_groups[] = {"sd01_0_grp", "sd01_1_grp", "sd01_2_grp"};
 static const char * const nand_groups[] = {"nand_0_grp", "nand_1_grp"};
 static const char * const nand_ctl1_groups[] = {"nand_2_grp", "nand_3_grp"};
 static const char * const emmc_groups[] = {"emmc_0_grp", "emmc_1_grp"};
@@ -1433,6 +1458,11 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "sd1",
 		.groups = sd1_groups,
 		.num_groups = ARRAY_SIZE(sd1_groups),
+	},
+	{
+		.name = "sd01",
+		.groups = sd01_groups,
+		.num_groups = ARRAY_SIZE(sd01_groups),
 	},
 	{
 		.name = "nand",
@@ -1819,6 +1849,19 @@ int nuc970_enable(struct pinctrl_dev *pctldev, unsigned selector,
 		__raw_writel(reg, REG_MFP_GPA_L + offset);
 	}
 
+	/* SD0 pin value is 0x6, SD1 PI pin value is 0x4, should set the correct value */
+	if (strcmp(nuc970_pinctrl_groups[group].name, "sd01_0_grp") == 0)
+	{
+		for(i = 8; i < nuc970_pinctrl_groups[group].num_pins; i++) {
+			j = nuc970_pinctrl_groups[group].pins[i];
+			offset = (j >> 4) * 8 + ((j & 0x8) ? 4 : 0);
+
+			reg = __raw_readl(REG_MFP_GPA_L + offset);
+			reg = (reg & ~(0xF << ((j & 0x7) * 4))) | (0x4 << ((j & 0x7) * 4));
+
+			__raw_writel(reg, REG_MFP_GPA_L + offset);
+		}
+	}
 	return 0;
 }
 
@@ -2098,7 +2141,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-sdh",
-		.name = PINCTRL_STATE_DEFAULT,
+		.name = "sd0", //PINCTRL_STATE_DEFAULT,
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "sd0",
@@ -2127,6 +2170,30 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "sd1",
 		.data.mux.group = "sd1_2_grp",
+	},
+	{
+		.dev_name = "nuc970-sdh",
+		.name = "sd01-PI",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "sd01",
+		.data.mux.group = "sd01_0_grp",
+	},
+	{
+		.dev_name = "nuc970-sdh",
+		.name = "sd01-PE",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "sd01",
+		.data.mux.group = "sd01_1_grp",
+	},
+	{
+		.dev_name = "nuc970-sdh",
+		.name = "sd01-PH",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "sd01",
+		.data.mux.group = "sd01_2_grp",
 	},
 	{
 		.dev_name = "nuc970-fmi",
