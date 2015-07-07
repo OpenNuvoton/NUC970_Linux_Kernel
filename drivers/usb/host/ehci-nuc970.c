@@ -37,11 +37,11 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
                 return -1;
         }
 
-        /* set over-current active low */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
-        
 		/* multi-function pin select */
 #if defined (CONFIG_NUC970_USBH_PWR_PE)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+
     	/* initial USBH_PPWR0 & USBH_PPWR1 pin -> PE.14 & PE.15 */
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pe");
     	if (IS_ERR(p))
@@ -50,6 +50,9 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	retval = PTR_ERR(p);
     	}
 #elif defined (CONFIG_NUC970_USBH_PWR_PF)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+
     	/* initial USBH_PPWR pin -> PF.10 */
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
     	if (IS_ERR(p))
@@ -58,6 +61,9 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	retval = PTR_ERR(p);
     	}
 #elif defined (CONFIG_NUC970_USBH_OC_ONLY)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-oc");
     	if (IS_ERR(p))
     	{
@@ -68,7 +74,6 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         /* set over-current active high */
         __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
 #endif
-
 		/* Enable USB Host clock */
         clk_prepare(clk_get(NULL, "usb_eclk"));	
         clk_enable(clk_get(NULL, "usb_eclk"));
