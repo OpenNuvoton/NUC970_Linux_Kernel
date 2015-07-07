@@ -112,11 +112,13 @@ choice
     depends on USB_NUC970_EHCI
 	
     config NUC970_USBH_PWR_PE
-	bool "PE.14 and PE.15 for USBH_PPWR0 and USBH_PPWR1"
+	bool "PE.14 and PE.15 for USBH_PPWR0/1, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_PF
-	bool "PF.10 for USBH_PPWR"
+	bool "PF.10 for USBH_PPWR, PH.1 for USBH_OVRCUR"
+    config NUC970_USBH_PWR_OC_ONLY
+	bool "No USBH_PPWRx, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_NONE
-	bool "Not used"
+	bool "No USBH_PPWRx and USBH_OVRCUR"
 endchoice
 
 
