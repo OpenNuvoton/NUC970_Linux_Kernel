@@ -360,7 +360,10 @@ static int nuc970_init_desc(struct net_device *dev)
 		tdesc->next = ether->tdesc_phys + offset;
 		tdesc->buffer = (unsigned int)NULL;
 		tdesc->sl = 0;
-		tdesc->mode = 0;
+		if(i % 4 == 0)	// Trigger TX interrupt every 4 packets
+			tdesc->mode = PADDINGMODE | CRCMODE | MACTXINTEN;
+		else
+			tdesc->mode = PADDINGMODE | CRCMODE;
 	}
 
 	ether->start_tx_ptr = ether->tdesc_phys;
@@ -598,6 +601,7 @@ static int nuc970_ether_close(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 	struct platform_device *pdev;
+
 	pdev = ether->pdev;
 
 	netif_stop_queue(dev);
@@ -626,43 +630,9 @@ static struct net_device_stats *nuc970_ether_stats(struct net_device *dev)
 static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct nuc970_txbd *txbd = (ether->tdesc + ether->cur_tx);
-
-
-	txbd->buffer = dma_map_single(&dev->dev, skb->data,
-					skb->len, DMA_TO_DEVICE);
-
-	tx_skb[ether->cur_tx]  = skb;
-	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
-	txbd->mode = TX_OWEN_DMA | PADDINGMODE | CRCMODE | MACTXINTEN;
-
-	ETH_TRIGGER_TX;
-
-	if (++ether->cur_tx >= TX_DESC_SIZE)
-		ether->cur_tx = 0;
-
-	txbd = (ether->tdesc + ether->cur_tx);
-
-	if (txbd->mode & TX_OWEN_DMA)
-		netif_stop_queue(dev);
-
-	return(0);
-}
-
-static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
-{
-	struct nuc970_ether *ether;
-	struct nuc970_txbd  *txbd;
-	struct platform_device *pdev;
-	struct net_device *dev;
+	struct nuc970_txbd *txbd;
+	unsigned int cur_entry, entry;
 	struct sk_buff *s;
-	unsigned int cur_entry, entry, status;
-
-	dev = dev_id;
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
-
-	nuc970_get_and_clear_int(dev, &status, 0xFFFF0000);
 
 	cur_entry = __raw_readl( REG_CTXDSA);
 
@@ -672,7 +642,7 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		txbd = (ether->tdesc + ether->finish_tx);
 		s = tx_skb[ether->finish_tx];
 		dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
-		dev_kfree_skb_irq(s);
+		dev_kfree_skb(s);
 		tx_skb[ether->finish_tx] = NULL;
 
 		if (++ether->finish_tx >= TX_DESC_SIZE)
@@ -686,11 +656,47 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		}
 
 		txbd->sl = 0x0;
-		txbd->mode = 0x0;
 		txbd->buffer = (unsigned int)NULL;
 
 		entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 	}
+
+	txbd = ether->tdesc + ether->cur_tx;
+	txbd->buffer = dma_map_single(&dev->dev, skb->data,
+					skb->len, DMA_TO_DEVICE);
+
+	tx_skb[ether->cur_tx]  = skb;
+	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
+	wmb();	// This is dummy function for ARM9
+	txbd->mode |= TX_OWEN_DMA;
+	wmb();	// This is dummy function for ARM9
+
+	ETH_TRIGGER_TX;
+
+	if (++ether->cur_tx >= TX_DESC_SIZE)
+		ether->cur_tx = 0;
+
+	txbd = (ether->tdesc + ether->cur_tx);
+
+	if (txbd->mode & TX_OWEN_DMA) {
+		netif_stop_queue(dev);
+	}
+
+	return(0);
+}
+
+static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
+{
+	struct nuc970_ether *ether;
+	struct platform_device *pdev;
+	struct net_device *dev;
+	unsigned int status;
+
+	dev = dev_id;
+	ether = netdev_priv(dev);
+	pdev = ether->pdev;
+
+	nuc970_get_and_clear_int(dev, &status, 0xFFFF0000);
 
 	if (status & MISTA_EXDEF) {
 		dev_err(&pdev->dev, "emc defer exceed interrupt\n");
@@ -724,6 +730,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			complete = 1;
 			break;
 		}
+
 		s = rx_skb[ether->cur_rx];
 		status = rxbd->sl;
 		length = status & 0xFFFF;
@@ -751,6 +758,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
 							1518, DMA_FROM_DEVICE);
+
 			rx_skb[ether->cur_rx] = skb;
 			rx_cnt++;
 
@@ -768,9 +776,8 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			}
 		}
 
-		wmb();
+		wmb();	// This is dummy function for ARM9
 		rxbd->sl = RX_OWEN_DMA;
-		rxbd->reserved = 0x0;
 
 		if (++ether->cur_rx >= RX_DESC_SIZE)
 			ether->cur_rx = 0;
@@ -783,6 +790,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 		__napi_complete(napi);
 		__raw_writel(__raw_readl(REG_MIEN) | ENRXINTR,  REG_MIEN);
 	}
+
 rx_out:
 
 	ETH_TRIGGER_RX;
@@ -799,6 +807,7 @@ static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 
 	if (unlikely(status & MISTA_RXBERR)) {
 		struct platform_device *pdev = ether->pdev;
+
 		dev_err(&pdev->dev, "emc rx bus error\n");
 		nuc970_reset_mac(dev, 1);
 
@@ -1084,8 +1093,9 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 		goto err1;
 	}
 
-	// Set MCLK to 1M
+	// Set MDC to 1M
 	clk_set_rate(ether->eclk, 1000000);
+
 	clk_prepare(ether->eclk);
 	clk_enable(ether->eclk);
 
@@ -1143,6 +1153,7 @@ err1:
 	platform_set_drvdata(pdev, NULL);
 err0:
 	free_netdev(dev);
+
 	return error;
 }
 

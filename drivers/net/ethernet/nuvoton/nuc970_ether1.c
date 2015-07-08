@@ -360,7 +360,10 @@ static int nuc970_init_desc(struct net_device *dev)
 		tdesc->next = ether->tdesc_phys + offset;
 		tdesc->buffer = (unsigned int)NULL;
 		tdesc->sl = 0;
-		tdesc->mode = 0;
+		if(i % 4 == 0)	// Trigger TX interrupt every 4 packets
+			tdesc->mode = PADDINGMODE | CRCMODE | MACTXINTEN;
+		else
+			tdesc->mode = PADDINGMODE | CRCMODE;
 	}
 
 	ether->start_tx_ptr = ether->tdesc_phys;
@@ -611,10 +614,6 @@ static int nuc970_ether_close(struct net_device *dev)
 	if (ether->phy_dev)
 		phy_stop(ether->phy_dev);
 
-	//del_timer_sync(&ether->check_timer);
-	//clk_disable(ether->rmiiclk);
-	clk_disable(ether->clk);
-
 	return 0;
 }
 
@@ -631,43 +630,9 @@ static struct net_device_stats *nuc970_ether_stats(struct net_device *dev)
 static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct nuc970_txbd *txbd = (ether->tdesc + ether->cur_tx);
-
-
-	txbd->buffer = dma_map_single(&dev->dev, skb->data,
-					skb->len, DMA_TO_DEVICE);
-
-	tx_skb[ether->cur_tx]  = skb;
-	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
-	txbd->mode = TX_OWEN_DMA | PADDINGMODE | CRCMODE | MACTXINTEN;
-
-	ETH_TRIGGER_TX;
-
-	if (++ether->cur_tx >= TX_DESC_SIZE)
-		ether->cur_tx = 0;
-
-	txbd = (ether->tdesc + ether->cur_tx);
-
-	if (txbd->mode & TX_OWEN_DMA)
-		netif_stop_queue(dev);
-
-	return(0);
-}
-
-static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
-{
-	struct nuc970_ether *ether;
-	struct nuc970_txbd  *txbd;
-	struct platform_device *pdev;
-	struct net_device *dev;
+	struct nuc970_txbd *txbd;
+	unsigned int cur_entry, entry;
 	struct sk_buff *s;
-	unsigned int cur_entry, entry, status;
-
-	dev = dev_id;
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
-
-	nuc970_get_and_clear_int(dev, &status, 0xFFFF0000);
 
 	cur_entry = __raw_readl( REG_CTXDSA);
 
@@ -677,7 +642,7 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		txbd = (ether->tdesc + ether->finish_tx);
 		s = tx_skb[ether->finish_tx];
 		dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
-		dev_kfree_skb_irq(s);
+		dev_kfree_skb(s);
 		tx_skb[ether->finish_tx] = NULL;
 
 		if (++ether->finish_tx >= TX_DESC_SIZE)
@@ -691,18 +656,54 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		}
 
 		txbd->sl = 0x0;
-		txbd->mode = 0x0;
 		txbd->buffer = (unsigned int)NULL;
 
 		entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 	}
+
+	txbd = ether->tdesc + ether->cur_tx;
+	txbd->buffer = dma_map_single(&dev->dev, skb->data,
+					skb->len, DMA_TO_DEVICE);
+
+	tx_skb[ether->cur_tx]  = skb;
+	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
+	wmb();	// This is dummy function for ARM9
+	txbd->mode |= TX_OWEN_DMA;
+	wmb();	// This is dummy function for ARM9
+
+	ETH_TRIGGER_TX;
+
+	if (++ether->cur_tx >= TX_DESC_SIZE)
+		ether->cur_tx = 0;
+
+	txbd = (ether->tdesc + ether->cur_tx);
+
+	if (txbd->mode & TX_OWEN_DMA) {
+		netif_stop_queue(dev);
+	}
+
+	return(0);
+}
+
+static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
+{
+	struct nuc970_ether *ether;
+	struct platform_device *pdev;
+	struct net_device *dev;
+	unsigned int status;
+
+	dev = dev_id;
+	ether = netdev_priv(dev);
+	pdev = ether->pdev;
+
+	nuc970_get_and_clear_int(dev, &status, 0xFFFF0000);
 
 	if (status & MISTA_EXDEF) {
 		dev_err(&pdev->dev, "emc defer exceed interrupt\n");
 	} else if (status & MISTA_TXBERR) {
 		dev_err(&pdev->dev, "emc bus error interrupt\n");
 		nuc970_reset_mac(dev, 1);
-	} 
+	}
 
 	if (netif_queue_stopped(dev)) {
 		netif_wake_queue(dev);
@@ -760,6 +761,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 			rx_skb[ether->cur_rx] = skb;
 			rx_cnt++;
+
 		} else {
 			ether->stats.rx_errors++;
 
@@ -774,9 +776,8 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			}
 		}
 
-		wmb();
+		wmb();	// This is dummy function for ARM9
 		rxbd->sl = RX_OWEN_DMA;
-		rxbd->reserved = 0x0;
 
 		if (++ether->cur_rx >= RX_DESC_SIZE)
 			ether->cur_rx = 0;
@@ -1024,6 +1025,7 @@ static int nuc970_mii_setup(struct net_device *dev)
 	phydev = phy_connect(dev, dev_name(&phydev->dev),
 			     &adjust_link,
 			     PHY_INTERFACE_MODE_RMII);
+
 	if(IS_ERR(phydev)) {
 		err = PTR_ERR(phydev);
 		dev_err(&pdev->dev, "phy_connect() failed\n");
