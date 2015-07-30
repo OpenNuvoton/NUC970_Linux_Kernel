@@ -1,3 +1,9 @@
+config NVT_EXT_WIFI
+	tristate "Nuvoton external WiFi driver support"
+	depends on ARM && ARCH_NUC970
+	select WIRELESS_EXT
+	select WEXT_PRIV
+
 config WIRELESS_EXT
 	bool
 
