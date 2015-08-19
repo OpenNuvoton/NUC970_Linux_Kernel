@@ -47,7 +47,6 @@
 #define	NUC970_PB13	(0x20 + 13)
 #define	NUC970_PB14	(0x20 + 14)
 #define	NUC970_PB15	(0x20 + 15)
-#define	NUC970_PB16	(0x20 + 16)
 
 #define	NUC970_PC0	(0x40 + 0)
 #define	NUC970_PC1	(0x40 + 1)
