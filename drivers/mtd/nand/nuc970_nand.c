@@ -1473,6 +1473,11 @@ static int nuc970_nand_probe(struct platform_device *pdev)
             nuc970_nand_EXECUTE_oob.m_SMRASize  = g_SYSAREA_NAND_EXTRA_SIZE[ePageSize];
             mtd->oobsize                = nuc970_nand_EXECUTE_oob.m_SMRASize;
         }
+        else if ( ePageSize==1 && mtd->oobsize >= g_SYSAREA_NAND_EXTRA_SIZE[ePageSize] ) // 2K, oob >= 64Byte
+        {
+            nuc970_nand_EXECUTE_oob.m_SMRASize  = g_SYSAREA_NAND_EXTRA_SIZE[ePageSize];
+            mtd->oobsize                = nuc970_nand_EXECUTE_oob.m_SMRASize;
+        }
         else
             nuc970_nand_EXECUTE_oob.m_SMRASize  = mtd->oobsize;
 
