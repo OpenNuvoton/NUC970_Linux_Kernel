@@ -1,0 +1,13 @@
+config NUC970_JPEG_CODEC
+	tristate "NUC970 JPEG codec support"
+	depends on ARCH_NUC970 && VIDEO_DEV
+	---help---
+	  Say Y here if you wnat to use NUC970's JPEG codec.
+
+config JPEG_CODEC_BUFFER_SIZE
+	hex "Max Raw data size - w*h*byteperpixel(hex) + Max Bistream Size"
+	default 0xC8000
+	depends on ARCH_NUC970 && VIDEO_DEV && NUC970_JPEG_CODEC
+	help
+	  Configure for jpeg encode data buffer size.
+	  default is 640*480*2 raw data buffer + 100K (Raw data buffer * 0.4) output buffer

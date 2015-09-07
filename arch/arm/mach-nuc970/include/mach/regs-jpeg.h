@@ -1,6 +1,6 @@
-/* linux/include/asm/arch-nuc900/regs-iic.h
+/* linux/include/asm/arch-nuc970/regs-jpeg.h
  *
- * Copyright (c) 2008 Nuvoton technology corporation
+ * Copyright (c) 2015 Nuvoton technology corporation
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -10,13 +10,15 @@
  *
  * Changelog:
  *
- *   2006/08/26     vincen.zswan add this file for nuvoton nuc900 evb.
+ *   2015/09/04     Add this file for nuvoton nuc970 JPEG engine.
  */
 
 
 
 #ifndef ___ASM_ARCH_REGS_JPEG_H
 #define ___ASM_ARCH_REGS_JPEG_H "$Id: lcd.h,v 1.3 2003/06/26 13:25:06 ben Exp $"
+
+#include "map.h"
 
 #define JPEG_BA		NUC970_VA_JPEG
 
@@ -103,6 +105,8 @@
 #define OPW_INTE		((u32)0x00001000)			/*!<Output Wait Interrupt Enable               */
 #define IPW_INTE		((u32)0x00002000)			/*!<Input Wait Interrupt Enable                */
 #define DHE_INTE		((u32)0x00004000)			/*!<JPEG Header Decode End Wait Interrupt Enable */
+#define DOW_INTS		((u32)0x01000000)			/*!<decoding output Wait Interrupt Status      */
+#define DOW_INTE		((u32)0x10000000)			/*!<decoding output Wait Interrupt Enable      */
 
 /********************* Bit definition of REG_JPSCALU  ************************/
 #define A_JUMP			((u32)0x00000004)			/*!<Reserve Buffer Size In JPEG Bit-stream For Software Application */

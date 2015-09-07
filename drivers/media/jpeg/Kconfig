@@ -1,0 +1,13 @@
+#
+# HW jpeg codec configuration
+#
+
+
+menu "NUC970 JPEG CODEC"
+	depends on VIDEO_DEV
+
+comment "NUC970 JPEG codec"
+
+source "drivers/media/jpeg/nuc970/Kconfig"
+
+endmenu # NUC970 JPEG CODEC

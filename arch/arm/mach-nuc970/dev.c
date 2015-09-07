@@ -507,7 +507,7 @@ struct platform_device nuc970_device_emac1 = {
 #endif
 
 /* JPEG Controller */
-#ifdef CONFIG_JPEG_CODEC
+#ifdef CONFIG_NUC970_JPEG_CODEC
 static struct resource nuc970_jpeg_resource[] = {
         [0] = {
                 .start = NUC970_PA_JPEG,
@@ -1307,7 +1307,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #if defined (CONFIG_MTD_NAND_NUC970) || defined (CONFIG_MMC_NUC970_EMMC)
 	&nuc970_device_fmi,
 #endif
-#ifdef CONFIG_JPEG_CODEC
+#ifdef CONFIG_NUC970_JPEG_CODEC
 	&nuc970_device_jpeg,
 #endif
 #ifdef CONFIG_NUC970_ETH0
