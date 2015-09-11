@@ -2,7 +2,6 @@
  *
  * Copyright (c) 2015 Nuvoton technology corporation
  * All rights reserved.
- * <clyu2@nuvoton.com>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -19,7 +18,6 @@
 #include <linux/dma-mapping.h>
 #include <linux/pagemap.h>
 #include <linux/interrupt.h>
-//#include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
@@ -147,13 +145,13 @@ int nuc907_jpeg_set_enc_mode(__u8 u8SourceFormat, __u16 u16JpegFormat)
         case DRVJPEG_ENC_PRIMARY_GRAY:  
         case DRVJPEG_ENC_THUMBNAIL_GRAY:    
             if (u8SourceFormat == DRVJPEG_ENC_SOURCE_PACKET)
-                return (-2);
+                return -EINVAL;
             else
                 writel(0xA0, REG_JMCR);
                 u8Gray = EY_ONLY;   
             break;
         default:
-            return (-2);
+            return -EINVAL;
     }   
     
     if (u8SourceFormat == DRVJPEG_ENC_SOURCE_PLANAR)
@@ -161,7 +159,7 @@ int nuc907_jpeg_set_enc_mode(__u8 u8SourceFormat, __u16 u16JpegFormat)
     else if(u8SourceFormat == DRVJPEG_ENC_SOURCE_PACKET)
         writel(readl(REG_JITCR) & ~PLANAR_ON, REG_JITCR);
     else
-        return (-2);
+        return -EINVAL;
             
     return 0;
 }
@@ -186,7 +184,7 @@ int nuc970_jpeg_set_dec_mode(__u32 u32OutputFormat)
             writel(readl(REG_JMCR) & ~ENC_DEC, REG_JMCR);
             break;
         default:
-            return (-2);
+            return -EINVAL;
     }
     return 0;
 }
@@ -212,7 +210,7 @@ int  nuc970_jpeg_CalScalingFactor(
     if (u8Mode == DRVJPEG_ENC_UPSCALE_MODE)
     {
         if (u16ScalingHeight < u16Height || u16ScalingWidth < u16Width)
-            return (-2);    
+            return -EINVAL;    
         
         w = ((u16ScalingWidth - 1) * 1024) / (u16Width - 2);
         h = ((u16ScalingHeight - 1) * 1024) / (u16Height - 2);
@@ -222,7 +220,7 @@ int  nuc970_jpeg_CalScalingFactor(
     else if (u8Mode == DRVJPEG_DEC_PACKET_DOWNSCALE_MODE) 
     {
         if (u16ScalingHeight > u16Height || u16ScalingWidth> u16Width)
-            return (-2);
+            return -EINVAL;
         
         w = (u16ScalingWidth * 8192) / (u16Width -1);
         h = (u16ScalingHeight * 8192) / (u16Height-1);
@@ -239,32 +237,32 @@ int  nuc970_jpeg_CalScalingFactor(
     {
         __u16 u16RatioW,u16RatioH;
         if (u16ScalingHeight > u16Height || u16ScalingWidth> u16Width)
-            return (-2);            
+            return -EINVAL;            
         if (u16Height % u16ScalingHeight)    
-            return (-2);
+            return -EINVAL;
         if (u16Width % u16ScalingWidth)          
-            return (-2);
+            return -EINVAL;
         
         u16RatioW = u16Width / u16ScalingWidth;
         
         if (u16RatioW == 1)
-            return (-2);
+            return -EINVAL;
             
         u16RatioW = u16RatioW / 2 - 1;
         
         if (u16RatioW > 31)
-            return (-2);        
+            return -EINVAL;        
         
         u16RatioH = u16Height / u16ScalingHeight - 1;
         
         if (u16RatioH > 63)
-            return (-2);        
+            return -EINVAL;        
             
         *pu16RatioW = u16RatioW;
         *pu16RatioH = u16RatioH;                    
     }
     else            
-        return (-2);
+        return -EINVAL;
     
     return 0;
 
@@ -288,7 +286,7 @@ int nuc970_jpeg_SetScalingFactor(
         _DRVJPEG_DEC_ENABLE_LOW_PASS_FILTER();
     }
     else
-        return (-2);
+        return -EINVAL;
         
     if (u8Mode == DRVJPEG_DEC_PLANAR_DOWNSCALE_MODE || u8Mode == DRVJPEG_ENC_PLANAR_DOWNSCALE_MODE)
         writel((readl(REG_JPSCALD) & ~(PSCALX_F | PSCALY_F)) | ((u16FactorW & 0x1F) << 8) | (u16FactorH & 0x1F), REG_JPSCALD);
@@ -355,7 +353,7 @@ int nuc970_jpeg_SetWindowDecode(
 )
 {   
     if (u16StartMCUX >= u16EndMCUX || u16StartMCUY >= u16EndMCUY)
-        return (-2);
+        return -EINVAL;
     
     writel(u16StartMCUY << 16 | u16StartMCUX, REG_JWINDEC0);
     writel(u16EndMCUY << 16 | u16EndMCUX, REG_JWINDEC1);
@@ -378,7 +376,7 @@ int nuc970_Jpeg_AdjustQTAB(
     else if (u8Mode == DRVJPEG_ENC_THUMBNAIL)
         u32Addr = (void __iomem *)REG_JTHBQC;
     else
-        return (-2);
+        return -EINVAL;
     
     writel(((u8Qadjust & 0xF) << 4 )| (u8Qscaling & 0xF), u32Addr);
     return 0;
@@ -402,7 +400,7 @@ int  nuc970_jpeg_SetQTAB(
             u32TimeOut--;
             
         if(!u32TimeOut)    
-            return (-1);
+            return -EINVAL;
             
         u32value = puQTable0[i] | (puQTable0[i+1]<<8) | (puQTable0[i+2]<<16) | (puQTable0[i+3]<<24);
         writel(u32value, (REG_JQTAB0 + i)); 
@@ -415,7 +413,7 @@ int  nuc970_jpeg_SetQTAB(
             u32TimeOut--;    
             
         if(!u32TimeOut)    
-            return (-1);
+            return -EINVAL;
                             
         u32value = puQTable1[i] | (puQTable1[i+1]<<8) | (puQTable1[i+2]<<16) | (puQTable1[i+3]<<24);
         writel(u32value, (REG_JQTAB1 + i)); 
@@ -432,7 +430,7 @@ int  nuc970_jpeg_SetQTAB(
             u32TimeOut--;      
             
         if(!u32TimeOut)    
-            return (-1);            
+            return -EINVAL;            
             
         u32value = puQTable2[i] | (puQTable2[i+1]<<8) | (puQTable2[i+2]<<16) | (puQTable2[i+3]<<24);
         writel(u32value, (REG_JQTAB2 + i)); 
@@ -443,7 +441,7 @@ int  nuc970_jpeg_SetQTAB(
             u32TimeOut--;     
 
     if (!u32TimeOut)    
-        return (-1);       
+        return -EINVAL;       
     else
         return 0;
             
@@ -455,11 +453,6 @@ static int jpegcodec_open(struct file *file)
     //struct video_device *dev = video_devdata(file);
     jpeg_priv_t *priv = (jpeg_priv_t *)video_drvdata(file);
     
-    if (IS_ERR(clk_get(NULL, "jpeg_hclk"))) {
-        printk("NUC970 jpegcodec_open clk_get error!!\n");
-        return -1;
-    }
-
     /* Enable JPEG engine clock */
     clk_prepare(clk_get(NULL, "jpeg_hclk"));    
     clk_enable(clk_get(NULL, "jpeg_hclk"));
@@ -807,7 +800,7 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         priv->decopw_en = 0;
                         priv->decopw_tcount = 0;
                         priv->decopw_end = 0;
-                        return -JPEG_MEM_SHORTAGE;
+                        return -ENOMEM;
                         break;
                     }
                 }
@@ -946,7 +939,7 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         {
                                 priv->state = JPEG_ENCODE_PARAM_ERROR;
                                  wake_up_interruptible(&jpeg_wq);
-                                 return 1;
+                                 return -EINVAL;
                         }
                         else
                         {
@@ -970,7 +963,7 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         {
                                 priv->state = JPEG_ENCODE_PARAM_ERROR;
                                  wake_up_interruptible(&jpeg_wq);
-                                 return 1;
+                                 return -EINVAL;
                         }
                         else
                         {
@@ -1147,7 +1140,7 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         priv->decopw_en = 0;
                         priv->decopw_tcount = 0;
                         priv->decopw_end = 0;
-                        return -JPEG_MEM_SHORTAGE;
+                        return -ENOMEM;
                     }
 
                     down_read(&current->mm->mmap_sem);
@@ -1162,7 +1155,7 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         priv->decopw_en = 0;
                         priv->decopw_tcount = 0;
                         priv->decopw_end = 0;
-                            return -JPEG_MEM_SHORTAGE;
+                            return -ENOMEM;
                     }
                 }
                 else
@@ -2319,7 +2312,7 @@ static int nuc970_jpegcodec_probe(struct platform_device *pdev)
 	if (ret)
 	{
 		printk("nuc970_jpegcodec_probe - failed to register v4l2 device!\n");
-		return -1;
+		return -EINVAL;
 	}
 
 //  priv->jdev.owner = THIS_MODULE;
