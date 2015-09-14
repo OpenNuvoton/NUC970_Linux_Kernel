@@ -497,6 +497,10 @@ static int nuvoton_vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer
 	cam->frame[b.index].state = F_QUEUED;
 
 	spin_lock_irqsave(&cam->queue_lock, lock_flags);		
+	if(list_empty(&cam->inqueue))
+	{	
+		cam->frame_current=&cam->frame[b.index];
+	}	
 	list_add_tail(&cam->frame[b.index].frame, &cam->inqueue);
 	spin_unlock_irqrestore(&cam->queue_lock, lock_flags);
 
