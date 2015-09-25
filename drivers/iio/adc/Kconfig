@@ -157,4 +157,22 @@ config VIPERBOARD_ADC
 	  Say yes here to access the ADC part of the Nano River
 	  Technologies Viperboard.
 
+config NUC970_NADC
+	tristate "Nuvoton NUC970 Normal ADC driver"
+	depends on ARCH_NUC970
+	help
+	  Say yes here to build support for NUC970 normal ADC.
+choice
+	prompt "Reference voltage selection"
+	default NUC970_NADC_BANDGAP
+	depends on NUC970_NADC
+	help
+        Select reference voltage source
+        
+    config NUC970_NADC_BANDGAP
+		bool "Internal band gap"
+	config NUC970_NADC_VREF
+		bool "VREF"
+endchoice
+        
 endmenu

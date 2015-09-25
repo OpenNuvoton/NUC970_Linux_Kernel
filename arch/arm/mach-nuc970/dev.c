@@ -581,6 +581,28 @@ struct platform_device nuc970_device_adc = {
 };
 #endif
 
+/* Normal ADC */
+#ifdef CONFIG_NUC970_NADC
+static struct resource nuc970_nadc_resource[] = {
+        [0] = {
+                .start = NUC970_PA_ADC,
+                .end   = NUC970_PA_ADC + NUC970_SZ_ADC - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_ADC,
+                .end   = IRQ_ADC,
+                .flags = IORESOURCE_IRQ,
+        }
+};
+
+struct platform_device nuc970_device_nadc = {
+        .name		  = "nuc970-nadc",
+        .id		  = -1,
+        .num_resources	  = ARRAY_SIZE(nuc970_nadc_resource),
+        .resource	  = nuc970_nadc_resource,
+};
+#endif
 
 #ifdef CONFIG_NUC970_DMA
 #define DMA_CHANNEL(_name, _base, _irq) \
@@ -1349,6 +1371,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #ifdef CONFIG_NUC970_ADC
 	&nuc970_device_adc,
 #endif
+#ifdef CONFIG_NUC970_NADC
+	&nuc970_device_nadc,
+#endif
+
 #ifdef CONFIG_NUC970_ETIMER
 	&nuc970_device_etimer0,
 	&nuc970_device_etimer1,
