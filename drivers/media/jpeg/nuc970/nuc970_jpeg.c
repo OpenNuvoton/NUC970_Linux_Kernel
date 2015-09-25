@@ -37,6 +37,8 @@
 
 #include "nuc970_jpeg.h"
 
+#include <mach/regs-lcd.h>
+#include <linux/platform_data/video-nuc970fb.h>
 
 static u32 jpeg_command = JPEG_CMD_NONE;
 
@@ -1262,6 +1264,17 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
             if (param.dst_bufsize)
                 priv->dst_bufsize = param.dst_bufsize;
             break;
+
+        case JPEG_DECODE_TO_FRAME_BUFFER:
+#ifdef CONFIG_FB_NUC970
+        	priv->paddr_dst = readl(NUC970_VA_LCD + REG_LCM_VA_BADDR0);
+        	printk("priv->paddr_dst (frame buffer physical address) = 0x%x\n", priv->paddr_dst);
+        	_DRVJPEG_SET_YADDR(priv->paddr_dst);
+            break;
+#else
+			printk("NUC970 LCD is not enabled!\n");
+			return -ENODEV;
+#endif        	
             
         case JPEG_G_PARAM:
             param.vaddr_src = priv->vaddr_src;

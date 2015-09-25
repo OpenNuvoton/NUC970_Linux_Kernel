@@ -121,6 +121,7 @@ typedef enum jpeg_state {
 #define JPEG_SET_ENC_USER_UADDRESS     _IOW('v',142,  __u32)
 #define JPEG_SET_ENC_USER_VADDRESS     _IOW('v',143,  __u32)
 #define JPEG_GET_JPEG_BUFFER_PADDR     _IOR('v',144, __u32)
+#define JPEG_DECODE_TO_FRAME_BUFFER    _IOR('v',145, __u32)
 
 
 #define DRVJPEG_ENC_PRIMARY                 0
