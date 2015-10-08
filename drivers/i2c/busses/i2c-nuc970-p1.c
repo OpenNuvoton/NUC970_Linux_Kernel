@@ -154,7 +154,6 @@ static inline void nuc970_i2c1_stop(struct nuc970_i2c *i2c, int ret)
 	writel(I2C_CMD_STOP, i2c->regs + CMDR);
 
 	nuc970_i2c1_master_complete(i2c, ret);
-	nuc970_i2c1_disable_irq(i2c);
 }
 
 /* helper functions to determine the current state in the set of
@@ -208,7 +207,6 @@ static void i2c_nuc970_irq_nextbyte(struct nuc970_i2c *i2c,
 		break;
 
 	case STATE_STOP:
-		dev_err(i2c->dev, "%s: called in STATE_STOP\n", __func__);
 		nuc970_i2c1_disable_irq(i2c);
 		break;
 
