@@ -2132,6 +2132,16 @@ choice
         depends on FB_NUC970
         select FB_NUC970_24BIT_PIN
 endchoice
+choice
+	prompt "LCD source format"
+	default SRCFMT_RGB565
+	depends on FB_NUC970
+	depends on E50A2V1_800X480
+	config SRCFMT_RGB565
+	bool "RGB565 support"
+	config SRCFMT_RGB888
+	bool "RGB888 support"
+endchoice
 config FB_NUC970_16BIT_PIN
 		bool
 		depends on FB_NUC970
