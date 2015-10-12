@@ -40,8 +40,8 @@
 
 #include "nuc970_sensor.h"
 
-#define NUVOTON_MAX_DEVICES         64
-#define NUVOTON_MAX_FRAMES 		    3
+#define NUVOTON_MAX_DEVICES         2
+#define NUVOTON_MAX_FRAMES 		      CONFIG_MAX_FRAME_BUFFER
 #define NUVOTON_FORCE_MUNMAP        0
 #define NUVOTON_FRAME_TIMEOUT       2
 
@@ -117,7 +117,6 @@ struct capture_parameter{
 	
 	u8 PacketEnable;
 	u8 PlanarEnable;
-	u8 EngineEnable;
 	};
 
 struct nuvoton_vin_device {
@@ -146,8 +145,8 @@ struct nuvoton_vin_device {
 	wait_queue_head_t wait_frame, wait_stream;
 
 	struct capture_parameter vpe; /*sensor interface for nuvoton */
-	dma_addr_t phy_addr;
-	void* vir_addr;
+	dma_addr_t phy_addr[NUVOTON_MAX_FRAMES];
+	void* vir_addr[NUVOTON_MAX_FRAMES];
 };
 
 /*****************************************************************************/

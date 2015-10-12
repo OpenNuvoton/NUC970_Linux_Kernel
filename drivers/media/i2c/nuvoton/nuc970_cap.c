@@ -11,7 +11,7 @@
  *   ref => sn9c102_core.c 
  *
  */
-#include <linux/kernel.h>
+#include <linux/kernel.h> 
 #include <linux/sched.h>
 #include <linux/list.h>
 #include <linux/slab.h>
@@ -59,54 +59,43 @@
 #define NUVOTON_VIN_MODULE_LICENSE "GPL"
 #define NUVOTON_VIN_MODULE_VERSION "1:1.10"
 #define NUVOTON_VIN_MODULE_VERSION_CODE  KERNEL_VERSION(1, 1, 10)
-
 /*****************************************************************************/
-
+int dev_nr = 0;
 static short video_nr[] = {[0 ... NUVOTON_MAX_DEVICES-1] = -1};
-module_param_array(video_nr, short, NULL, 0444);
-MODULE_PARM_DESC(video_nr,
-		 "\n<-1|n[,...]> Specify V4L2 minor mode number."
-		 "\n -1 = use next available (default)"
-		 "\n  n = use minor number n (integer >= 0)"
-		 "\nYou can specify up to "
-		 __MODULE_STRING(NUVOTON_MAX_DEVICES) " cameras this way."
-		 "\nFor example:"
-		 "\nvideo_nr=-1,2,-1 would assign minor number 2 to"
-		 "\nthe second registered camera and use auto for the first"
-		 "\none and for every other camera."
-		 "\n");
+static unsigned int frame_timeout = NUVOTON_FRAME_TIMEOUT;
 
-static bool force_munmap[] = {[0 ... NUVOTON_MAX_DEVICES-1] =
-			       NUVOTON_FORCE_MUNMAP};
-module_param_array(force_munmap, bool, NULL, 0444);
-MODULE_PARM_DESC(force_munmap,
-		 "\n<0|1[,...]> Force the application to unmap previously"
-		 "\nmapped buffer memory before calling any VIDIOC_S_CROP or"
-		 "\nVIDIOC_S_FMT ioctl's. Not all the applications support"
-		 "\nthis feature. This parameter is specific for each"
-		 "\ndetected camera."
-		 "\n 0 = do not force memory unmapping"
-		 "\n 1 = force memory unmapping (save memory)"
-		 "\nDefault value is "__MODULE_STRING(NUVOTON_FORCE_MUNMAP)"."
-		 "\n");
+static struct nuvoton_vin_device* nuvoton_cam[NUVOTON_MAX_DEVICES];
 
-static unsigned int frame_timeout[] = {[0 ... NUVOTON_MAX_DEVICES-1] =
-				       NUVOTON_FRAME_TIMEOUT};
-module_param_array(frame_timeout, uint, NULL, 0644);
-MODULE_PARM_DESC(frame_timeout,
-		 "\n<n[,...]> Timeout for a video frame in seconds."
-		 "\nThis parameter is specific for each detected camera."
-		 "\nDefault value is "__MODULE_STRING(NUVOTON_FRAME_TIMEOUT)"."
-		 "\n");
-		 
-struct nuvoton_vin_device* nuvoton_cam;
+void nuvoton_vdi_enable(void){	
+	int i;
+	u8 packet=0,planar=0,engine=0;
+	ENTRY();
+	for(i=0;i<NUVOTON_MAX_DEVICES;i++)
+	{
+		if(nuvoton_cam[i]->vpe.PacketEnable==1) packet=1;
+		if(nuvoton_cam[i]->vpe.PlanarEnable==1) planar=1;
+	}
+	engine=(packet|planar);
+	__raw_writel( __raw_readl(REG_CAP_CTL) | ( (engine<<0) | (packet<<6) | (planar<<5) ),REG_CAP_CTL);
+	LEAVE();		
+}
 
-/* Declare static vars that will be used as parameters */
-//static u32 vid_limit	=  2;	
-/* Video memory limit, in Mb */
-/* create an initial linked list: avid_vdo_devlist */
-//static LIST_HEAD(avid_vdo_devlist);
-LIST_HEAD(nuvoton_vdo_devlist);
+void nuvoton_vdi_disable(void){
+	
+	int i;
+	u8 packet=0,planar=0,engine=0;
+	ENTRY();
+	for(i=0;i<NUVOTON_MAX_DEVICES;i++)
+	{
+		if(nuvoton_cam[i]->vpe.PacketEnable==1) packet=1;
+		if(nuvoton_cam[i]->vpe.PlanarEnable==1) planar=1;
+	}
+	engine=!(packet|planar);
+	packet=!packet;
+	planar=!planar;	
+	__raw_writel( __raw_readl(REG_CAP_CTL) & ~( (engine<<0) | (packet<<6) | (planar<<5) ),REG_CAP_CTL);
+	LEAVE();		
+}
 
 /* ---- IOCTL vidioc handling  ----*/
 static int nuvoton_vidioc_querycap(struct file* file,void* priv,struct v4l2_capability *cap)
@@ -115,7 +104,7 @@ static int nuvoton_vidioc_querycap(struct file* file,void* priv,struct v4l2_capa
 	ENTRY();	
 	strlcpy(cap->driver,"nuvoton_vin",sizeof(cap->driver));
 	cap->version = NUVOTON_VIN_MODULE_VERSION_CODE;
-	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_READWRITE | V4L2_CAP_STREAMING;
+	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_READWRITE | V4L2_CAP_STREAMING| V4L2_CAP_VIDEO_OVERLAY;
 	strlcpy(cap->card, cam->v4ldev->name, sizeof(cap->card));	
 	LEAVE();
 	return 0;
@@ -234,18 +223,8 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 		return -EINVAL;
 	memcpy(&rect, &(s->_rect), sizeof(rect));
 
-	#if 1 
-		rect.width = pix->width;
-		rect.height = pix->height;
-	#else
-	if (!s->set_crop) {
-		pix->width = rect.width;
-		pix->height = rect.height;
-	} else {
-		rect.width = pix->width;
-		rect.height = pix->height;
-	}
-	#endif
+	rect.width = pix->width;
+	rect.height = pix->height;
 
 	if (rect.width < 8)
 		rect.width = 8;
@@ -262,8 +241,13 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 	pix->height = rect.height;
 	pix->priv = pfmt->priv;
 	pix->colorspace = pfmt->colorspace;
-	pix->bytesperline = 0;
-	pix->sizeimage = pix->height * ((pix->width * pix->priv) / 8);
+	if(pix->bytesperline==0)
+	{
+		pix->bytesperline = pix->width*2;
+		pfmt->bytesperline = pix->width*2;
+	}
+
+	pix->sizeimage = pix->height * (((pix->bytesperline/2) * pix->priv) / 8);
 	pix->field = V4L2_FIELD_NONE;	
 	memcpy(pfmt, pix, sizeof(*pix));
 	/*Set capture format for nuvoton sensor interface */	
@@ -274,7 +258,8 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 		case V4L2_PIX_FMT_YUYV:
 		case V4L2_PIX_FMT_RGB555:
 		case V4L2_PIX_FMT_RGB565:
-		case V4L2_PIX_FMT_GREY:			
+		case V4L2_PIX_FMT_GREY:		
+			VDEBUG("Packet\n");
 			if(pix->pixelformat==V4L2_PIX_FMT_YUYV) 	
 				outfmt = 0<<4;
 			if(pix->pixelformat==V4L2_PIX_FMT_GREY) 	
@@ -284,18 +269,20 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 			}
 			if(pix->pixelformat==V4L2_PIX_FMT_RGB555) 	
 				outfmt = 2<<4;
-			if(pix->pixelformat==V4L2_PIX_FMT_RGB565) 	
+			if(pix->pixelformat==V4L2_PIX_FMT_RGB565) 
 				outfmt = 3<<4; //infmtord
 				
 			__raw_writel( (__raw_readl(REG_CAP_PAR) & ~(3<<4)) | outfmt,REG_CAP_PAR );
 			__raw_writel( (__raw_readl(REG_CAP_PAR) & ~INMASK) | s->infmtord,REG_CAP_PAR );
 			//VDEBUG("pix->pixelformat = V4L2_PIX_FMT_YUYV\n");
 			/* Set_Cropping start position for sensor */
-			__raw_writel( (__raw_readl(REG_CAP_CWSP) & ~(CAP_CWSP_CWSADDRV | CAP_CWSP_CWSADDRH)) | (s->cropstart),REG_CAP_CWSP );
+			if(cam->users==1)
+				__raw_writel( (__raw_readl(REG_CAP_CWSP) & ~(CAP_CWSP_CWSADDRV | CAP_CWSP_CWSADDRH)) | (s->cropstart),REG_CAP_CWSP );
 
 			/* Packet Scaling Vertical Factor Register (LSB) */		
 			VDEBUG("pix->height=%d, s->cropcap.bounds.height = %d\n",pix->height,s->cropcap.bounds.height);
 			u32GCD=GCD(pix->height,s->cropcap.bounds.height);
+			if(u32GCD<=0) u32GCD=1;
 			heightN=(pix->height/u32GCD);
 			heightM=(s->cropcap.bounds.height/u32GCD);
 			__raw_writel( (__raw_readl(REG_CAP_PKTSL) & ~(CAP_PKTSL_PKTSVNL | CAP_PKTSL_PKTSVML))|
@@ -307,7 +294,8 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 
 			/* Packet Scaling Horizontal Factor Register (LSB) */	
 			VDEBUG("pix->width=%d, s->cropcap.bounds.width = %d\n",pix->width,s->cropcap.bounds.width);
-			u32GCD=GCD(pix->width,s->cropcap.bounds.width);			
+			u32GCD=GCD(pix->width,s->cropcap.bounds.width);	
+			if(u32GCD<=0) u32GCD=1;		
 			widthN=(pix->width/u32GCD);
 			widthM=(s->cropcap.bounds.width/u32GCD);			
 			__raw_writel( (__raw_readl(REG_CAP_PKTSL) & ~(CAP_PKTSL_PKTSHNL | CAP_PKTSL_PKTSHML))|
@@ -318,55 +306,71 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 					       ((widthN>>8)<<8 | (widthM>>8)<<0),REG_CAP_PKTSM);
 						
 			/* Frame Output Pixel Stride Width Register(Packet/Planar) */
+			#if 0
 			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PKTSTRIDE) | 
 					       (/*PacketStride*/pix->width<<0),REG_CAP_STRIDE);
-			
+			#else
+			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PKTSTRIDE) | 
+					       (/*PacketStride*/(pix->bytesperline/2)<<0),REG_CAP_STRIDE);
+			#endif
 			cam->vpe.format=pix->pixelformat;
 			cam->vpe.PacketWidth=pix->width;
 			cam->vpe.PacketHeight=pix->height;
 			cam->vpe.PacketEnable=1;
-			cam->vpe.EngineEnable=1;
 		break;	
 
 		/* Planar YUV422 */
 		case V4L2_PIX_FMT_YUV422P:
-		case V4L2_PIX_FMT_YUV411P:
+		case V4L2_PIX_FMT_YUV411P:		
+			
 			if(pix->pixelformat==V4L2_PIX_FMT_YUV422P) 	outfmt = 0<<7;
 			if(pix->pixelformat==V4L2_PIX_FMT_YUV411P) 	outfmt = 1<<7;	
+				VDEBUG("Planar, cam->users=%d\n",cam->users);
+				VDEBUG("Planar, pix->height=%d,pix->width=%d\n",pix->height,pix->width);
+				VDEBUG("Planar, s->cropcap.bounds.height=%d,s->cropcap.bounds.width=%d\n",s->cropcap.bounds.height,s->cropcap.bounds.width);
 			__raw_writel( (__raw_readl(REG_CAP_PAR) & ~(1<<7)) | outfmt,REG_CAP_PAR );
 			//VDEBUG("pix->pixelformat = V4L2_PIX_FMT_YUV422P\n");
 			/* Set_Cropping start position for sensor */
-			__raw_writel( (__raw_readl(REG_CAP_CWSP) & ~(CAP_CWSP_CWSADDRV | CAP_CWSP_CWSADDRH)) | ( 0 | 2<<16 ),REG_CAP_CWSP );
-
+			if(cam->users==1)
+				__raw_writel( (__raw_readl(REG_CAP_CWSP) & ~(CAP_CWSP_CWSADDRV | CAP_CWSP_CWSADDRH)) | ( 0 | 2<<16 ),REG_CAP_CWSP );					
 			/* Planar Scaling Vertical Factor Register (LSB) */
 			u32GCD=pix->height/s->cropcap.bounds.height;
+			if(u32GCD<=0) u32GCD=1;
 			__raw_writel( (__raw_readl(REG_CAP_PLNSL) & ~(CAP_PLNSL_PLNSVNL | CAP_PLNSL_PLNSVML))|
 					       ( ((pix->height/u32GCD)&0xff)<<24 | ((s->cropcap.bounds.height/u32GCD)&0xff)<<16),REG_CAP_PLNSL);
 
 			/* Planar Scaling Vertical Factor Register (MSB) */
 			u32GCD=pix->height/s->cropcap.bounds.height;
+			if(u32GCD<=0) u32GCD=1;
 			__raw_writel( (__raw_readl(REG_CAP_PLNSM) & ~(CAP_PLNSM_PLNSVNH | CAP_PLNSM_PLNSVMH))|
 					       ( ((pix->height/u32GCD)>>8)<<24 | ((s->cropcap.bounds.height)>>8)/u32GCD<<16),REG_CAP_PLNSM);
 
 			/* Planar Scaling Horizontal Factor Register (LSB) */
 			u32GCD=pix->width/s->cropcap.bounds.width;
+			if(u32GCD<=0) u32GCD=1;
 			__raw_writel( (__raw_readl(REG_CAP_PLNSL) & ~(CAP_PLNSL_PLNSHNL | CAP_PLNSL_PLNSHML))|
 							(((pix->width/u32GCD) & 0xff)<<8 | ((s->cropcap.bounds.width/u32GCD) & 0xff)<<0),REG_CAP_PLNSL);
 			
 			/* Planar Scaling Horizontal Factor Register (MSB) */			
 			u32GCD=pix->width/s->cropcap.bounds.width;
+			if(u32GCD<=0) u32GCD=1;
 			__raw_writel( (__raw_readl(REG_CAP_PLNSM) & ~(CAP_PLNSM_PLNSHNH | CAP_PLNSM_PLNSHMH))|
 					       (((pix->width/u32GCD) >>8)<<8 | ((s->cropcap.bounds.width/u32GCD)>>8)<<0),REG_CAP_PLNSM);
 
-			/* Frame Output Pixel Stride Width Register(Planar) */		
+			/* Frame Output Pixel Stride Width Register(Planar) */	
+			#if 0	
 			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PLNSTRIDE) | 
 					      (/*PacketStride*/pix->width<<16),REG_CAP_STRIDE);
+			#else
+			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PLNSTRIDE) | 
+					      (/*PacketStride*/(pix->bytesperline/2)<<16),REG_CAP_STRIDE);
+			#endif
 			
 			cam->vpe.format=pix->pixelformat;
 			cam->vpe.PlanarWidth=pix->width;
 			cam->vpe.PlanarHeight=pix->height;
 			cam->vpe.PlanarEnable=1;
-			cam->vpe.EngineEnable=1;
+			VDEBUG("V4L2_PIX_FMT_YUV422P END\n",cam->users);	
 		break;
 		
 		#if 0  /* not surpport yet, TODO: */
@@ -395,9 +399,12 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 		break;
 
 	}
-		
-	__raw_writel((__raw_readl(REG_CAP_PAR) & ~(VSP_HI|HSP_HI|PCLKP_HI)) | s->polarity,REG_CAP_PAR); /* set CAP Polarity */
-	__raw_writel((__raw_readl(REG_CAP_INT) | 0x10000) ,REG_CAP_INT); 	   /* Enable CAP Interrupt */
+	
+	if(cam->users==1)	
+	{
+		__raw_writel((__raw_readl(REG_CAP_PAR) & ~(VSP_HI|HSP_HI|PCLKP_HI)) | s->polarity,REG_CAP_PAR); /* set CAP Polarity */
+		__raw_writel((__raw_readl(REG_CAP_INT) | 0x10000) ,REG_CAP_INT); 	   /* Enable CAP Interrupt */
+	}
 	LEAVE();               
 	return 0;
 }
@@ -496,11 +503,7 @@ static int nuvoton_vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer
 
 	cam->frame[b.index].state = F_QUEUED;
 
-	spin_lock_irqsave(&cam->queue_lock, lock_flags);		
-	if(list_empty(&cam->inqueue))
-	{	
-		cam->frame_current=&cam->frame[b.index];
-	}	
+	spin_lock_irqsave(&cam->queue_lock, lock_flags);				
 	list_add_tail(&cam->frame[b.index].frame, &cam->inqueue);
 	spin_unlock_irqrestore(&cam->queue_lock, lock_flags);
 
@@ -516,7 +519,6 @@ static int nuvoton_vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffe
 	struct v4l2_buffer b;
 	struct nuvoton_vin_frame_t *f;
 	unsigned long lock_flags;
-	long timeout;
 	int err = 0;
 	ENTRY();
 
@@ -527,37 +529,8 @@ static int nuvoton_vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffe
 	if (list_empty(&cam->outqueue)) {
 		if (cam->stream == STREAM_OFF)
 			return -EINVAL;
-//		if (filp->f_flags & O_NONBLOCK)
-//			return -EAGAIN;
-		if (!cam->module_param.frame_timeout) {
-			err = wait_event_interruptible
-			      ( cam->wait_frame,
-				(!list_empty(&cam->outqueue)) ||
-				(cam->state & DEV_DISCONNECTED) ||
-				(cam->state & DEV_MISCONFIGURED) );
-			if (err)
-				return err;
-		} else {
-			timeout = wait_event_interruptible_timeout
-				  ( cam->wait_frame,
-				    (!list_empty(&cam->outqueue)) ||
-				    (cam->state & DEV_DISCONNECTED) ||
-				    (cam->state & DEV_MISCONFIGURED),
-				    cam->module_param.frame_timeout *
-				    1000 * msecs_to_jiffies(1) );
-			if (timeout < 0)
-			{
-				return timeout;
-			}else if (timeout == 0 &&
-				 !(cam->state & DEV_DISCONNECTED)) {
-				VDEBUG("Video frame timeout elapsed\n");
-				return -EIO;
-			}
-		}
-		if (cam->state & DEV_DISCONNECTED)
-			return -ENODEV;
-		if (cam->state & DEV_MISCONFIGURED)
-			return -EIO;
+			err = wait_event_interruptible( cam->wait_frame,(!list_empty(&cam->outqueue)));			
+			if (err) return err;	
 	}
 	spin_lock_irqsave(&cam->queue_lock, lock_flags);
 	f = list_entry(cam->outqueue.next, struct nuvoton_vin_frame_t, frame);
@@ -582,14 +555,13 @@ static int nuvoton_vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_
 
 	/* Setting Buffer address */
 	VDEBUG("cam->nbuffers=%d\n",cam->nbuffers);
-	VDEBUG("cam->vpe.EngineEnable=%d\n",cam->vpe.EngineEnable);
 	
 	if(cam->nbuffers>0)
 	{
-		
 		VDEBUG("cam->frame_current->bufmem=0x%08x\n",cam->frame_current->bufmem);
 		VDEBUG("cam->frame_current->pbuf=0x%08x\n",cam->frame_current->pbuf);
 		VDEBUG("cam->vpe.PacketEnable=%d\n",cam->vpe.PacketEnable);
+
 		if(cam->vpe.PacketEnable==1)
 		{							
 			if(cam->frame_current!=NULL)				
@@ -601,24 +573,18 @@ static int nuvoton_vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_
 		VDEBUG("cam->vpe.PlanarEnable=%d\n",cam->vpe.PlanarEnable);
 		if(cam->vpe.PlanarEnable==1)
 		{
-			//if(V4L2_PIX_FMT_YUV422P)	
-			{
 				if(cam->frame_current!=NULL)
 				{
 					__raw_writel((unsigned int)cam->frame_current->pbuf,REG_CAP_YBA);
 					__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 					__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
 				}else
-					printk("PlanarEnable : cam->frame_current == NULL\n");				
-			}
+					VDEBUG("PlanarEnable : cam->frame_current == NULL\n");				
 		}
 	}
 	/* Capture engine enable and packer/planar mode enable */	
-	__raw_writel( (__raw_readl(REG_CAP_CTL) & ~(CAP_CTL_CAPEN | CAP_CTL_PKTEN | CAP_CTL_PLNEN))
-		| (cam->vpe.EngineEnable | (cam->vpe.PacketEnable<<6) | (cam->vpe.PlanarEnable<<5) ),REG_CAP_CTL);
+	 nuvoton_vdi_enable();
 
-	//for(j=0;j<=0x88;j+=4)
-	//	printk("CAP_BA+0x%2x=0x%08x\n",j,__raw_readl(CAP_BA+j));
 	cam->stream = STREAM_ON;
 	LEAVE();
 	return 0;
@@ -627,7 +593,12 @@ static int nuvoton_vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_
 /* stop capturing sensor output stream */
 static int nuvoton_vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
 {
+	struct nuvoton_vin_device* cam=priv;
 	ENTRY();
+	cam->vpe.PacketEnable=0;
+	cam->vpe.PacketEnable=0;
+	cam->stream = STREAM_OFF;
+	nuvoton_vdi_disable();
 	LEAVE();
 	return 0;
 }
@@ -693,20 +664,11 @@ static int nuvoton_vidioc_queryctrl(struct file *file,void *priv,struct v4l2_que
 	struct nuvoton_vin_device* cam=priv;
 	struct nuvoton_vin_sensor* s = &cam->sensor;			
 	ENTRY();
-	
-	#if 0
-	for (i = 0; i < ARRAY_SIZE(s->qctrl); i++)
-		if (qc->id && qc->id == s->qctrl[i].id) {
-			memcpy(qc, &(s->qctrl[i]), sizeof(qc));			
-			return 0;
-		}
-	#else
-		if (qc->id && qc->id == s->qctrl.id) {
-			memcpy((char *)qc, (char *)&(s->qctrl), sizeof(qc));
-			LEAVE();
-			return 0;
-		}
-	#endif	
+	if (qc->id && qc->id == s->qctrl.id) {
+		memcpy((char *)qc, (char *)&(s->qctrl), sizeof(qc));
+		LEAVE();
+		return 0;
+	}
 	LEAVE();	
 	return -EINVAL;	
 }
@@ -790,20 +752,12 @@ static int nuvoton_vidioc_s_crop(struct file *file, void *priv,const struct v4l2
 	//const enum unvoton_vin_stream_state stream = cam->stream;
 	const u8 stream = cam->stream;
 	const u32 nbuffers = cam->nbuffers;
-	u32 i;
 	int err = 0;
 	ENTRY();	
 	rect = (struct v4l2_rect*)&(crop->c);
 		
 	if (crop->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
 		return -EINVAL;
-		
-	if (cam->module_param.force_munmap)
-		for (i = 0; i < cam->nbuffers; i++)
-			if (cam->frame[i].vma_use_count) {
-				VDEBUG("VIDIOC_S_CROP failed. Unmap the buffers first.\n");
-				return -EBUSY;
-			}
 
 	if (!s->set_crop) {
 			memcpy(rect, &(s->_rect), sizeof(*rect));			
@@ -828,14 +782,14 @@ static int nuvoton_vidioc_s_crop(struct file *file, void *priv,const struct v4l2
 			return err;	
 	
 	
-	if (cam->module_param.force_munmap || cam->io == IO_READ)
+	if (cam->io == IO_READ)
 		nuvoton_vin_release_buffers(cam);
 		
 	if (s->set_crop)
 		err += s->set_crop(cam, rect);
 
 	if (err) { /* atomic, no rollback in ioctl() */
-		cam->state |= DEV_MISCONFIGURED;
+		//cam->state |= DEV_MISCONFIGURED;
 		VDEBUG("VIDIOC_S_CROP failed because of hardware problems. To use the camera, close and open %s again.\n",
 						video_device_node_name(cam->v4ldev));
 		return -EIO;
@@ -845,9 +799,8 @@ static int nuvoton_vidioc_s_crop(struct file *file, void *priv,const struct v4l2
 	s->pix_format.height = rect->height;
 	memcpy(&(s->_rect), rect, sizeof(*rect));
 	
-	if ((cam->module_param.force_munmap  || cam->io == IO_READ) &&
-	    nbuffers != nuvoton_vin_request_buffers(cam, nbuffers, cam->io)) {
-		cam->state |= DEV_MISCONFIGURED;
+	if ((cam->io == IO_READ) && nbuffers != nuvoton_vin_request_buffers(cam, nbuffers, cam->io)) {
+		//cam->state |= DEV_MISCONFIGURED;
 		VDEBUG("VIDIOC_S_CROP failed because of not enough memory. To use the camera, close and open %s again.\n",
 		    video_device_node_name(cam->v4ldev));
 		return -ENOMEM;
@@ -855,8 +808,6 @@ static int nuvoton_vidioc_s_crop(struct file *file, void *priv,const struct v4l2
 	
 	if (cam->io == IO_READ)
 		nuvoton_vin_empty_framequeues(cam);
-	else if (cam->module_param.force_munmap)
-		nuvoton_vin_requeue_outqueue(cam);
 
 	cam->stream = stream;
 	LEAVE();
@@ -870,9 +821,45 @@ static int nuvoton_vin_vidioc_s_jpegcomp(struct file *file, void *priv,const str
 	return 0;
 }
 
+static int nuvoton_vidioc_s_fbuf(struct file *file, void *priv,
+				const struct v4l2_framebuffer *fb)
+{
+   ENTRY();
+	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
+		__raw_writel((__raw_readl(NUC970_VA_LCD+REG_LCM_VA_BADDR0)),REG_CAP_PKTBA0);
+		LEAVE();
+		return 0;
+	}
+	LEAVE();
+	return -EINVAL;	
+}
+
+static int nuvoton_vidioc_g_fbuf(struct file *file, void *priv,
+				struct v4l2_framebuffer *fb)
+{
+//Bttv-driver.c
+//Fsl-viu.c
+//Ivtv-ioctl.c
+//Omap_vout.c
+//saa7134-video.c
+//Zoran_driver.c
+   ENTRY();
+	//struct nuvoton_vin_device* cam=priv;	
+	//struct nuvoton_vin_sensor* s = &cam->sensor;	
+	fb->capability = V4L2_FBUF_FLAG_OVERLAY;
+	fb->flags = V4L2_FBUF_FLAG_OVERLAY;
+	LEAVE();
+	return 0;
+}
+
+
+
 #if 0
 static int vidioc_querymenu(struct file *file,void *priv,struct v4l2_querymenu *menu){return 0;}
 #endif
+
+
+
 
 /* ----	Initialization v4l2 ioctrl ops   ----*/
 static const struct v4l2_ioctl_ops nuvoton_vdi_ioctl_ops =
@@ -899,6 +886,11 @@ static const struct v4l2_ioctl_ops nuvoton_vdi_ioctl_ops =
 	.vidioc_g_crop = nuvoton_vidioc_g_crop,
 	.vidioc_s_crop = nuvoton_vidioc_s_crop,
 	.vidioc_s_jpegcomp = nuvoton_vin_vidioc_s_jpegcomp,
+	.vidioc_g_fbuf = nuvoton_vidioc_g_fbuf,
+	.vidioc_s_fbuf = nuvoton_vidioc_s_fbuf,
+	/*  VIDIOC_G_FBUF and VIDIOC_S_FBUF ioctl to get and set 
+	    the framebuffer parameters for a Video Overlay 
+	    or Video Output Overlay (OSD) */
 };
 
 
@@ -907,39 +899,36 @@ int nuvoton_vin_stream_interrupt(struct nuvoton_vin_device* cam){return 0;}
 
 u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum nuvoton_vin_io_method io)
 {
-	struct v4l2_pix_format* p = &(cam->sensor.pix_format);	
-	#if 0
-	struct v4l2_rect* r = &(cam->sensor.cropcap.bounds);
-	const size_t imagesize = cam->module_param.force_munmap ||
-				 io == IO_READ ?
-				 (p->width * p->height * p->priv) / 8 :
-				 (r->width * r->height * p->priv) / 8;
-	#else				 				 
-	const size_t imagesize = (p->width * p->height * p->priv) / 8 ;
-	#endif				 
-	void* buff = NULL;
+	struct v4l2_pix_format* p = &(cam->sensor.pix_format);			 				 
+	size_t imagesize;
+	//void* buff = NULL;
 	u32 i;	
+	
+	if(p->bytesperline==0)
+		imagesize = (p->width * p->height * p->priv) / 8;
+	else
+		imagesize = ((p->bytesperline/2) * p->height * p->priv) / 8;
+		
 	ENTRY();
 	if (count > NUVOTON_MAX_FRAMES)
 		count = NUVOTON_MAX_FRAMES;
 
 	cam->nbuffers = (count);
 	for (i = 0; i < cam->nbuffers; i++) {
-		cam->frame[i].bufmem = cam->vir_addr + i*PAGE_ALIGN(imagesize);
-		cam->frame[i].pbuf = cam->phy_addr + i*PAGE_ALIGN(imagesize);
+		cam->frame[i].bufmem = cam->vir_addr[i];
+		cam->frame[i].pbuf = cam->phy_addr[i];
 		cam->frame[i].buf.index = i;
-		cam->frame[i].buf.m.userptr = (unsigned long)(buff + i*PAGE_ALIGN(imagesize));
-		cam->frame[i].buf.m.offset = i*PAGE_ALIGN(imagesize);
+		cam->frame[i].buf.m.userptr = (unsigned long)(cam->frame[i].bufmem);
+		cam->frame[i].buf.m.offset = (unsigned long)(cam->frame[i].bufmem);
 		cam->frame[i].buf.length = imagesize;
 		cam->frame[i].buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		cam->frame[i].buf.sequence = 0;
 		cam->frame[i].buf.field = V4L2_FIELD_NONE;
 		cam->frame[i].buf.memory = V4L2_MEMORY_MMAP;
 		cam->frame[i].buf.flags = 0;
-		//VDEBUG("cam->frame[%d].bufmem=0x%08x\n",i,(unsigned int)cam->frame[i].bufmem);
-		//VDEBUG("cam->frame[%d].pbuf=0x%08x\n",i,(unsigned int)cam->frame[i].pbuf);		
-	}
-	
+		VDEBUG("cam->frame[%d].bufmem=0x%08x\n",i,(unsigned int)cam->frame[i].bufmem);
+		VDEBUG("cam->frame[%d].pbuf=0x%08x\n",i,(unsigned int)cam->frame[i].pbuf);		
+	}	
 	cam->frame_current=&cam->frame[0];	
 	LEAVE();
 	return (cam->nbuffers);
@@ -949,9 +938,7 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 void nuvoton_vin_release_buffers(struct nuvoton_vin_device* cam)
 {
 	ENTRY();
-
 	if (cam->nbuffers) {
-		//vfree(cam->frame[0].bufmem);
 		cam->nbuffers = 0;
 	}
 	cam->frame_current = NULL;
@@ -1001,30 +988,16 @@ static void nuvoton_vin_queue_unusedframes(struct nuvoton_vin_device* cam)
 /*****************************************************************************/
 
 /* ----	Initialization and module stuff   ----*/
+#if 0
 static int nuvoton_vin_init(struct nuvoton_vin_device* cam)
 {
-	//struct nuvoton_vin_device* s = &cam->sensor;
-	//struct v4l2_control ctrl;
-	//struct v4l2_queryctrl *qctrl;
-	//struct v4l2_rect* rect;
-	//u8 i = 0;
-	//int err = 0;
 	ENTRY();
 	cam->state=0;
 	cam->nreadbuffers = 2;
-	if (!(cam->state & DEV_INITIALIZED)) {
-		mutex_init(&cam->open_mutex);
-		mutex_init(&cam->fileop_mutex);
-		spin_lock_init(&cam->queue_lock);
-		init_waitqueue_head(&cam->wait_frame);
-		init_waitqueue_head(&cam->wait_stream);
-		
-		cam->state |= DEV_INITIALIZED;
-	}
-
 	LEAVE();	
 	return 0;
 }
+#endif
 
 static void nuvoton_vin_release_resources(struct kref *kref)
 {
@@ -1037,23 +1010,13 @@ static void nuvoton_vin_release_resources(struct kref *kref)
 	kfree(cam);	
 }
 
-#define CLK_PMCON_SEN_OFF_ST (1<<4 )
-#define CLK_HCLKEN_CAPEN 		 (1<<26)
-#define CLK_HCLKEN_SENSOREN  (1<<27)
 int capture_init(struct nuvoton_vin_device* cam)
 {
-	//u32 i32Div;
-	//struct nuvoton_vin_sensor* s = &cam->sensor;
-
+  int ret;
+  struct clk *clkcap,*clkaplldiv,*clkmux;	
 	struct clk *clk;
-	#if 0	
-	struct clk *clkcap,*clkaplldiv,*clkmux;
-	int ret;
-	#endif
-	//u32 u32SensorFreq=24000000;
 	ENTRY();
 	
-
 	clk = clk_get(NULL, "cap_eclk");
 	if (IS_ERR(clk)) {	
 		return -ENOENT;
@@ -1066,9 +1029,8 @@ int capture_init(struct nuvoton_vin_device* cam)
 	clk_enable(clk_get(NULL, "cap_hclk"));
 	
 	clk_prepare(clk_get(NULL, "sensor_hclk"));
-        clk_enable(clk_get(NULL, "sensor_hclk"));
+  clk_enable(clk_get(NULL, "sensor_hclk"));
 
-#if 0
 	clkmux = clk_get(NULL, "cap_eclk_mux");
         if (IS_ERR(clkmux)) {
 			printk(KERN_ERR "nuc970-audio:failed to get cap clock source\n");
@@ -1088,27 +1050,7 @@ int capture_init(struct nuvoton_vin_device* cam)
 			return ret;
 		}		
 		clk_set_parent(clkmux, clkaplldiv);
-		clk_set_rate(clkcap, 24000000);
-	#endif
-	/* Muti-pin setting */	
-
-	/* MFP_GPI_L : 3=SEN_CLK0, 4=SEN_PCLK, 5=SEN_HSYNC, 6=SEN_VSYNC, 7=SEN_FIFLD */
-	//__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xFFFF000) | 0x33333000,REG_MFP_GPI_L);
-
-	/* MFP_GPI_H : SEN_PDATA[0~7] */	
-	//__raw_writel(0x33333333,REG_MFP_GPI_H);		
-	
-	// To-Do
-	//__raw_writel((__raw_readl(REG_CLK_DIV3) & ~0x000f0000 ) | 3<<16,REG_CLK_DIV3); /* Sensor Clock Source Select UCLKOut */
-	//i32Div = (66000000/u32SensorFreq)-1;	
-	//if(i32Div < 0) i32Div = 0;			
-	//__raw_writel((__raw_readl(REG_CLK_DIV3) & ~0x0f000000 ) | i32Div<<24,REG_CLK_DIV3);
-			
-	
-	//printk("REG_CLK_HCLKEN=0x%08x\n",__raw_readl(REG_CLK_HCLKEN));
-	//printk("REG_MFP_GPI_L=0x%08x\n",__raw_readl(REG_MFP_GPI_L));
-	//printk("REG_MFP_GPI_H=0x%08x\n",__raw_readl(REG_MFP_GPI_H));
-	//printk("REG_CLK_DIV3=0x%08x\n",__raw_readl(REG_CLK_DIV3));
+		clk_set_rate(clkcap, CONFIG_VIDOE_FREQ);
 	
 	/* GPIOI7 set to high */
 	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xF0000000) ,REG_MFP_GPI_L);
@@ -1122,6 +1064,7 @@ int capture_init(struct nuvoton_vin_device* cam)
 	return 0;
 }
 
+static int vdi_user=0;
 static int nuvoton_vdi_open(struct file *filp)
 {
 	struct nuvoton_vin_device* cam;
@@ -1142,11 +1085,6 @@ static int nuvoton_vdi_open(struct file *filp)
 		up_read(&nuvoton_vin_dev_lock);
 		return -ERESTARTSYS;
 	}
-	if (cam->state & DEV_DISCONNECTED) {
-		VDEBUG("Device not present\n");
-		err = -ENODEV;
-		goto out;
-	}
 	if (cam->users) {
 		VDEBUG("Device %s is busy...\n",video_device_node_name(cam->v4ldev));
 		VDEBUG("Simultaneous opens are not supported\n");
@@ -1154,29 +1092,13 @@ static int nuvoton_vdi_open(struct file *filp)
 			err = -EWOULDBLOCK;
 			goto out;
 		}
-		VDEBUG("A blocking open() has been requested. Wait for the device to be released...\n");
-		up_read(&nuvoton_vin_dev_lock);
-		//err = wait_event_interruptible_exclusive(cam->wait_open,
-			//			(cam->state & DEV_DISCONNECTED)
-				//			 || !cam->users);
-		down_read(&nuvoton_vin_dev_lock);
+		VDEBUG("A blocking open() has been requested. Wait for the device to be released...\n");		
 		if (err)
 			goto out;
-		if (cam->state & DEV_DISCONNECTED) {
-			err = -ENODEV;
-			goto out;
-		}
 	}
-	if (cam->state & DEV_MISCONFIGURED) {
-		err = nuvoton_vin_init(cam);
-		if (err) {
-			VDEBUG("Initialization failed again. I will retry on next open().\n");
-			goto out;
-		}
-		cam->state &= ~DEV_MISCONFIGURED;
-	}
-	filp->private_data = cam;
-	cam->users++;
+
+	filp->private_data = cam;	
+	cam->users=++vdi_user;
 	cam->io = IO_NONE;
 	cam->stream = STREAM_OFF;
 	cam->nbuffers = 0;
@@ -1204,17 +1126,15 @@ static int nuvoton_vdi_close(struct file *filp)
 	cam = video_drvdata(filp);
 
 	nuvoton_vin_release_buffers(cam);	
-	cam->users--;
-	//printk("after cam->users=%d\n",cam->users);
-	//wake_up_interruptible_nr(&cam->wait_open, 1);
-	//printk("wake_up_interruptible_nr\n");
+	vdi_user--;
+	cam->users=0;
+	cam->vpe.PacketEnable=0;
+	cam->vpe.PlanarEnable=0;
 	VDEBUG("Video device %s closed", video_device_node_name(cam->v4ldev));
 
 	kref_put(&cam->kref, nuvoton_vin_release_resources);	
-	up_write(&nuvoton_vin_dev_lock);
-	
-
-	__raw_writel( __raw_readl(REG_CAP_CTL) & ~(CAP_CTL_CAPEN | CAP_CTL_PKTEN | CAP_CTL_PLNEN),REG_CAP_CTL);
+	up_write(&nuvoton_vin_dev_lock);	
+  nuvoton_vdi_disable();
 	LEAVE();
 	return 0;
 }
@@ -1228,20 +1148,10 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 	int err = 0;	
 	ENTRY();			
 	if (mutex_lock_interruptible(&cam->fileop_mutex))
+	{
 		return -ERESTARTSYS;
-
-	if (cam->state & DEV_DISCONNECTED) {
-		VDEBUG("Device not present");
-		mutex_unlock(&cam->fileop_mutex);
-		return -ENODEV;
 	}
-
-	if (cam->state & DEV_MISCONFIGURED) {
-		VDEBUG("The camera is misconfigured. Close and open it again.\n");
-		mutex_unlock(&cam->fileop_mutex);
-		return -EIO;
-	}
-
+  
 	if (cam->io == IO_MMAP) {
 		VDEBUG("Close and open the device again to choose the read method\n");
 		mutex_unlock(&cam->fileop_mutex);
@@ -1254,12 +1164,12 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 			return -ENOMEM;
 		}
 		cam->io = IO_READ;
-		cam->stream = STREAM_ON;
-
+		cam->stream = STREAM_ON;	
 		if(cam->nreadbuffers>0)
 		{
+			VDEBUG("cam->nreadbuffers=%d\n",cam->nreadbuffers);
 			if(cam->vpe.PacketEnable==1)
-			{							
+			{	
 				if(cam->frame_current!=NULL)				
 					__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
 				else
@@ -1267,21 +1177,22 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 			}
 			if(cam->vpe.PlanarEnable==1)
 			{
-				//if(V4L2_PIX_FMT_YUV422P)	
-				{
 					if(cam->frame_current!=NULL)
 					{
 						__raw_writel((unsigned int)cam->frame_current->pbuf,REG_CAP_YBA);
 						__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 						__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
 					}else
-						printk("PlanarEnable : cam->frame_current == NULL\n");				
-				}
+						VDEBUG("PlanarEnable : cam->frame_current == NULL\n");				
 			}
+			
+			VDEBUG("cam->frame_current->bufmem=0x%08x\n",cam->frame_current->bufmem);
+			VDEBUG("cam->frame_current->pbuf=0x%08x\n",cam->frame_current->pbuf);
+			VDEBUG("cam->vpe.PacketEnable=%d\n",cam->vpe.PacketEnable);
+			VDEBUG("cam->vpe.PlanarEnable=%d\n",cam->vpe.PlanarEnable);
 		}
-		/* Capture engine enable and packer/planar mode enable */	
-		__raw_writel( (__raw_readl(REG_CAP_CTL) & ~(CAP_CTL_CAPEN | CAP_CTL_PKTEN | CAP_CTL_PLNEN))
-			| (cam->vpe.EngineEnable | (cam->vpe.PacketEnable<<6) | (cam->vpe.PlanarEnable<<5) ),REG_CAP_CTL);		
+		/* Capture engine enable and packet/planar mode enable */			
+		nuvoton_vdi_enable();
 	}
 
 	if (list_empty(&cam->inqueue)) {
@@ -1294,40 +1205,16 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 		mutex_unlock(&cam->fileop_mutex);
 		return 0;
 	}
-
+  
 	if (list_empty(&cam->outqueue)) {
-		if (filp->f_flags & O_NONBLOCK) {
-			mutex_unlock(&cam->fileop_mutex);
-			return -EAGAIN;
-		}
 		timeout = wait_event_interruptible_timeout
-			  ( cam->wait_frame,
-			    (!list_empty(&cam->outqueue)) ||
-			    (cam->state & DEV_DISCONNECTED) ||
-			    (cam->state & DEV_MISCONFIGURED),
-			    msecs_to_jiffies(
-				cam->module_param.frame_timeout * 1000
-			    )
-			  );
+			  ( cam->wait_frame,(!list_empty(&cam->outqueue)),msecs_to_jiffies(frame_timeout * 1000));
 		if (timeout < 0) {
 			mutex_unlock(&cam->fileop_mutex);
 			return timeout;
-		}
-		if (cam->state & DEV_DISCONNECTED) {
-			mutex_unlock(&cam->fileop_mutex);
-			return -ENODEV;
-		}
-		if (!timeout || (cam->state & DEV_MISCONFIGURED)) {
-			mutex_unlock(&cam->fileop_mutex);
-			return -EIO;
-		}
+		}		
 	}
-
 	f = list_entry(cam->outqueue.prev, struct nuvoton_vin_frame_t, frame);
-
-	if (count > f->buf.bytesused)
-		count = f->buf.bytesused;
-
 	if (copy_to_user(buf, f->bufmem, count)) {
 		err = -EFAULT;
 		goto exit;
@@ -1335,9 +1222,10 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 	*f_pos += count;
 
 exit:
+
 	spin_lock_irqsave(&cam->queue_lock, lock_flags);
 	list_for_each_entry(i, &cam->outqueue, frame)
-		i->state = F_UNUSED;
+	i->state = F_UNUSED;
 	INIT_LIST_HEAD(&cam->outqueue);
 	spin_unlock_irqrestore(&cam->queue_lock, lock_flags);
 
@@ -1346,8 +1234,8 @@ exit:
 	VDEBUG("Frame #%lu, bytes read: %zu\n",(unsigned long)f->buf.index, count);
 
 	mutex_unlock(&cam->fileop_mutex);
-	LEAVE();
-	return err ? err : count;		
+	LEAVE();	
+	return 0;	
 }
 
 static void nuvoton_vin_vm_open(struct vm_area_struct* vma)
@@ -1383,18 +1271,6 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 	ENTRY();
 	if (mutex_lock_interruptible(&cam->fileop_mutex))
 		return -ERESTARTSYS;
-
-	if (cam->state & DEV_DISCONNECTED) {
-		VDEBUG("Device not present\n");
-		mutex_unlock(&cam->fileop_mutex);
-		return -ENODEV;
-	}
-
-	if (cam->state & DEV_MISCONFIGURED) {
-		VDEBUG("The camera is misconfigured. Close and open it again.\n");
-		mutex_unlock(&cam->fileop_mutex);
-		return -EIO;
-	}
 
 	if (!(vma->vm_flags & (VM_WRITE | VM_READ))) {
 		mutex_unlock(&cam->fileop_mutex);
@@ -1458,65 +1334,52 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 
 /* ISR for buffer handling                   *
  * for nuvoton sensor interface              *
- * type of dev_id is "struct im9815_vdo_dev" */
+ *                                           */
 static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 {
-	struct nuvoton_vin_device* cam=priv;	
-	struct nuvoton_vin_frame_t** f=NULL;	
-	ENTRY();	
-	f  = &cam->frame_current;	
-	if (cam->stream == STREAM_INTERRUPT) {
-		VDEBUG("STREAM_INTERRUPT\n");
-		cam->stream = STREAM_OFF;
-		if ((*f))
-			(*f)->state = F_QUEUED;
-		wake_up(&cam->wait_stream);
-	}
-
-	if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue))
-	{
-		if(cam->stream == STREAM_OFF) VDEBUG("STREAM_OFF\n");
-		VDEBUG("goto resubmit\n");
-		goto resubmit;
-	}
-
-	if (!(*f))
-	{
-		goto resubmit;
-		//(*f) = list_entry(cam->inqueue.next, struct nuvoton_vin_frame_t,frame);		
-	}
-	spin_lock(&cam->queue_lock);
-	list_move_tail(&(*f)->frame, &cam->outqueue);
-
-	if (!list_empty(&cam->inqueue))
-	{						
-		(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
-		
-		/* Update New frame */
-		__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
-		
-		if(cam->vpe.PacketEnable==1)
-		{				
-			/* Setting packet buffer start address */
-			__raw_writel((*f)->pbuf,REG_CAP_PKTBA0);
-		}
-		if(cam->vpe.PlanarEnable==1)
-		{
-				/* Setting planar buffer Y address, U address, V address */
-				__raw_writel((unsigned int)(*f)->pbuf,REG_CAP_YBA);
-				__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
-				__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
-		}			
-	}	
-//	else
-//		(*f) = NULL;
-	spin_unlock(&cam->queue_lock);
-
-	
-resubmit:				
-	VDEBUG("wake_up_interruptible\n");
-	wake_up_interruptible(&cam->wait_frame);
-	__raw_writel(__raw_readl(REG_CAP_INT),REG_CAP_INT);
+   int i;
+   struct nuvoton_vin_device* cam=priv;	
+   struct nuvoton_vin_frame_t** f=NULL;	
+   ENTRY();	
+  for(i=0;i<NUVOTON_MAX_DEVICES;i++)
+  {
+			cam=nuvoton_cam[i];
+			f  = &cam->frame_current;
+			if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue))
+			{
+				wake_up_interruptible(&cam->wait_frame);	
+				continue;
+			} 
+			if (!(*f))
+			{	
+				wake_up_interruptible(&cam->wait_frame);	
+				continue;
+			}
+			spin_lock(&cam->queue_lock);
+			list_move_tail(&(*f)->frame, &cam->outqueue);
+			if (!list_empty(&cam->inqueue))
+			{		
+				(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
+				
+				/* Update New frame */
+				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
+				
+				if(cam->vpe.PacketEnable==1)
+				{				
+					/* Setting packet buffer start address */
+					__raw_writel((*f)->pbuf,REG_CAP_PKTBA0);
+				}else if(cam->vpe.PlanarEnable==1)
+					{
+							/* Setting planar buffer Y address, U address, V address */
+							__raw_writel((unsigned int)(*f)->pbuf,REG_CAP_YBA);
+							__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
+							__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
+					}			
+		  }	
+	  spin_unlock(&cam->queue_lock);
+	  wake_up_interruptible(&cam->wait_frame);	
+  }
+  __raw_writel(__raw_readl(REG_CAP_INT),REG_CAP_INT);	
 	LEAVE();
 	return IRQ_NONE;
 }
@@ -1531,21 +1394,20 @@ static struct v4l2_file_operations nuvoton_vdi_fops =
 	.read       		= nuvoton_vdi_read,    	  
 	.ioctl      		= video_ioctl2, 		/* V4L2 ioctl handler */    
 	.unlocked_ioctl 	= video_ioctl2, 		/* V4L2 ioctl handler */    
-	.mmap       		= nuvoton_vdi_mmap,
+	.mmap       		= nuvoton_vdi_mmap,	
 };
 
 /* ----	Initialization v4l2_file_operations  ----*/
 extern int nuvoton_vin_probe(struct nuvoton_vin_device* cam);
 int nuvoton_vdi_device_register(void)
 {
-	struct nuvoton_vin_device* cam;
-	static unsigned int dev_nr;	
+	struct nuvoton_vin_device* cam;		
 	int err = 0;
 	ENTRY();
 	
 	if (!(cam = kzalloc(sizeof(struct nuvoton_vin_device), GFP_KERNEL)))
 			return -ENOMEM;
-        nuvoton_cam=cam;
+        nuvoton_cam[dev_nr]=cam;
 	if (!(cam->control_buffer = kzalloc(4, GFP_KERNEL))) {
 		VDEBUG("kmalloc() failed\n");
 		err = -ENOMEM;
@@ -1556,26 +1418,34 @@ int nuvoton_vdi_device_register(void)
 			VDEBUG("video_device_alloc() failed\n");
 			err = -ENOMEM;
 			goto fail;
-	}
+	}     
+        capture_init(cam); /* Set capture init for nuvoton sensor interface */	
+	VDEBUG("capture_init().");
 
-	capture_init(cam); /* Set capture init for nuvoton sensor interface */
-	VDEBUG("capture_init().");	
-	//for sensor init
-	if(nuvoton_vin_probe(cam)<0){  //sensor probe;
-		VDEBUG("Initialization failed. I will retry on open().");
-		return -EAGAIN;
-	}
-		
+  if(dev_nr==0)	
+  {
+		//for sensor init
+		if(nuvoton_vin_probe(cam)<0){  //sensor probe;
+			VDEBUG("Initialization failed. I will retry on open().");
+			return -EAGAIN;
+	  }
+  }else{
+            memcpy(&cam->sensor, &nuvoton_cam[0]->sensor, sizeof(struct nuvoton_vin_sensor)); 
+  }
+	
 	{
-		struct v4l2_rect* bounds = &(cam->sensor.cropcap.bounds);	
-		if((cam->vir_addr = dma_alloc_writecombine(NULL, 
-							NUVOTON_MAX_FRAMES * PAGE_ALIGN(bounds->width*bounds->height*2),
-							&cam->phy_addr, 
+		int j;
+		struct v4l2_rect* defrect = &(cam->sensor.cropcap.defrect);		
+		
+	  for(j=0;j<NUVOTON_MAX_FRAMES;j++)	
+			if((cam->vir_addr[j] = dma_alloc_writecombine(NULL, 
+							PAGE_ALIGN(defrect->width*defrect->height*2),
+							&cam->phy_addr[j], 
 							GFP_KERNEL))==NULL)	
-		{
+			{
 				printk("dma_alloc_writecombine failed\n");	
 				return -EAGAIN;
-		}
+			}
 	}
 	/* INIT */
 	
@@ -1586,6 +1456,7 @@ int nuvoton_vdi_device_register(void)
 	cam->nreadbuffers = 2;
 	
 	strcpy(cam->v4ldev->name, "NUVOTON Camera Interface");
+	cam->stream = STREAM_OFF;
 	cam->v4ldev->current_norm	= V4L2_STD_NTSC_M;
 	cam->v4ldev->fops		= &nuvoton_vdi_fops;
 	cam->v4ldev->release		= video_device_release;
@@ -1621,9 +1492,6 @@ int nuvoton_vdi_device_register(void)
 	}
 		
 	VDEBUG("V4L2 device registered as %s\n",video_device_node_name(cam->v4ldev));		
-	
-	cam->module_param.force_munmap = force_munmap[dev_nr];
-	cam->module_param.frame_timeout = frame_timeout[dev_nr];
 
 	dev_nr = (dev_nr < NUVOTON_MAX_DEVICES-1) ? dev_nr+1 : 0;	
 	kref_init(&cam->kref);
@@ -1655,17 +1523,20 @@ However, a further limit does   exist at videodev that forbids any driver to reg
 Max number of video_devices can be registered at the same time: 32 */
 static int nuvoton_cap_device_probe(struct platform_device *pdev)
 {
-	int ret = -ENOMEM;
+	int i,ret = -ENOMEM;
 	ENTRY();	
-	ret = nuvoton_vdi_device_register();
-	if(ret)
-	{	
-		printk("%s, main sensor registeration fail.\n\n", __func__);
-		ret = -EPROBE_DEFER;
-		goto out;
+	for(i=0;i<NUVOTON_MAX_DEVICES;i++)
+	{
+		ret = nuvoton_vdi_device_register();
+		if(ret)
+		{	
+			printk("%s video%d, main sensor registeration fail.\n", __func__,i);
+			ret = -EPROBE_DEFER;
+			goto out;
+		}
+		else
+			printk("%s video%d, main sensor registeration ok.\n", __func__,i);
 	}
-	else
-		printk("%s, main sensor registeration ok.\n\n", __func__);
 	
 out:
 	LEAVE();
@@ -1675,8 +1546,6 @@ out:
 static int nuvoton_cap_device_remove(struct platform_device *pdev)
 {
 	ENTRY();
-        if(nuvoton_cam!=NULL)
-           vfree(nuvoton_cam->vir_addr);
 	LEAVE();
 	return 0;
 }
@@ -1700,3 +1569,4 @@ module_platform_driver(nuc970_cap_driver);
 MODULE_DESCRIPTION("NUVOTON sensor interface");
 MODULE_AUTHOR("SCHung");
 MODULE_LICENSE("Dual BSD/GPL");
+
