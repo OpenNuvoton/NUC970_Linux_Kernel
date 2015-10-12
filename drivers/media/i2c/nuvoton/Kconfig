@@ -6,6 +6,14 @@ config VIDEO_NUC970
 	---help---
 	Support for built-in video-in interface for NUC970.
 
+config MAX_FRAME_BUFFER
+	int "Max frame buffer"
+	depends on VIDEO_NUC970
+	default "3"
+config VIDOE_FREQ
+	int "Video frequency"
+	depends on VIDEO_NUC970
+	default "24000000"
 choice
 	prompt "Nuvoton NUC970 Image Sensor Selection"
 	depends on VIDEO_NUC970

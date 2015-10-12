@@ -143,7 +143,7 @@ static struct nuvoton_vin_sensor nt99141 = {
 		.defrect = {
 			.left = 0,
 			.top = 0,
-			.width = 640,
+			.width = 800,
 			.height = 480,
 		},
 	},
