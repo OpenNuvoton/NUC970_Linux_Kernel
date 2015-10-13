@@ -12,12 +12,87 @@ config NUC970_GE2D
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called nuc970-ge2d.
-      
+
+config NUC970_SC
+	tristate "NUC970 Smartcard Interface support"
+	depends on ARCH_NUC970
+	help
+	 Smartcard card interface support for NUC970 series processor.
+	 This driver comply with EMV2000 and supports T0 and T1 transfer.
+
+config EMV_CHECK
+	bool "Perform EMV check"
+	depends on NUC970_SC
+
+config	NUC970_SC0
+	bool "NUC970 SC0 support"
+	depends on NUC970_SC
+
+choice
+	prompt "NUC970 SC0 pin selection"
+	default NUC970_SC_PG
+	depends on NUC970_SC0
+	help
+	  Select SC0 multi function pin.
+
+	config NUC970_SC_PG
+		bool "Use port G"
+	config NUC970_SC_PI
+		bool "Use port I"
+endchoice
+
+
+choice
+	prompt "NUC970 SC0 CD pin config"
+	default NUC970_SC0_CDLV_H
+	depends on NUC970_SC0
+	help
+	  Select SC0 card detect level.
+
+	config NUC970_SC0_CDLV_H
+		bool "CD high as card insert"
+	config NUC970_SC0_CDLV_L
+		bool "CD low as card insert"
+	config NUC970_SC0_CD_IGNORE
+		bool "Ignore CD signal"
+endchoice
+
+config	NUC970_SC0_PWRINV
+	bool "Inverse SC0 power pin level"
+	depends on NUC970_SC0
+
+
+config	NUC970_SC1
+	bool "NUC970 SC1 support"
+	depends on NUC970_SC
+	help
+	 Enabe this option will configure SC1 MFP
+
+choice
+	prompt "NUC970 SC1 CD pin config"
+	default NUC970_SC1_CDLV_H
+	depends on NUC970_SC1
+	help
+	  Select SC1 card detect level.
+
+	config NUC970_SC1_CDLV_H
+		bool "CD high as card insert"
+	config NUC970_SC1_CDLV_L
+		bool "CD low as card insert"
+	config NUC970_SC1_CD_IGNORE
+		bool "Ignore CD signal"
+endchoice
+
+config	NUC970_SC1_PWRINV
+	bool "Inverse SC1 power pin level"
+	depends on NUC970_SC1
+
+
 config NUC970_ETIMER
 	tristate "NUC970 Enhance Timer (ETIMER) support"
 	depends on ARCH_NUC970
 	help
-	  Enhance timer dirver Nuvoton NUC970 Series MCU. This timer also supports capture function.
+	  Enhance timer dirver Nuvoton NUC970 Series processor. This timer also supports capture function.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called nuc970-etimer.

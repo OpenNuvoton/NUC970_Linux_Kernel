@@ -343,12 +343,12 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.lower_margin	= 13,
 		.vsync_len		= 3,
 		#if  defined(CONFIG_SRCFMT_RGB888)
-		.dccs		= 0x0e00020a,				
-	  .fbctrl		= 0x03200320,				
+		.dccs		= 0x0e00020a,
+	  .fbctrl		= 0x03200320,
 		#elif defined(CONFIG_SRCFMT_RGB565)
 		.dccs		= 0x0e00040a,
 		.fbctrl		= 0x01900190,
-		#endif				
+		#endif
 		.devctl		= 0x070000c0,
 		.scale		= 0x04000400,
 	},
@@ -931,7 +931,7 @@ struct platform_device nuc970_device_spi1 = {
         .num_resources	  = ARRAY_SIZE(nuc970_spi1_resource),
         .resource	  = nuc970_spi1_resource,
 #if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV)
-        .dev		= {                
+        .dev		= {
                 .platform_data = &nuc970_spi1_platform_data,
 		}
 #endif
@@ -1171,11 +1171,23 @@ static struct plat_nuc970serial_port nuc970_scuart_data[] = {
 #if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
 
 #ifdef CONFIG_NUC970_SC
-static struct resource nuc970_sc_resource[] = {
+static struct resource nuc970_sc0_resource[] = {
         [0] = {
+                .start = NUC970_PA_SC,
+                .end   = NUC970_PA_SC + 0x400 - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
                 .start = IRQ_SMC0,
                 .end   = IRQ_SMC0,
                 .flags = IORESOURCE_IRQ,
+        },
+};
+static struct resource nuc970_sc1_resource[] = {
+        [0] = {
+                .start = NUC970_PA_SC + 0x400,
+                .end   = NUC970_PA_SC + 0x800 - 1,
+                .flags = IORESOURCE_MEM,
         },
         [1] = {
                 .start = IRQ_SMC1,
@@ -1189,8 +1201,8 @@ struct platform_device nuc970_device_sc0 = {
         .name		  = "nuc970-sc",
         .id		  = 0,
 #ifdef CONFIG_NUC970_SC
-        .num_resources	  = ARRAY_SIZE(nuc970_sc_resource),
-        .resource	  = nuc970_sc_resource,
+        .num_resources	  = ARRAY_SIZE(nuc970_sc0_resource),
+        .resource	  = nuc970_sc0_resource,
 #endif
 #ifdef CONFIG_SCUART_NUC970
         .dev			= {
@@ -1202,8 +1214,8 @@ struct platform_device nuc970_device_sc1 = {
         .name		  = "nuc970-sc",
         .id		  = 1,
 #ifdef CONFIG_NUC970_SC
-        .num_resources	  = ARRAY_SIZE(nuc970_sc_resource),
-        .resource	  = nuc970_sc_resource,
+        .num_resources	  = ARRAY_SIZE(nuc970_sc1_resource),
+        .resource	  = nuc970_sc1_resource,
 #endif
 #ifdef CONFIG_SCUART_NUC970
         .dev			= {
@@ -1523,7 +1535,7 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 #ifdef CONFIG_GPIO_NUC970
 #ifdef CONFIG_I2C_ALGOBIT
 	i2c_register_board_info(2, nuc970_i2c_clients2, sizeof(nuc970_i2c_clients2)/sizeof(struct i2c_board_info));
-#endif	
+#endif
 #endif
 
 #ifdef CONFIG_PWM_NUC970
