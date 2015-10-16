@@ -605,5 +605,15 @@ config TILE_SROM
 	  device appear much like a simple EEPROM, and knows
 	  how to partition a single ROM for multiple purposes.
 
+config NUC970_MEM
+	bool "Support for /dev/nuc970-mem"
+	default y
+	---help---
+	  If you do say Y here, you can allocate physically linear memories from system memory.
+	  And you can share the memory at the other process using re-allocation ioctl.
+
+	  If unsure, say Y.
+
+
 endmenu
 

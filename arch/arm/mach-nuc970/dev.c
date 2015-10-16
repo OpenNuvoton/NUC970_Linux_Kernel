@@ -1268,6 +1268,28 @@ struct platform_device nuc970_device_gpio = {
 
 #endif
 
+#ifdef CONFIG_NUC970_GE2D
+static struct resource nuc970_ge2d_resource[] = {
+        [0] = {
+                .start = NUC970_PA_GE,
+                .end   = NUC970_PA_GE + NUC970_SZ_GE - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_GE2D,
+                .end   = IRQ_GE2D,
+                .flags = IORESOURCE_IRQ,
+        }
+};
+
+struct platform_device nuc970_device_ge2d = {
+        .name		  = "nuc970-ge2d",
+        .id		  = -1,
+        .num_resources	  = ARRAY_SIZE(nuc970_ge2d_resource),
+        .resource	  = nuc970_ge2d_resource,
+};
+#endif
+
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device0,
 
@@ -1409,6 +1431,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
 	&nuc970_device_sc0,
 	&nuc970_device_sc1,
+#endif
+
+#ifdef CONFIG_NUC970_GE2D
+    &nuc970_device_ge2d,
 #endif
 };
 

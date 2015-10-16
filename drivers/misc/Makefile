@@ -54,3 +54,4 @@ obj-$(CONFIG_VMWARE_VMCI)	+= vmw_vmci/
 obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
 obj-$(CONFIG_SRAM)		+= sram.o
 obj-$(CONFIG_NUC970_ETIMER)	+= nuc970-etimer.o
+obj-$(CONFIG_NUC970_GE2D)	+= nuc970_ge2d.o

@@ -36,6 +36,11 @@
 # include <linux/efi.h>
 #endif
 
+#ifdef CONFIG_NUC970_MEM
+# include "nuc970_mem.h"
+#endif
+
+
 #define DEVPORT_MINOR	4
 
 static inline unsigned long size_inside_page(unsigned long start,
@@ -845,6 +850,16 @@ static const struct file_operations oldmem_fops = {
 };
 #endif
 
+#ifdef CONFIG_NUC970_MEM
+extern int nuc970_mem_mmap(struct file* filp, struct vm_area_struct *vma);
+extern long nuc970_mem_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+
+static const struct file_operations nuc970_mem_fops = {
+	.unlocked_ioctl	= nuc970_mem_ioctl,
+	.mmap   = nuc970_mem_mmap,
+};
+#endif
+
 static const struct memdev {
 	const char *name;
 	umode_t mode;
@@ -868,6 +883,10 @@ static const struct memdev {
 #endif
 #ifdef CONFIG_CRASH_DUMP
 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
+#endif
+#ifdef CONFIG_NUC970_MEM
+	[13] = {"nuc970-mem", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH
+			| S_IWOTH, &nuc970_mem_fops},
 #endif
 };
 

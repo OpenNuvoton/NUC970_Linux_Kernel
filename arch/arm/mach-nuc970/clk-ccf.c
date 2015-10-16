@@ -95,7 +95,7 @@ enum nuc970_clks {
 	// hclk
 	hclk_gate, hclk1_div, gdma_gate, ebi_gate, tic_gate, sram_gate, 
 	hclkn_div, dram_gate, hclk234_div, 
-	usbh_gate, emac1_gate, emac1_eclk_div, emac1_eclk_gate, usbd_gate, fmi_gate, nand_gate, emmc_gate, crypto_gate, jpeg_gate, jpeg_eclk_div, jpeg_eclk_gate,
+	usbh_gate, emac1_gate, emac1_eclk_div, emac1_eclk_gate, usbd_gate, fmi_gate, nand_gate, emmc_gate, crypto_gate, jpeg_gate, jpeg_eclk_div, jpeg_eclk_gate, ge2d_gate, ge2d_eclk_div, ge2d_eclk_gate,
 	emac0_gate, emac0_eclk_div, emac0_eclk_gate, sdh_gate, audio_gate, lcd_gate, cap_gate, sensor_gate,
 	
 	
@@ -169,6 +169,10 @@ int __init nuc970_init_clocks(void)
 	clk[jpeg_gate] = nuc970_clk_gate("jpeg_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 29);
 	clk[jpeg_eclk_div] = nuc970_clk_divider("jpeg_eclk_div", "hclk234_div", REG_CLK_DIV3, 28, 3);
 	clk[jpeg_eclk_gate] = nuc970_clk_gate("jpeg_eclk_gate", "jpeg_eclk_div", REG_CLK_HCLKEN, 29);
+    
+    clk[ge2d_gate] = nuc970_clk_gate("ge2d_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 28);
+	clk[ge2d_eclk_div] = nuc970_clk_divider("ge2d_eclk_div", "hclk234_div", REG_CLK_DIV2, 28, 2);
+	clk[ge2d_eclk_gate] = nuc970_clk_gate("ge2d_eclk_gate", "ge2d_eclk_div", REG_CLK_HCLKEN, 28);
 	
 	// HCLK4
 	clk[sdh_gate] = nuc970_clk_gate("sdh_hclk_gate", "hclk234_div", REG_CLK_HCLKEN, 30);
@@ -461,6 +465,9 @@ int __init nuc970_init_clocks(void)
 	clk_register_clkdev(clk[jpeg_gate], "jpeg_hclk", NULL);
 	clk_register_clkdev(clk[jpeg_eclk_div], "jpeg_eclk_div", NULL);
 	clk_register_clkdev(clk[jpeg_eclk_gate], "jpeg_eclk", NULL);
+    clk_register_clkdev(clk[ge2d_gate], "ge2d_hclk", NULL);
+	clk_register_clkdev(clk[ge2d_eclk_div], "ge2d_eclk_div", NULL);
+	clk_register_clkdev(clk[ge2d_eclk_gate], "ge2d_eclk", NULL);
 	
 	//HCLK4
 	clk_register_clkdev(clk[emac0_gate], "emac0_hclk", NULL);
