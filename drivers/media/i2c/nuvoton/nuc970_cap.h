@@ -123,6 +123,7 @@ struct nuvoton_vin_device {
 	struct video_device* v4ldev;
 	struct nuvoton_vin_sensor sensor;
 	u8* control_buffer;
+	u32 type;
 	struct nuvoton_vin_frame_t *frame_current, frame[NUVOTON_MAX_FRAMES];
 	struct list_head inqueue, outqueue;
 	u32 frame_count, nbuffers, nreadbuffers;
