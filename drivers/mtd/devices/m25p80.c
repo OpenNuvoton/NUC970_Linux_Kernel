@@ -162,6 +162,7 @@ static inline int set_4byte(struct m25p *flash, u32 jedec_id, int enable)
 	switch (JEDEC_MFR(jedec_id)) {
 	case CFI_MFR_MACRONIX:
 	case 0xEF /* winbond */:
+	case CFI_MFR_EON: /* cFeon */
 		flash->command[0] = enable ? OPCODE_EN4B : OPCODE_EX4B;
 		return spi_write(flash->spi, flash->command, 1);
 	default:
