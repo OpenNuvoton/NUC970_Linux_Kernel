@@ -824,14 +824,16 @@ static int nuvoton_vin_vidioc_s_jpegcomp(struct file *file, void *priv,const str
 static int nuvoton_vidioc_s_fbuf(struct file *file, void *priv,
 				const struct v4l2_framebuffer *fb)
 {
+	struct nuvoton_vin_device* cam=priv;
    ENTRY();
 	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
-		__raw_writel((__raw_readl(NUC970_VA_LCD+REG_LCM_VA_BADDR0)),REG_CAP_PKTBA0);
-		LEAVE();
-		return 0;
+		cam->type=V4L2_BUF_TYPE_VIDEO_OVERLAY;
+	} else {
+		cam->type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	}
 	LEAVE();
-	return -EINVAL;	
+	return 0;
+
 }
 
 static int nuvoton_vidioc_g_fbuf(struct file *file, void *priv,
@@ -921,7 +923,7 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 		cam->frame[i].buf.m.userptr = (unsigned long)(cam->frame[i].bufmem);
 		cam->frame[i].buf.m.offset = (unsigned long)(cam->frame[i].bufmem);
 		cam->frame[i].buf.length = imagesize;
-		cam->frame[i].buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		cam->frame[i].buf.type = cam->type;
 		cam->frame[i].buf.sequence = 0;
 		cam->frame[i].buf.field = V4L2_FIELD_NONE;
 		cam->frame[i].buf.memory = V4L2_MEMORY_MMAP;
@@ -1130,6 +1132,8 @@ static int nuvoton_vdi_close(struct file *filp)
 	cam->users=0;
 	cam->vpe.PacketEnable=0;
 	cam->vpe.PlanarEnable=0;
+	cam->type=0;
+	cam->stream = STREAM_OFF;
 	VDEBUG("Video device %s closed", video_device_node_name(cam->v4ldev));
 
 	kref_put(&cam->kref, nuvoton_vin_release_resources);	
@@ -1345,8 +1349,18 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
   {
 			cam=nuvoton_cam[i];
 			f  = &cam->frame_current;
-			if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue))
-			{
+		if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue)) {
+			if(cam->stream == STREAM_ON && cam->type==V4L2_BUF_TYPE_VIDEO_OVERLAY) {
+				if(cam->frame_current->buf.index==(cam->nbuffers-1)) {
+					__raw_writel(cam->frame[cam->nbuffers-1].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+					cam->frame_current=&cam->frame[0];
+				} else {
+					__raw_writel(cam->frame[cam->frame_current->buf.index].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+					cam->frame_current=&cam->frame[cam->frame_current->buf.index+1];
+				}
+				__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
+				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
+			}
 				wake_up_interruptible(&cam->wait_frame);	
 				continue;
 			} 

@@ -162,9 +162,9 @@ static int nuc970_gpio_core_direction_out(struct gpio_chip *gc,
 
 static int nuc970_gpio_core_to_request(struct gpio_chip *chip, unsigned offset)
 {
-	unsigned int group,num,reg,value;
+	unsigned int group,num1,num,reg,value;
 	group = offset / GPIO_OFFSET;
-	num   = offset % GPIO_OFFSET;
+	num1  = num = offset % GPIO_OFFSET;
 	reg   = (unsigned int)REG_MFP_GPA_L+(group* 0x08);
 	if(num>7)
 	{
@@ -175,7 +175,7 @@ static int nuc970_gpio_core_to_request(struct gpio_chip *chip, unsigned offset)
 	value =	( __raw_readl((volatile unsigned int *)reg) & (0xf<<(num*4)))>>(num*4);
 	if(value>0 && value<0xf)
 	{
-			printk("Please Check IO, multi-function pins = 0x%x \n",value);
+			printk(KERN_ERR "Please Check GPIO%c%02d's multi-function = 0x%x \n",(char)(65+group),num1,value);
 			return -EINVAL;
 	}
 	return 0;
