@@ -580,7 +580,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
     clk_prepare(nuc970_adc->clk);
     clk_enable(nuc970_adc->clk);
 
-    clk_set_rate(nuc970_adc->eclk, 1000000);
+    clk_set_rate(nuc970_adc->eclk, 2000000);
     nuc970_adc->kp_state = KP_IDLE;
     nuc970_adc->ts_state = TS_IDLE;
 
