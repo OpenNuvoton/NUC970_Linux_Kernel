@@ -1011,6 +1011,51 @@ struct platform_device nuc970_device_rtc = {
 };
 #endif
 
+
+#ifdef CONFIG_NUC970_CAN0
+static struct resource nuc970_can0_resource[] = {
+        [0] = {
+                .start = NUC970_PA_CAN,
+                .end   = NUC970_PA_CAN + NUC970_SZ_CAN - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_CAN0,
+                .end   = IRQ_CAN0,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_can0 = {
+        .name		= "nuc970-can0",
+        .id		= -1,
+        .num_resources	= ARRAY_SIZE(nuc970_can0_resource),
+        .resource	= nuc970_can0_resource,
+};
+#endif
+
+#ifdef CONFIG_NUC970_CAN1
+static struct resource nuc970_can1_resource[] = {
+        [0] = {
+                .start = NUC970_PA_CAN1,
+                .end   = NUC970_PA_CAN1 + NUC970_SZ_CAN1 - 1,
+                .flags = IORESOURCE_MEM,
+        },
+        [1] = {
+                .start = IRQ_CAN1,
+                .end   = IRQ_CAN1,
+                .flags = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device nuc970_device_can1 = {
+        .name		= "nuc970-can1",
+        .id		= -1,
+        .num_resources	= ARRAY_SIZE(nuc970_can1_resource),
+        .resource	= nuc970_can1_resource,
+};
+#endif
+
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
 	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
@@ -1331,6 +1376,14 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 
 #ifdef CONFIG_NUC970_UART10
 		&nuc970_serial_device10,
+#endif
+
+#ifdef CONFIG_NUC970_CAN0
+	&nuc970_device_can0,
+#endif
+
+#ifdef CONFIG_NUC970_CAN1
+	&nuc970_device_can1,
 #endif
 
 #ifdef CONFIG_USB_OHCI_HCD

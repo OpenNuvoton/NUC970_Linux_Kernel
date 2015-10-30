@@ -1,0 +1,44 @@
+menuconfig NUC970_CAN
+	tristate "NUC970 CAN0/CAN1 devices"
+	depends on HAS_IOMEM
+
+if NUC970_CAN
+
+config NUC970_CAN0
+	bool "NUC970 CAN0 support"
+	help
+	  This selects NUC970 CAN0 driver
+
+choice
+	prompt "NUC970 CAN0 pin selection"
+	default NUC970_CAN0_PB
+	depends on NUC970_CAN0
+	help
+	  Select CAN0 multi-function pin.
+
+	config NUC970_CAN0_PB
+		bool "Tx:PB11, Rx:PB10"
+	config NUC970_CAN0_PH
+		bool "Tx:PH3, Rx:PH2"
+	config NUC970_CAN0_PI
+		bool "Tx:PI4, Rx:PI3"
+endchoice
+
+config NUC970_CAN1
+	bool "NUC970 CAN1 support"
+	help
+	  This selects NUC971 CAN0 driver
+
+choice
+	prompt "NUC970 CAN1 pin selection"
+	default NUC970_CAN1_PH
+	depends on NUC970_CAN1
+	help
+	  Select CAN1 multi-function pin.
+
+	config NUC970_CAN1_PH
+		bool "Tx:PH15, Rx:PH14"
+endchoice
+
+
+endif
