@@ -73,7 +73,8 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
  */
 #define SPI_MODE_MASK		(SPI_CPHA | SPI_CPOL | SPI_CS_HIGH \
 				| SPI_LSB_FIRST | SPI_3WIRE | SPI_LOOP \
-				| SPI_NO_CS | SPI_READY)
+				| SPI_NO_CS | SPI_READY| SPI_TX_DUAL \
+                | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD)
 
 struct spidev_data {
 	dev_t			devt;
@@ -265,6 +266,8 @@ static int spidev_message(struct spidev_data *spidev,
 		buf += k_tmp->len;
 
 		k_tmp->cs_change = !!u_tmp->cs_change;
+        k_tmp->tx_nbits = u_tmp->tx_nbits;
+        k_tmp->rx_nbits = u_tmp->rx_nbits;
 		k_tmp->bits_per_word = u_tmp->bits_per_word;
 		k_tmp->delay_usecs = u_tmp->delay_usecs;
 		k_tmp->speed_hz = u_tmp->speed_hz;
@@ -357,7 +360,7 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	/* read requests */
 	case SPI_IOC_RD_MODE:
 		retval = __put_user(spi->mode & SPI_MODE_MASK,
-					(__u8 __user *)arg);
+					(__u32 __user *)arg);
 		break;
 	case SPI_IOC_RD_LSB_FIRST:
 		retval = __put_user((spi->mode & SPI_LSB_FIRST) ?  1 : 0,
@@ -372,17 +375,18 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	/* write requests */
 	case SPI_IOC_WR_MODE:
-		retval = __get_user(tmp, (u8 __user *)arg);
+		retval = __get_user(tmp, (u32 __user *)arg);
 		if (retval == 0) {
-			u8	save = spi->mode;
-
+			u16	save = spi->mode;
+ 
 			if (tmp & ~SPI_MODE_MASK) {
 				retval = -EINVAL;
 				break;
 			}
 
 			tmp |= spi->mode & ~SPI_MODE_MASK;
-			spi->mode = (u8)tmp;
+			spi->mode = (u16)tmp;
+ 
 			retval = spi_setup(spi);
 			if (retval < 0)
 				spi->mode = save;

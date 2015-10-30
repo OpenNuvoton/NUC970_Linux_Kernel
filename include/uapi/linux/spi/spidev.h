@@ -92,6 +92,11 @@ struct spi_ioc_transfer {
 	__u16		delay_usecs;
 	__u8		bits_per_word;
 	__u8		cs_change;
+    __u8        tx_nbits;
+    __u8        rx_nbits;
+#define SPI_NBITS_SINGLE        0x01 /* 1bit transfer */
+#define SPI_NBITS_DUAL          0x02 /* 2bits transfer */
+#define SPI_NBITS_QUAD          0x04 /* 4bits transfer */
 	__u32		pad;
 
 	/* If the contents of 'struct spi_ioc_transfer' ever change

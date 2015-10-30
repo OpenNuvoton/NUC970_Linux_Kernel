@@ -774,9 +774,14 @@ struct platform_device nuc970_device_i2c1 = {
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc970_spi0_flash_partitions[] = {
         {
-                .name = "SPI flash",
-                .size = 0x0200000,
+                .name = "kernel",
+                .size = 0x0800000,
                 .offset = 0,
+        },
+        {
+                .name = "rootfs",
+                .size = 0x0800000,
+                .offset = 0x0800000,
         },
 };
 
@@ -784,17 +789,21 @@ static struct flash_platform_data nuc970_spi0_flash_data = {
         .name = "m25p80",
         .parts =  nuc970_spi0_flash_partitions,
         .nr_parts = ARRAY_SIZE(nuc970_spi0_flash_partitions),
-        .type = "en25qh16",
+        .type = "w25q128",        
 };
 
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 7500000,
+                .max_speed_hz = 15000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .platform_data = &nuc970_spi0_flash_data,
-                .mode = SPI_MODE_0,
+#if defined(CONFIG_SPI_NUC970_P0_NORMAL)
+                .mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL),
+#elif defined(CONFIG_SPI_NUC970_P0_QUAD)                
+                .mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD),
+#endif
         },
 };
 #endif
@@ -803,7 +812,7 @@ static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "spidev",
-                .max_speed_hz = 7500000,
+                .max_speed_hz = 75000000,
                 .bus_num = 0,
                 .chip_select = 0,
                 .mode = SPI_MODE_0,

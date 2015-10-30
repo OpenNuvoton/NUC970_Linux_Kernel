@@ -149,33 +149,24 @@ static void nuc970_spi1_setup_txbitlen(struct nuc970_spi *hw,
 	spin_lock_irqsave(&hw->lock, flags);
 
 	val = __raw_readl(hw->regs + REG_CNTRL);
-
 	val |= (txbitlen << 3);
-
 	__raw_writel(val, hw->regs + REG_CNTRL);
 
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_spi1_gobusy(struct nuc970_spi *hw)
+static inline void nuc970_spi1_gobusy(struct nuc970_spi *hw)
 {
 	unsigned int val;
-	unsigned long flags;
-
-	spin_lock_irqsave(&hw->lock, flags);
 
 	val = __raw_readl(hw->regs + REG_CNTRL);
-
 	val |= GOBUSY;
-
 	__raw_writel(val, hw->regs + REG_CNTRL);
-
-	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
 static inline unsigned int hw_txbyte(struct nuc970_spi *hw, int count)
 {
-	return hw->tx ? hw->tx[count] : 0;
+	return hw->tx ? hw->tx[count] : 0xffffffff;
 }
 
 static int nuc970_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
@@ -186,12 +177,26 @@ static int nuc970_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
 	hw->rx = t->rx_buf;
 	hw->len = t->len;
 	hw->count = 0;
-
+    
+    if(t->tx_nbits & SPI_NBITS_DUAL) {
+        __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x5 << 20), hw->regs + REG_CNTRL);
+    } else if(t->tx_nbits & SPI_NBITS_QUAD) {
+        __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x3 << 20), hw->regs + REG_CNTRL);
+    }
+    
+    if(t->rx_nbits & SPI_NBITS_DUAL) {
+        __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x4 << 20), hw->regs + REG_CNTRL);
+    } else if(t->rx_nbits & SPI_NBITS_QUAD) {
+        __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x2 << 20), hw->regs + REG_CNTRL);
+    }   
+    
 	__raw_writel(hw_txbyte(hw, 0x0), hw->regs + REG_TX0);
-
 	nuc970_spi1_gobusy(hw);
 
 	wait_for_completion(&hw->done);
+    
+    if(spi->mode & (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD))
+        __raw_writel(__raw_readl(hw->regs + REG_CNTRL) & ~(0x7 << 20), hw->regs + REG_CNTRL);
 
 	return hw->count;
 }
@@ -345,6 +350,7 @@ static int nuc970_spi1_update_state(struct spi_device *spi,
     unsigned int div;
     unsigned int bpw;
 	unsigned int hz;
+    unsigned char spimode;
     
     bpw = t ? t->bits_per_word : spi->bits_per_word;
 	hz  = t ? t->speed_hz : spi->max_speed_hz;
@@ -367,7 +373,9 @@ static int nuc970_spi1_update_state(struct spi_device *spi,
     else
         hw->pdata->clkpol = 0;
     
-    if ((spi->mode == SPI_MODE_0) || (spi->mode == SPI_MODE_3)) {
+    spimode = spi->mode & 0xff; //remove dual/quad bit
+    
+    if ((spimode == SPI_MODE_0) || (spimode == SPI_MODE_3)) {
         hw->pdata->txneg = 1;
         hw->pdata->rxneg = 0;
     } else {
@@ -465,8 +473,11 @@ static int nuc970_spi1_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, hw);
 	init_completion(&hw->done);
-
-	master->mode_bits          = SPI_MODE_0;
+#if defined(CONFIG_SPI_NUC970_P1_PB) || defined(CONFIG_SPI_NUC970_P1_PI)
+	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL);
+#elif defined(CONFIG_SPI_NUC970_P1_QUAD_PB) || defined(CONFIG_SPI_NUC970_P1_QUAD_PI)
+    master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD);
+#endif
 	master->num_chipselect     = hw->pdata->num_cs;
 	master->bus_num            = hw->pdata->bus_num;
 	hw->bitbang.master         = hw->master;
