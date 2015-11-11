@@ -269,6 +269,7 @@ static void transmit_chars(struct uart_nuc970_port *up)
 	do {
 		//while(serial_in(up, UART_REG_FSR) & TX_FULL);
 		serial_out(up, UART_REG_THR, xmit->buf[xmit->tail]);
+		while(!(serial_in(up, UART_REG_FSR) & TX_EMPTY));
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		up->port.icount.tx++;
 		if (uart_circ_empty(xmit))
