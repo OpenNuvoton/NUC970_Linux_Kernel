@@ -168,10 +168,21 @@ static void nuc970serial_start_tx(struct uart_port *port)
 	if (up->rs485.flags & SER_RS485_ENABLED)
 		rs485_stop_rx(up);
 
+    #if 0
 	if (!((ier = serial_in(up, UART_REG_IER)) & THRE_IEN)) {
 		ier |= THRE_IEN;
 		serial_out(up, UART_REG_IER, ier);
 	}
+	#else
+	{
+	struct circ_buf *xmit = &up->port.state->xmit;
+	ier = serial_in(up, UART_REG_IER);
+	serial_out(up, UART_REG_IER, ier & ~THRE_IEN);
+	if( uart_circ_chars_pending(xmit)<(16-((serial_in(up, UART_REG_FSR)>>16)&0x3F)) )
+		transmit_chars(up);
+	serial_out(up, UART_REG_IER, ier | THRE_IEN);
+	}
+	#endif
 
 }
 
@@ -269,7 +280,6 @@ static void transmit_chars(struct uart_nuc970_port *up)
 	do {
 		//while(serial_in(up, UART_REG_FSR) & TX_FULL);
 		serial_out(up, UART_REG_THR, xmit->buf[xmit->tail]);
-		while(!(serial_in(up, UART_REG_FSR) & TX_EMPTY));
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		up->port.icount.tx++;
 		if (uart_circ_empty(xmit))
@@ -434,7 +444,7 @@ static void nuc970serial_shutdown(struct uart_port *port)
 	 * Disable interrupts from this port
 	 */
 	serial_out(up, UART_REG_IER, 0);
-	serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
+	//serial_out(up, UART_REG_FCR, TFR | RFR /* | RX_DIS */);
 
 }
 
