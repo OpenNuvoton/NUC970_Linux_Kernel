@@ -114,6 +114,7 @@ static struct key_threshold nuc970_key_th[] = {
 
 #define CLK_PCLKEN1_ADCEN (1<<24)
 #define Z_TH 100
+#define ADC_SAMPLE_CNT CONFIG_SAMPLE_NUC970ADC
 struct nuc970_adc {
     struct input_dev *input_ts;
     struct input_dev *input_kp;
@@ -244,7 +245,7 @@ static void ts_wait_conversion(unsigned long param)
 
 static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 {
-    u32 x,y,z;
+    u32 x,y,z,z2,pressure;
     ENTRY();
     if(  (nuc970_adc->isr & ADC_ISR_TF) && (nuc970_adc->conf & ADC_CONF_TEN) && (nuc970_adc->isr & ADC_ISR_ZF) && (nuc970_adc->conf & ADC_CONF_ZEN) )
     {
@@ -254,7 +255,9 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
             x = (__raw_readl(REG_ADC_XYDATA) & 0xfff);
             y = (__raw_readl(REG_ADC_XYDATA)>>16 & 0xfff);
             z = (__raw_readl(REG_ADC_ZDATA) & 0xfff);
-            ADEBUG("x=0x%03x,y=0x%03x,z=0x%03x\n",x,y,z);
+	    z2= ((__raw_readl(REG_ADC_ZDATA)>>16) & 0xfff);
+            pressure=(x*(z2-(z+1)))/(z+1);
+	    ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,mear);
             if(z<=Z_TH) /* threshold value */
             {
                 nuc970_adc->ts_state = TS_IDLE;
@@ -265,7 +268,7 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
                 input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);
                 input_report_abs(nuc970_adc->input_ts, ABS_X,y);
                 input_report_abs(nuc970_adc->input_ts, ABS_Y,x);
-                input_report_abs(nuc970_adc->input_ts, ABS_PRESSURE,z);
+                input_report_abs(nuc970_adc->input_ts, ABS_PRESSURE,pressure);
                 mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(50));
             }
             input_sync(nuc970_adc->input_ts);
@@ -375,7 +378,7 @@ static int nuc970ts_open(struct input_dev *dev)
     ENTRY();
 
     /* Set touch parameters */
-    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<22)|(1<<20) | (7<<3) | (3<<6)), REG_ADC_CONF); /* CONF */
+    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<22)|(1<<20) | (7<<3) | (3<<6) | (ADC_SAMPLE_CNT<<24) ), REG_ADC_CONF); /* CONF */
 
     /* Clear interrupt before enable pendown */
     nuc970_touch2detect();
