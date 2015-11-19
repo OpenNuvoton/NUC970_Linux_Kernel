@@ -113,7 +113,8 @@ static struct key_threshold nuc970_key_th[] = {
 #endif
 
 #define CLK_PCLKEN1_ADCEN (1<<24)
-#define Z_TH 100
+#define Z_TH 10
+#define ADC_PENUP_NUM 50
 #define ADC_SAMPLE_CNT CONFIG_SAMPLE_NUC970ADC
 struct nuc970_adc {
     struct input_dev *input_ts;
@@ -131,6 +132,7 @@ struct nuc970_adc {
     struct clk		*clk;
     struct clk		*eclk;
     struct tasklet_struct irq_tasklet;
+    u32 ts_num;
 #ifdef CONFIG_BATTREY_NUC970ADC
     struct device *dev;
     struct power_supply bat;
@@ -151,7 +153,7 @@ static void nuc970_detect2touch(void)
     __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
 
     /* Config touch paramters : ts_enable_touch  */
-    __raw_writel(__raw_readl(REG_ADC_CONF)| ADC_CONF_TEN | ADC_CONF_ZEN | ADC_CONF_DISTMAVEN | ADC_CONF_DISZMAVEN | (1<<22) | (7<<3) | (3<<6), REG_ADC_CONF);
+    __raw_writel(__raw_readl(REG_ADC_CONF)| ADC_CONF_TEN | ADC_CONF_ZEN | (1<<22) | (7<<3) | (3<<6), REG_ADC_CONF);
     __raw_writel(__raw_readl(REG_ADC_ISR) | ADC_ISR_MF, REG_ADC_ISR);
     __raw_writel(__raw_readl(REG_ADC_IER) |(ADC_IER_MIEN), REG_ADC_IER);
     LEAVE();
@@ -161,7 +163,7 @@ static void nuc970_touch2detect(void)
     ENTRY();
     /* Clear interrupt before enable pendown */
     __raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_TEN | ADC_CONF_ZEN), REG_ADC_CONF);
-    __raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN)) | ADC_IER_MIEN, REG_ADC_IER); /*Diable Interrupt */
+    __raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN)) | ADC_IER_MIEN, REG_ADC_IER); /*Disable Interrupt */
     __raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN | ADC_CTL_PEDEEN), REG_ADC_CTL); /* Enable pen down event */
     udelay(100);
     __raw_writel(ADC_ISR_PEDEF|ADC_ISR_PEUEF|ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);/* Clear pen down/up interrupt status */
@@ -255,20 +257,52 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
             x = (__raw_readl(REG_ADC_XYDATA) & 0xfff);
             y = (__raw_readl(REG_ADC_XYDATA)>>16 & 0xfff);
             z = (__raw_readl(REG_ADC_ZDATA) & 0xfff);
-	    z2= ((__raw_readl(REG_ADC_ZDATA)>>16) & 0xfff);
+            z2= ((__raw_readl(REG_ADC_ZDATA)>>16) & 0xfff);
             pressure=(x*(z2-(z+1)))/(z+1);
-	    ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,mear);
+            ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
+            #if 0
             if(z<=Z_TH) /* threshold value */
+            #else
+            if((__raw_readl(REG_ADC_ZSORT0)&0xfff)<=Z_TH ||
+               (__raw_readl(REG_ADC_ZSORT1)&0xfff)<=Z_TH ||
+               (__raw_readl(REG_ADC_ZSORT2)&0xfff)<=Z_TH ||
+               (__raw_readl(REG_ADC_ZSORT3)&0xfff)<=Z_TH ) /* threshold value */
+            #endif
             {
-                nuc970_adc->ts_state = TS_IDLE;
                 input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 0);
-                del_timer(&nuc970_adc->timer);
-                nuc970_touch2detect();
+              if(nuc970_adc->ts_num++>ADC_PENUP_NUM)
+              {
+                 nuc970_adc->ts_state = TS_IDLE;
+                 del_timer(&nuc970_adc->timer);
+                 nuc970_touch2detect();
+              }else
+                 mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(50));
             } else {
+                int i,xdata,ydata;
+                nuc970_adc->ts_num=0;
+                for(i=0;i<=12;i+=4)
+                {
+                  xdata = (__raw_readl(REG_ADC_XYSORT0+i) & 0xfff);
+                  ydata = (__raw_readl(REG_ADC_XYSORT0+i)>>16 & 0xfff);
+                  if(xdata==0 || xdata==0xFFF || ydata==0 || ydata==0xfff)
+                  {
+                    enable_menu();
+                    return true;
+                  }
+                }
                 input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);
                 input_report_abs(nuc970_adc->input_ts, ABS_X,y);
                 input_report_abs(nuc970_adc->input_ts, ABS_Y,x);
                 input_report_abs(nuc970_adc->input_ts, ABS_PRESSURE,pressure);
+                ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
+                ADEBUG("zs0=0x%08x\n",__raw_readl(REG_ADC_ZSORT0));
+                ADEBUG("zs1=0x%08x\n",__raw_readl(REG_ADC_ZSORT1));
+                ADEBUG("zs2=0x%08x\n",__raw_readl(REG_ADC_ZSORT2));
+                ADEBUG("zs3=0x%08x\n",__raw_readl(REG_ADC_ZSORT3));
+                ADEBUG("xys0=0x%08x\n",__raw_readl(REG_ADC_XYSORT0));
+                ADEBUG("xys1=0x%08x\n",__raw_readl(REG_ADC_XYSORT1));
+                ADEBUG("xys2=0x%08x\n",__raw_readl(REG_ADC_XYSORT2));
+                ADEBUG("xys3=0x%08x\n",__raw_readl(REG_ADC_XYSORT3));
                 mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(50));
             }
             input_sync(nuc970_adc->input_ts);
@@ -378,7 +412,7 @@ static int nuc970ts_open(struct input_dev *dev)
     ENTRY();
 
     /* Set touch parameters */
-    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN | (1<<22)|(1<<20) | (7<<3) | (3<<6) | (ADC_SAMPLE_CNT<<24) ), REG_ADC_CONF); /* CONF */
+    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN | (1<<22)| (7<<3) | (3<<6) | (ADC_SAMPLE_CNT<<24) ), REG_ADC_CONF); /* CONF */
 
     /* Clear interrupt before enable pendown */
     nuc970_touch2detect();
