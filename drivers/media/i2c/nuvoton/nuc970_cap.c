@@ -824,9 +824,18 @@ static int nuvoton_vin_vidioc_s_jpegcomp(struct file *file, void *priv,const str
 static int nuvoton_vidioc_s_fbuf(struct file *file, void *priv,
 				const struct v4l2_framebuffer *fb)
 {
+	int i;
 	struct nuvoton_vin_device* cam=priv;
-   ENTRY();
+	   ENTRY();
 	if (fb->flags & V4L2_FBUF_FLAG_OVERLAY) {
+		cam->nbuffers = NUVOTON_MAX_FRAMES;
+			for (i = 0; i < cam->nbuffers; i++) {
+			cam->frame[i].bufmem = cam->vir_addr[i];
+			cam->frame[i].pbuf = cam->phy_addr[i];
+			cam->frame[i].buf.index = i;
+		}
+		cam->frame_current=&cam->frame[0];
+		__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
 		cam->type=V4L2_BUF_TYPE_VIDEO_OVERLAY;
 	} else {
 		cam->type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -923,7 +932,7 @@ u32 nuvoton_vin_request_buffers(struct nuvoton_vin_device* cam, u32 count,enum n
 		cam->frame[i].buf.m.userptr = (unsigned long)(cam->frame[i].bufmem);
 		cam->frame[i].buf.m.offset = (unsigned long)(cam->frame[i].bufmem);
 		cam->frame[i].buf.length = imagesize;
-		cam->frame[i].buf.type = cam->type;
+		cam->frame[i].buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		cam->frame[i].buf.sequence = 0;
 		cam->frame[i].buf.field = V4L2_FIELD_NONE;
 		cam->frame[i].buf.memory = V4L2_MEMORY_MMAP;
@@ -1475,7 +1484,8 @@ int nuvoton_vdi_device_register(void)
 	cam->v4ldev->fops		= &nuvoton_vdi_fops;
 	cam->v4ldev->release		= video_device_release;
 	cam->v4ldev->tvnorms		= V4L2_STD_525_60;		
-	cam->v4ldev->ioctl_ops = &nuvoton_vdi_ioctl_ops; /* for V4L2 ioctl handler */	
+	cam->v4ldev->ioctl_ops = &nuvoton_vdi_ioctl_ops; /* for V4L2 ioctl handler */
+	cam->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	video_set_drvdata(cam->v4ldev, cam);
 	
 	init_completion(&cam->probe);
