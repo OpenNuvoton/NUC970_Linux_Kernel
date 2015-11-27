@@ -1048,6 +1048,7 @@ static int nau8822_probe(struct snd_soc_codec *codec)
 		snd_soc_update_bits(codec, update_reg[i], 0x100, 0x100);
 
 	nau8822_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+	snd_soc_update_bits(codec, NAU8822_BEEP_CONTROL, 0x10, 0x10);
 
 	return 0;
 }
