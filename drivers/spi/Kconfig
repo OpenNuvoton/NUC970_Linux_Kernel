@@ -495,16 +495,37 @@ config SPI_NUC970_P0
 	  SPI driver for Nuvoton NUC970 Series ARM SoCs
 
 choice
-	prompt "NUC970 SPI0 pin selection"
+	prompt "SPI0 pin selection by transfer mode"
 	default SPI_NUC970_P0_NORMAL
 	depends on SPI_NUC970_P0
 	help
-	  Select SPI0 multi-function pin. Can be PB6 ~ PB9 and PB10, PB11 for quad mode.
+	  Select SPI0 multi-function pin.	  
+	  Can be PB6 ~ PB9 or additional PB10 and PB11 for quad mode.
 
 	config SPI_NUC970_P0_NORMAL
 		bool "Normal mode"
 	config SPI_NUC970_P0_QUAD
 		bool "Quad mode"	
+endchoice
+
+config SPI_NUC970_P0_SS1
+	tristate "SPI0 enable pin for the second chip select"
+	depends on SPI_NUC970_P0
+	help
+	  Enable the second chip select pin for SPI0.
+      
+choice
+	prompt "Pin selection"
+	default SPI_NUC970_P0_SS1_PB0
+	depends on SPI_NUC970_P0_SS1
+	help
+	  Select SPI0 chipselect pin . Can be PB0 or PH12.
+	
+	config SPI_NUC970_P0_SS1_PB0
+		bool "Use SS1 (PB0)"
+    config SPI_NUC970_P0_SS1_PH12
+		bool "Use SS1 (PH12)"    
+        
 endchoice
 
 config SPI_NUC970_P1
@@ -515,21 +536,36 @@ config SPI_NUC970_P1
 	  SPI driver for Nuvoton NUC970 Series ARM SoCs	  
 
 choice
-	prompt "NUC970 SPI1 pin selection"
-	default SPI_NUC970_P1_NORMAL
+	prompt "SPI1 transfer mode selection"
+	default SPI_NUC970_P1_NORMAL_MODE
 	depends on SPI_NUC970_P1
 	help
-	  Select SPI1 multi-function pin. Can be port B: PB12 ~ PB15, port I: PI5 ~ PI8 and PG4, PG5 for quad mode.
+	  Select SPI1 multi-function pin.
+	  Pins can be PB12 ~ PB15 or PI5 ~ PI8 for normal mode and additional PG4, PG5 for quad mode.
 
-	config SPI_NUC970_P1_PB
-		bool "Port B - Normal mode"
-	config SPI_NUC970_P1_PI
-		bool "Port I - Normal mode"
-	config SPI_NUC970_P1_QUAD_PB
-		bool "Port B - Quad mode"
-	config SPI_NUC970_P1_QUAD_PI
-		bool "Port I - Quad mode"
+	config SPI_NUC970_P1_NORMAL_MODE
+		bool "Normal mode"
+	config SPI_NUC970_P1_QUAD_MODE
+		bool "Quad mode"
 endchoice
+
+choice
+	prompt "SPI1 IO port selection"
+	default SPI_NUC970_P1_PB
+	depends on SPI_NUC970_P1
+        
+    config SPI_NUC970_P1_PB
+		bool "Port B"
+	config SPI_NUC970_P1_PI
+		bool "Port I"    
+endchoice
+
+config SPI_NUC970_P1_SS1
+	tristate "SPI1 enable pin for the second chip select"
+	depends on SPI_NUC970_P1
+    help
+	  Enable the second chip select pin for SPI1.
+ 
 #
 # Add new SPI master controllers in alphabetical order above this line
 #

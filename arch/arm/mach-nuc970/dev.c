@@ -791,37 +791,37 @@ static struct flash_platform_data nuc970_spi0_flash_data = {
         .nr_parts = ARRAY_SIZE(nuc970_spi0_flash_partitions),
         .type = "w25q128",        
 };
+#endif
 
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
+#ifdef CONFIG_MTD_M25P80        
         {
                 .modalias = "m25p80",
                 .max_speed_hz = 15000000,
                 .bus_num = 0,
-                .chip_select = 0,
+                .chip_select = 0,       //use SS0
                 .platform_data = &nuc970_spi0_flash_data,
-#if defined(CONFIG_SPI_NUC970_P0_NORMAL)
+ #if defined(CONFIG_SPI_NUC970_P0_NORMAL)
                 .mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL),
-#elif defined(CONFIG_SPI_NUC970_P0_QUAD)                
+ #elif defined(CONFIG_SPI_NUC970_P0_QUAD) 
                 .mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD),
-#endif
+ #endif
         },
-};
 #endif
 
 #ifdef CONFIG_SPI_SPIDEV
-static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
         {
                 .modalias = "spidev",
                 .max_speed_hz = 75000000,
                 .bus_num = 0,
-                .chip_select = 0,
+                .chip_select = 1,       //use SS1
                 .mode = SPI_MODE_0,
         },
-};
 #endif
+};
 
 static struct nuc970_spi_info nuc970_spi0_platform_data = {
-        .num_cs		= 1,
+        .num_cs		= 2,
         .lsb		= 0,
         .txneg		= 1,
         .rxneg		= 0,
@@ -875,33 +875,33 @@ static struct flash_platform_data nuc970_spi1_flash_data = {
         .nr_parts = ARRAY_SIZE(nuc970_spi1_flash_partitions),
         .type = "en25qh16",
 };
+#endif
+
 
 static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
+#ifdef CONFIG_MTD_M25P80
         {
                 .modalias = "m25p80",
-                .max_speed_hz = 75000000,
+                .max_speed_hz = 15000000,
                 .bus_num = 1,
-                .chip_select = 0,
+                .chip_select = 0,       //use SS0
                 .platform_data = &nuc970_spi1_flash_data,
                 .mode = SPI_MODE_0,
         },
-};
 #endif
-
-#ifdef CONFIG_SPI_SPIDEV
-static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
+#ifdef CONFIG_SPI_SPIDEV        
         {
                 .modalias = "spidev",
                 .max_speed_hz = 75000000,
                 .bus_num = 1,
-                .chip_select = 0,
+                .chip_select = 1,       //use SS1
                 .mode = SPI_MODE_0,
         },
-};
 #endif
+};
 
 static struct nuc970_spi_info nuc970_spi1_platform_data = {
-        .num_cs		= 1,
+        .num_cs		= 2,
         .lsb		= 0,
         .txneg		= 1,
         .rxneg		= 0,

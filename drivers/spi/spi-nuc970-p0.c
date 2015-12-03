@@ -44,7 +44,8 @@
 #define LSB			(0x01 << 10)
 #define SELECTLEV	(0x01 << 2)
 #define SELECTPOL	(0x01 << 31)
-#define SELECTSLAVE	0x01
+#define SELECTSLAVE0	0x01
+#define SELECTSLAVE1	0x02
 #define GOBUSY		0x01
 
 struct nuc970_spi {
@@ -71,7 +72,7 @@ static inline struct nuc970_spi0 *to_hw(struct spi_device *sdev)
 	return spi_master_get_devdata(sdev->master);
 }
 
-static void nuc970_slave_select(struct spi_device *spi, unsigned int ssr)
+static inline void nuc970_slave_select(struct spi_device *spi, unsigned int ssr)
 {
 	struct nuc970_spi *hw = (struct nuc970_spi *)to_hw(spi);
 	unsigned int val;
@@ -82,16 +83,23 @@ static void nuc970_slave_select(struct spi_device *spi, unsigned int ssr)
 	spin_lock_irqsave(&hw->lock, flags);
 
 	val = __raw_readl(hw->regs + REG_SSR);
-
+               
 	if (!cs)
 		val &= ~SELECTLEV;
 	else
 		val |= SELECTLEV;
-
-	if (!ssr)
-		val &= ~SELECTSLAVE;
-	else
-		val |= SELECTSLAVE;
+    
+    if(spi->chip_select == 0) {        
+        if (!ssr)
+            val &= ~SELECTSLAVE0;
+        else
+            val |= SELECTSLAVE0;
+    } else {
+        if (!ssr)
+            val &= ~SELECTSLAVE1;
+        else
+            val |= SELECTSLAVE1;
+    }
 
 	__raw_writel(val, hw->regs + REG_SSR);
 
@@ -107,9 +115,9 @@ static void nuc970_slave_select(struct spi_device *spi, unsigned int ssr)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_spi0_chipsel(struct spi_device *spi, int value)
+static inline void nuc970_spi0_chipsel(struct spi_device *spi, int value)
 {
-	switch (value) {
+    switch (value) {
 	case BITBANG_CS_INACTIVE:
 		nuc970_slave_select(spi, 0);
 		break;
@@ -120,7 +128,7 @@ static void nuc970_spi0_chipsel(struct spi_device *spi, int value)
 	}
 }
 
-static void nuc970_spi0_setup_txnum(struct nuc970_spi *hw,
+static inline void nuc970_spi0_setup_txnum(struct nuc970_spi *hw,
 							unsigned int txnum)
 {
 	unsigned int val;
@@ -140,7 +148,7 @@ static void nuc970_spi0_setup_txnum(struct nuc970_spi *hw,
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_spi0_setup_txbitlen(struct nuc970_spi *hw,
+static inline void nuc970_spi0_setup_txbitlen(struct nuc970_spi *hw,
 							unsigned int txbitlen)
 {
 	unsigned int val;
@@ -231,7 +239,7 @@ static irqreturn_t nuc970_spi0_irq(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
-static void nuc970_set_clock_polarity(struct nuc970_spi *hw, unsigned int polarity)
+static inline void nuc970_set_clock_polarity(struct nuc970_spi *hw, unsigned int polarity)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -249,7 +257,7 @@ static void nuc970_set_clock_polarity(struct nuc970_spi *hw, unsigned int polari
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_tx_edge(struct nuc970_spi *hw, unsigned int edge)
+static inline void nuc970_tx_edge(struct nuc970_spi *hw, unsigned int edge)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -267,7 +275,7 @@ static void nuc970_tx_edge(struct nuc970_spi *hw, unsigned int edge)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_rx_edge(struct nuc970_spi *hw, unsigned int edge)
+static inline void nuc970_rx_edge(struct nuc970_spi *hw, unsigned int edge)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -285,7 +293,7 @@ static void nuc970_rx_edge(struct nuc970_spi *hw, unsigned int edge)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_send_first(struct nuc970_spi *hw, unsigned int lsb)
+static inline void nuc970_send_first(struct nuc970_spi *hw, unsigned int lsb)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -303,7 +311,7 @@ static void nuc970_send_first(struct nuc970_spi *hw, unsigned int lsb)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_set_sleep(struct nuc970_spi *hw, unsigned int sleep)
+static inline void nuc970_set_sleep(struct nuc970_spi *hw, unsigned int sleep)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -321,7 +329,7 @@ static void nuc970_set_sleep(struct nuc970_spi *hw, unsigned int sleep)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_enable_int(struct nuc970_spi *hw)
+static inline void nuc970_enable_int(struct nuc970_spi *hw)
 {
 	unsigned int val;
 	unsigned long flags;
@@ -337,9 +345,9 @@ static void nuc970_enable_int(struct nuc970_spi *hw)
 	spin_unlock_irqrestore(&hw->lock, flags);
 }
 
-static void nuc970_set_divider(struct nuc970_spi *hw)
+static inline void nuc970_set_divider(struct nuc970_spi *hw)
 {
-	__raw_writel(hw->pdata->divider, hw->regs + REG_DIVIDER);
+    __raw_writel(hw->pdata->divider, hw->regs + REG_DIVIDER);
 }
 
 static int nuc970_spi0_update_state(struct spi_device *spi,
@@ -351,17 +359,18 @@ static int nuc970_spi0_update_state(struct spi_device *spi,
     unsigned int bpw;
 	unsigned int hz;
     unsigned char spimode;
-    
+ 
     bpw = t ? t->bits_per_word : spi->bits_per_word;
 	hz  = t ? t->speed_hz : spi->max_speed_hz;
     
     if(bpw)
         hw->pdata->txbitlen = spi->bits_per_word;
     
-    if(hz) {
+    if(hw->pdata->hz != hz) {
         clk = clk_get_rate(hw->clk);
         div = DIV_ROUND_UP(clk, hz * 2) - 1;
-        hw->pdata->divider = div;
+        hw->pdata->hz = hz;
+        hw->pdata->divider = div;        
     }
         
     //Mode 0: CPOL=0, CPHA=0; active high
@@ -398,14 +407,8 @@ static int nuc970_spi0_setupxfer(struct spi_device *spi,
     int ret;
           
     ret = nuc970_spi0_update_state(spi, t);
-    if (ret)
-		return ret;
-   
-    nuc970_spi0_setup_txbitlen(hw, hw->pdata->txbitlen);
-    nuc970_tx_edge(hw, hw->pdata->txneg);
-    nuc970_rx_edge(hw, hw->pdata->rxneg);
-    nuc970_set_clock_polarity(hw, hw->pdata->clkpol);
-    nuc970_send_first(hw, hw->pdata->lsb);
+    if (!ret)
+		nuc970_set_divider(hw);
     
     return 0;
 }
@@ -414,7 +417,7 @@ static int nuc970_spi0_setup(struct spi_device *spi)
 {
 	struct nuc970_spi *hw = (struct nuc970_spi *)to_hw(spi);
     int ret;
-    
+
     ret = nuc970_spi0_update_state(spi, NULL);
     if (ret)
 		return ret;
@@ -442,6 +445,7 @@ static void nuc970_init_spi(struct nuc970_spi *hw)
 	nuc970_set_sleep(hw, hw->pdata->sleep);
 	nuc970_spi0_setup_txbitlen(hw, hw->pdata->txbitlen);
 	nuc970_spi0_setup_txnum(hw, hw->pdata->txnum);
+    nuc970_set_clock_polarity(hw, hw->pdata->clkpol);
 	nuc970_set_divider(hw);
 	nuc970_enable_int(hw);
 }
@@ -452,7 +456,7 @@ static int nuc970_spi0_probe(struct platform_device *pdev)
 	struct spi_master *master;
 	int err = 0;
 	struct pinctrl *p;
-	
+
 	master = spi_alloc_master(&pdev->dev, sizeof(struct nuc970_spi));
 	if (master == NULL) {
 		dev_err(&pdev->dev, "No memory for spi_master\n");
@@ -530,13 +534,21 @@ static int nuc970_spi0_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
     
-#if defined(CONFIG_SPI_NUC970_P0_NORMAL)	
-	p = devm_pinctrl_get_select(&pdev->dev, "spi0");
-#elif defined(CONFIG_SPI_NUC970_P0_QUAD)	
+#if defined(CONFIG_SPI_NUC970_P0_NORMAL) && !defined(CONFIG_SPI_NUC970_P0_SS1)
+    p = devm_pinctrl_get_select(&pdev->dev, "spi0");
+#elif defined(CONFIG_SPI_NUC970_P0_NORMAL) && defined(CONFIG_SPI_NUC970_P0_SS1_PB0)
+    p = devm_pinctrl_get_select(&pdev->dev, "spi0-ss1-PB");
+#elif defined(CONFIG_SPI_NUC970_P0_NORMAL) && defined(CONFIG_SPI_NUC970_P0_SS1_PH12)
+    p = devm_pinctrl_get_select(&pdev->dev, "spi0-ss1-PH");
+#elif defined(CONFIG_SPI_NUC970_P0_QUAD) && !defined(CONFIG_SPI_NUC970_P0_SS1)
 	p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad");	
+#elif defined(CONFIG_SPI_NUC970_P0_QUAD) && defined(CONFIG_SPI_NUC970_P0_SS1_PB0)
+    p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad-ss1-PB");
+#elif defined(CONFIG_SPI_NUC970_P0_QUAD) && defined(CONFIG_SPI_NUC970_P0_SS1_PH12)
+    p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad-ss1-PB");
 #endif
     if(IS_ERR(p)) { 
-        dev_err(&pdev->dev, "unable to reserve pin\n");
+        dev_err(&pdev->dev, "unable to reserve spi pin by mode\n");
         err = PTR_ERR(p);
     }
     
