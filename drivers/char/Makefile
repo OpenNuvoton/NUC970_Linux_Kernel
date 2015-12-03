@@ -64,3 +64,4 @@ js-rtc-y = rtc.o
 obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
 
 obj-$(CONFIG_NUC970_MEM)	+= nuc970_mem.o
+obj-$(CONFIG_NUC970_DMA_PROXY)	+= nuc970_dma_proxy.o 
