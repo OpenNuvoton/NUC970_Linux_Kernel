@@ -98,7 +98,7 @@ static void dump_mtp_status(void)
 
 int  MTP_Enable(void)
 {
-	u32	 loop;
+	u32	 t0;
 	
 	MTP->MTP_REGLCTL = 0x59;
 	MTP->MTP_REGLCTL = 0x16;
@@ -106,20 +106,21 @@ int  MTP_Enable(void)
 
 	MTP->MTP_KEYEN |= MTP_KEYEN_KEYEN;
 
-	for (loop = 0; loop < 0x100000; loop++)
+	t0 = jiffies;
+	while (jiffies - t0 < 10)
 	{
 		if ((MTP->MTP_STATUS & MTP_STATUS_MTPEN) &&
 			!(MTP->MTP_STATUS & MTP_STATUS_BUSY))
 		{
 			if (MTP->MTP_STATUS & MTP_STATUS_NONPRG)
 			{
-				//printk("MTP enabled, no key programmed.\n");
+				printk("MTP enabled, no key programmed.\n");
 				return 0;
 			}
 
 			if (MTP->MTP_STATUS & MTP_STATUS_KEYVALID)
 			{
-				//printk("MTP enabled and key valid.\n");
+				printk("MTP enabled and key valid.\n");
 				return 0;
 			}
 		}
@@ -134,7 +135,7 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 				 const u8 *key, unsigned int keylen)
 {
 	u32   *mtp_key = (u32 *)key;
-	int   i, loop;
+	int   i, t0;
 
 	if (keylen == 0)
 	{
@@ -152,12 +153,13 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 	
 		MTP->MTP_PSTART = MTP_PSTART_PSTART;
 
-		for (loop = 0; loop < 0x100000; loop++)
+		t0 = jiffies;
+		while (jiffies - t0 < 10)
 		{
 			if (MTP->MTP_PSTART == 0)
 				break;
 		}
-		if (loop >= 0x100000)
+		if (jiffies - t0 >= 0)
 		{
 			printk("Failed to start MTP!\n");
 			return -1;
@@ -201,12 +203,13 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 	
 		MTP->MTP_PSTART = MTP_PSTART_PSTART;
 	
-		for (loop = 0; loop < 0x100000; loop++)
+		t0 = jiffies;
+		while (jiffies - t0 < 10)
 		{
 			if (MTP->MTP_PSTART == 0)
 				break;
 		}
-		if (loop >= 0x100000)
+		if (jiffies - t0 >= 10)
 		{
 			printk("MTP_PSTART not cleared!\n");
 			dump_mtp_status();
