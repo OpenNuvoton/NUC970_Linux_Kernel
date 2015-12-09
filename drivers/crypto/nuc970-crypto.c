@@ -98,7 +98,7 @@ static void dump_mtp_status(void)
 
 int  MTP_Enable(void)
 {
-	u32	 t0;
+	unsigned long	 timeout = jiffies+10;   // 0.1 second time out
 	
 	MTP->MTP_REGLCTL = 0x59;
 	MTP->MTP_REGLCTL = 0x16;
@@ -106,8 +106,7 @@ int  MTP_Enable(void)
 
 	MTP->MTP_KEYEN |= MTP_KEYEN_KEYEN;
 
-	t0 = jiffies;
-	while (jiffies - t0 < 10)
+	while (time_before(jiffies, timeout))
 	{
 		if ((MTP->MTP_STATUS & MTP_STATUS_MTPEN) &&
 			!(MTP->MTP_STATUS & MTP_STATUS_BUSY))
@@ -135,7 +134,8 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 				 const u8 *key, unsigned int keylen)
 {
 	u32   *mtp_key = (u32 *)key;
-	int   i, t0;
+	int   i;
+	unsigned long  timeout;
 
 	if (keylen == 0)
 	{
@@ -153,13 +153,13 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 	
 		MTP->MTP_PSTART = MTP_PSTART_PSTART;
 
-		t0 = jiffies;
-		while (jiffies - t0 < 10)
+		timeout = jiffies+10;   // 0.1 second time out
+		while (time_before(jiffies, timeout))
 		{
 			if (MTP->MTP_PSTART == 0)
 				break;
 		}
-		if (jiffies - t0 >= 0)
+		if (!time_before(jiffies, timeout))
 		{
 			printk("Failed to start MTP!\n");
 			return -1;
@@ -203,13 +203,13 @@ static int nuc970_mtp_setkey(struct crypto_ablkcipher *cipher,
 	
 		MTP->MTP_PSTART = MTP_PSTART_PSTART;
 	
-		t0 = jiffies;
-		while (jiffies - t0 < 10)
+		timeout = jiffies+10;   // 0.1 second time out
+		while (time_before(jiffies, timeout))
 		{
 			if (MTP->MTP_PSTART == 0)
 				break;
 		}
-		if (jiffies - t0 >= 10)
+		if (!time_before(jiffies, timeout))
 		{
 			printk("MTP_PSTART not cleared!\n");
 			dump_mtp_status();
