@@ -1,7 +1,7 @@
 /*
  * linux/arch/arm/mach-nuc970/cpu.c
  *
- * Copyright (c) 2014 Nuvoton Technology Corporation.
+ * Copyright (c) 2014~2016 Nuvoton Technology Corporation.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -42,9 +42,11 @@
 void nuc970_restart(char mode, const char *cmd)
 {
 	//UnlockReg
-	__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
-	__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
-	__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
+	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) {
+		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
+	}
 
 	__raw_writel(1, REG_AHBIPRST);      // System reset...
 }
