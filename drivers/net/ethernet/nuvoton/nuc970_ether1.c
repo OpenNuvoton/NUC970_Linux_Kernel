@@ -1018,6 +1018,7 @@ static int nuc970_mii_setup(struct net_device *dev)
 
 	phydev = phy_find_first(ether->mii_bus);
 	if(phydev == NULL) {
+		err = -ENODEV;
 		dev_err(&pdev->dev, "phy_find_first() failed\n");
 		goto out3;
 	}
