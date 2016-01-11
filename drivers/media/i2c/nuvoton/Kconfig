@@ -14,6 +14,29 @@ config VIDOE_FREQ
 	int "Video frequency"
 	depends on VIDEO_NUC970
 	default "24000000"
+
+choice
+	prompt "Nuvoton NUC970 Sensor Power Down Pin Selection"
+	depends on VIDEO_NUC970
+	default SENSOR_PD_PI0
+        ---help---
+        NUC972 EV-board sensor powerdown pin use PI0.
+	NUC977 EV-board sensor powerdown pin use PI2.
+
+config	SENSOR_PD_PI0
+	bool "PD_PI0"
+        ---help---
+        NUC972 EV-board sensor powerdown pin use PI0.
+        NUC977 EV-board sensor powerdown pin use PI2.
+
+config SENSOR_PD_PI2
+	bool "PD_PI2"
+        ---help---
+        NUC972 EV-board sensor powerdown pin use PI0.
+        NUC977 EV-board sensor powerdown pin use PI2.
+
+endchoice
+
 choice
 	prompt "Nuvoton NUC970 Image Sensor Selection"
 	depends on VIDEO_NUC970
