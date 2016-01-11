@@ -324,13 +324,13 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 #ifdef CONFIG_E50A2V1_800X480
 	/* E50A2V1 800x480 TFT Panel , 24bits*/
 	[0] = {
-		#if  defined(CONFIG_SRCFMT_RGB888)
+#ifdef CONFIG_FB_SRCFMT_RGB888
 		.type		= LCM_DCCS_VA_SRC_RGB888,
 		.bpp		= 32,
-		#elif defined(CONFIG_SRCFMT_RGB565)
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
 		.type   = LCM_DCCS_VA_SRC_RGB565,
 		.bpp		= 16,
-		#endif
+#endif
 		.width		= 800,
 		.height		= 480,
 		.xres		= 800,
@@ -342,14 +342,18 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.upper_margin	= 32,
 		.lower_margin	= 13,
 		.vsync_len		= 3,
-		#if  defined(CONFIG_SRCFMT_RGB888)
+#ifdef CONFIG_FB_SRCFMT_RGB888
 		.dccs		= 0x0e00020a,
-	  .fbctrl		= 0x03200320,
-		#elif defined(CONFIG_SRCFMT_RGB565)
+        .fbctrl		= 0x03200320,
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
 		.dccs		= 0x0e00040a,
 		.fbctrl		= 0x01900190,
-		#endif
-		.devctl		= 0x070000c0,
+#endif
+#ifdef CONFIG_FB_LCD_16BIT_PIN
+        .devctl		= 0x050000c0,
+#elif defined(CONFIG_FB_LCD_24BIT_PIN)
+        .devctl		= 0x070000c0,
+#endif
 		.scale		= 0x04000400,
 	},
 #endif

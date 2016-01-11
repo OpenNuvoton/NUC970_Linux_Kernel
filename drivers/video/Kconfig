@@ -2132,25 +2132,33 @@ choice
         depends on FB_NUC970
         select FB_NUC970_24BIT_PIN
 endchoice
+
 choice
-	prompt "LCD source format"
-	default SRCFMT_RGB565
+	prompt "Framebuffer bitmap source format"
+	default FB_SRCFMT_RGB565
 	depends on FB_NUC970
 	depends on E50A2V1_800X480
-	config SRCFMT_RGB565
-	bool "RGB565 support"
-	config SRCFMT_RGB888
-	bool "RGB888 support"
+	
+    config FB_SRCFMT_RGB565
+        bool "RGB565 support"
+	
+    config FB_SRCFMT_RGB888
+        bool "RGB888 support"
 endchoice
-config FB_NUC970_16BIT_PIN
-		bool
-		depends on FB_NUC970
-config FB_NUC970_18BIT_PIN
-		bool
-		depends on FB_NUC970
-config FB_NUC970_24BIT_PIN
-		bool
-		depends on FB_NUC970
+
+choice
+	prompt "LCD pin interface selection"
+    depends on FB_NUC970
+    
+    config FB_LCD_16BIT_PIN
+		bool "16 bits interface"
+		
+    config FB_LCD_18BIT_PIN
+		bool "18 bits interface"
+	
+    config FB_LCD_24BIT_PIN
+		bool "24 bits interface"
+endchoice	
 
 config FB_SM501
 	tristate "Silicon Motion SM501 framebuffer support"
