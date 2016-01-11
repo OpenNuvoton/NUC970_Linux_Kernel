@@ -1069,9 +1069,18 @@ int capture_init(struct nuvoton_vin_device* cam)
 	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0080),(GPIO_BA+0x204)); /* GPIOI7 Output to high */
 	
 	/* GPIOI0 set to low  */
+#ifdef CONFIG_SENSOR_PD_PI0
 	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
 	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
-	__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */	
+	__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+#endif
+
+#ifdef CONFIG_SENSOR_PD_PI2
+        __raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
+        __raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+        __raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+#endif
+
 	return 0;
 }
 
