@@ -45,18 +45,16 @@
 #include <mach/map.h>
 #include <mach/fb.h>
 #include <mach/regs-lcd.h>
-#include <mach/nuc970_spi.h>
 #include <mach/gpio.h>
 
-#include <linux/platform_data/i2c-nuc970.h>
 #include <linux/i2c.h>
 #include <linux/i2c-gpio.h>
 #include <linux/i2c/i2c-hid.h>
+#include <linux/platform_data/i2c-nuc970.h>
 
+#include <linux/platform_data/spi-nuc970.h>
 #include <linux/platform_data/dma-nuc970.h>
-
 #include <linux/platform_data/keypad-nuc970.h>
-
 
 #include "cpu.h"
 
