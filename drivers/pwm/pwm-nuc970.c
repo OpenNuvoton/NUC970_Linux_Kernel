@@ -293,26 +293,18 @@ static int nuc970_pwm_resume(struct device *dev)
 
 	return 0;
 }
-#else
-static int nuc970_pwm_suspend(struct device *dev)
-{
-	return 0;
-}
-
-static int nuc970_pwm_resume(struct device *dev)
-{
-	return 0;
-}
-
+static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend, nuc970_pwm_resume);
 #endif
 
-static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend, nuc970_pwm_resume);
+
 
 static struct platform_driver nuc970_pwm_driver = {
 	.driver		= {
 		.name	= "nuc970-pwm",
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_PM_SLEEP
 		.pm	= &nuc970_pwm_pm_ops,
+#endif
 	},
 	.probe		= nuc970_pwm_probe,
 	.remove		= nuc970_pwm_remove,
