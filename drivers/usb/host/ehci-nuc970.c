@@ -40,7 +40,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 		/* multi-function pin select */
 #if defined (CONFIG_NUC970_USBH_PWR_PE)
         /* set over-current active low */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 
     	/* initial USBH_PPWR0 & USBH_PPWR1 pin -> PE.14 & PE.15 */
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pe");
@@ -51,7 +51,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
     	}
 #elif defined (CONFIG_NUC970_USBH_PWR_PF)
         /* set over-current active low */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 
     	/* initial USBH_PPWR pin -> PF.10 */
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
@@ -62,7 +62,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
     	}
 #elif defined (CONFIG_NUC970_USBH_OC_ONLY)
         /* set over-current active low */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 
     	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-oc");
     	if (IS_ERR(p))
@@ -72,7 +72,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
     	}
 #else  //  CONFIG_NUC970_USBH_NONE
         /* set over-current active high */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 #endif
 		/* Enable USB Host clock */
         clk_prepare(clk_get(NULL, "usb_eclk"));	
@@ -114,8 +114,8 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 
         /* enable PHY 0/1 */
         physical_map_ehci = (u32)ehci->caps;
-        __raw_writel(0x160, physical_map_ehci+0xC4);
-        __raw_writel(0x520, physical_map_ehci+0xC8);
+        __raw_writel(0x160, (volatile void __iomem *)physical_map_ehci+0xC4);
+        __raw_writel(0x520, (volatile void __iomem *)physical_map_ehci+0xC8);
 
         /* cache this readonly data; minimize chip reads */
         ehci->hcs_params = readl(&ehci->caps->hcs_params);
@@ -218,17 +218,17 @@ static struct platform_driver ehci_hcd_nuc970_driver = {
         },
 };
 
-static int __init ehci_nuc970_init(void)
-{
+//static int __init ehci_nuc970_init(void)
+//{
+//
+//	return platform_driver_register(&ehci_hcd_nuc970_driver);
+//}
 
-	return platform_driver_register(&ehci_hcd_nuc970_driver);
-}
-
-static void __exit ehci_nuc970_cleanup(void)
-{
-	platform_driver_unregister(&ehci_hcd_nuc970_driver);
-
-}
+//static void __exit ehci_nuc970_cleanup(void)
+//{
+//	platform_driver_unregister(&ehci_hcd_nuc970_driver);
+//
+//}
 
 //module_init(ehci_nuc970_init);
 //module_exit(ehci_nuc970_cleanup);

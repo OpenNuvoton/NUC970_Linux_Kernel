@@ -30,7 +30,6 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         int retval;
         struct usb_hcd *hcd;
         struct ohci_hcd *ohci ;
-        u32  physical_map_ohci;
 		struct clk *clkmux, *clkaplldiv, *clkapll, *clkusb;
 		int ret;
 		
@@ -189,6 +188,7 @@ static const struct hc_driver ohci_nuc970_hc_driver = {
          */
         .start =        ohci_nuc970_start,
         .stop =			ohci_stop,
+	   .shutdown =      ohci_shutdown,
 
         /*
          * managing i/o requests and associated device resources
