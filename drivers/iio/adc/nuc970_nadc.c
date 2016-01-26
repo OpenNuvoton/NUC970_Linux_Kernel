@@ -22,6 +22,13 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/iio/iio.h>
+#include <linux/iio/sysfs.h>
+#include <linux/iio/trigger.h>
+#include <linux/iio/buffer.h>
+
+#include <linux/iio/trigger_consumer.h>
+#include <linux/iio/triggered_buffer.h>
+
 #include <linux/clk.h>
 
 /* nuc970 adc registers offset */
@@ -40,6 +47,14 @@
 	.address = _index,				\
 	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),   \
 	.datasheet_name = _id,				\
+    .scan_index = _index,               \
+    .scan_type = {                      \
+        .sign = 'u',                    \
+        .realbits = 12,                 \
+        .storagebits = 16,              \
+        .shift = 0,                     \
+        .endianness = IIO_BE,           \
+    },                                  \
 }
 
 struct nuc970_adc_device {
@@ -48,6 +63,7 @@ struct nuc970_adc_device {
 	unsigned int    irq;
 	void __iomem    *regs;
 	struct completion   completion;
+    struct iio_trigger	*trig;
 };
 
 static const struct iio_chan_spec nuc970_adc_iio_channels[] = {
@@ -61,6 +77,32 @@ static const struct iio_chan_spec nuc970_adc_iio_channels[] = {
 	ADC_CHANNEL(7, "adc7"),
 };
 
+static irqreturn_t nuc970_trigger_handler(int irq, void *p)
+{
+	struct iio_poll_func *pf = p;
+	struct iio_dev *indio_dev = pf->indio_dev;
+    struct nuc970_adc_device *info = iio_priv(indio_dev);
+	int val;
+    int channel = *indio_dev->active_scan_mask;
+    unsigned long timeout;
+
+	// enable channel
+    writel((readl(info->regs + CONF) & ~(0x7 << 3)) | (channel << 3), info->regs + CONF);
+    
+    // enable MST
+    writel(readl(info->regs + CTL) | 0x100, info->regs + CTL);
+
+    timeout = wait_for_completion_interruptible_timeout
+			(&info->completion, NUC970_ADC_TIMEOUT);
+	    
+    val = readl(info->regs + DATA);
+        
+	iio_push_to_buffers(indio_dev, (void *)&val);
+	iio_trigger_notify_done(indio_dev->trig);
+    
+	return IRQ_HANDLED;
+}
+
 static irqreturn_t nuc970_adc_isr(int irq, void *dev_id)
 {
 	struct nuc970_adc_device *info = (struct nuc970_adc_device *)dev_id;
@@ -68,15 +110,20 @@ static irqreturn_t nuc970_adc_isr(int irq, void *dev_id)
     if(readl(info->regs+ISR) & 1)    //check M_F bit
     {
         writel(1, info->regs + ISR); //clear flag
-    	complete(&info->completion);
-    }
-
+        complete(&info->completion);
+    }   
+    
 	return IRQ_HANDLED;
 }
 
 static void nuc970_adc_channels_remove(struct iio_dev *indio_dev)
 {
 	kfree(indio_dev->channels);
+}
+
+static void nuc970_adc_buffer_remove(struct iio_dev *idev)
+{
+	iio_triggered_buffer_cleanup(idev);
 }
 
 static int nuc970_adc_read_raw(struct iio_dev *indio_dev,
@@ -109,6 +156,23 @@ static int nuc970_adc_read_raw(struct iio_dev *indio_dev,
     
 	return IIO_VAL_INT;
 }
+
+static int nuc970_ring_preenable(struct iio_dev *indio_dev)
+{
+	int ret;
+
+	ret = iio_sw_buffer_preenable(indio_dev);
+	if (ret < 0)
+		return ret;
+    
+	return 0;
+}
+
+static const struct iio_buffer_setup_ops nuc970_ring_setup_ops = {
+	.preenable = &nuc970_ring_preenable,
+	.postenable = &iio_triggered_buffer_postenable,
+	.predisable = &iio_triggered_buffer_predisable,
+};
 
 static const struct iio_info nuc970_adc_info = {
 	.read_raw = &nuc970_adc_read_raw,
@@ -152,6 +216,7 @@ static int nuc970_adc_probe(struct platform_device *pdev)
 	indio_dev->info = &nuc970_adc_info;
     indio_dev->num_channels = 8;
     indio_dev->channels = nuc970_adc_iio_channels;
+    indio_dev->masklength = indio_dev->num_channels - 1;
     
     /* find the clock and enable it */	
 	info->eclk=clk_get(NULL, "adc_eclk");
@@ -191,9 +256,16 @@ static int nuc970_adc_probe(struct platform_device *pdev)
 
     writel(1, info->regs + IER); //enable M_IEN
     
-	ret = iio_device_register(indio_dev);
+    ret = iio_triggered_buffer_setup(indio_dev, &iio_pollfunc_store_time,
+			&nuc970_trigger_handler, &nuc970_ring_setup_ops);
 	if (ret)
 		goto err_free_channels;
+    
+	ret = iio_device_register(indio_dev);
+	if (ret < 0) {
+		printk("Couldn't register NC970 ADC..\n");
+        goto err_free_channels;
+    }
 
 	platform_set_drvdata(pdev, indio_dev);
     
@@ -224,6 +296,7 @@ static int nuc970_adc_remove(struct platform_device *pdev)
     clk_disable_unprepare(info->clk);
     clk_disable_unprepare(info->eclk);
     
+    nuc970_adc_buffer_remove(indio_dev);    
     free_irq(info->irq, info);
     
     writel(0, info->regs + CONF); //disable NACEN

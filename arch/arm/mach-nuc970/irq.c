@@ -367,7 +367,7 @@ void __init nuc970_init_irq(void)
 	__raw_writel(0xFFFFFFFC, REG_AIC_MDCR);
 	__raw_writel(0xFFFFFFFF, REG_AIC_MDCRH);
 
-	for (irqno = IRQ_WDT; irqno < NR_IRQS; irqno++) {
+	for (irqno = IRQ_WDT; irqno < NR_IRQS-SPARE_IRQS; irqno++) {
 		irq_set_chip_and_handler(irqno, &nuc970_irq_chip, handle_level_irq);
 		set_irq_flags(irqno, IRQF_VALID);
 	}

@@ -160,6 +160,8 @@ config VIPERBOARD_ADC
 config NUC970_NADC
 	tristate "Nuvoton NUC970 Normal ADC driver"
 	depends on ARCH_NUC970
+    	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
 	help
 	  Say yes here to build support for NUC970 normal ADC.
 choice
