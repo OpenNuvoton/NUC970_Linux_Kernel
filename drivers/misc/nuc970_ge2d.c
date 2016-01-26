@@ -84,6 +84,10 @@ static unsigned int make_color(unsigned int bpp, unsigned char r, unsigned char 
         case 32:
             color = (r << 16) | (g << 8) | (b);     //888
         break;
+	
+	default:
+	    color = ((r & 0xF8) << 8) | ((g & 0xFC) << 2) | ((b & 0xF8) >> 3);     //565
+        break;
     }
     
     return color;
