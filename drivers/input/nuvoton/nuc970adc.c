@@ -114,7 +114,7 @@ static struct key_threshold nuc970_key_th[] = {
 
 #define CLK_PCLKEN1_ADCEN (1<<24)
 #define Z_TH 10
-#define ADC_PENUP_NUM 50
+#define ADC_PENUP_NUM 3000  //20ms * ADC_PENUP_NUM = 60sec
 #define ADC_SAMPLE_CNT CONFIG_SAMPLE_NUC970ADC
 struct nuc970_adc {
     struct input_dev *input_ts;
@@ -259,9 +259,9 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
             z = (__raw_readl(REG_ADC_ZDATA) & 0xfff);
             z2= ((__raw_readl(REG_ADC_ZDATA)>>16) & 0xfff);
             pressure=(x*(z2-(z+1)))/(z+1);
-            ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
+            //ADEBUG("G=>x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
             #if 0
-            if(z<=Z_TH) /* threshold value */
+            if(z<=Z_TH && (0xfff-z2)<=Z_TH) /* threshold value */
             #else
             if((__raw_readl(REG_ADC_ZSORT0)&0xfff)<=Z_TH ||
                (__raw_readl(REG_ADC_ZSORT1)&0xfff)<=Z_TH ||
@@ -269,14 +269,14 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
                (__raw_readl(REG_ADC_ZSORT3)&0xfff)<=Z_TH ) /* threshold value */
             #endif
             {
-                input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 0);
+              input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 0);
               if(nuc970_adc->ts_num++>ADC_PENUP_NUM)
               {
                  nuc970_adc->ts_state = TS_IDLE;
                  del_timer(&nuc970_adc->timer);
                  nuc970_touch2detect();
               }else
-                 mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(50));
+                 mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(20));
             } else {
                 int i,xdata,ydata;
                 nuc970_adc->ts_num=0;
@@ -284,8 +284,9 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
                 {
                   xdata = (__raw_readl(REG_ADC_XYSORT0+i) & 0xfff);
                   ydata = (__raw_readl(REG_ADC_XYSORT0+i)>>16 & 0xfff);
-                  if(xdata==0 || xdata==0xFFF || ydata==0 || ydata==0xfff)
+                  if(xdata==0 || xdata==0xFFF || ydata==0 || ydata==0xfff ||abs(xdata-x)>50 || abs(ydata-y)>50)
                   {
+		    ADEBUG("conversion data is failed\n");
                     enable_menu();
                     return true;
                   }
@@ -303,7 +304,7 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
                 ADEBUG("xys1=0x%08x\n",__raw_readl(REG_ADC_XYSORT1));
                 ADEBUG("xys2=0x%08x\n",__raw_readl(REG_ADC_XYSORT2));
                 ADEBUG("xys3=0x%08x\n",__raw_readl(REG_ADC_XYSORT3));
-                mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(50));
+                mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(20));
             }
             input_sync(nuc970_adc->input_ts);
             return true;
@@ -356,7 +357,7 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
     nuc970_adc->ier=__raw_readl(REG_ADC_IER);
     nuc970_adc->conf=__raw_readl(REG_ADC_CONF);
     ENTRY();
-    ADEBUG("isr=0x%08x,ier=0x%08x\n",nuc970_adc->isr,nuc970_adc->ier);
+    //ADEBUG("isr=0x%08x,ier=0x%08x\n",nuc970_adc->isr,nuc970_adc->ier);
 #ifdef CONFIG_TOUCHSCREEN_NUC970ADC
     if((nuc970_adc->isr & ADC_ISR_PEDEF)&&(nuc970_adc->ier & ADC_IER_PEDEIEN ))
     {
