@@ -37,7 +37,7 @@
 // KPI_CONF
 #define KROW		(0x70000000)	// Keypad Matrix ROW number
 #define KCOL		(0x07000000)	// Keypad Matrix COL Number
-#define DB_EN		(0x00200000)	// Scan In Signal De-bounce Enable	
+#define DB_EN		(0x00200000)	// Scan In Signal De-bounce Enable
 #define DB_CLKSEL	(0x000F0000)	// Scan In De-bounce sampling cycle selection
 #define PRESCALE	(0x0000FF00)	// Row Scan Cycle Pre-scale Value
 #define INPU		(0x00000040)	// key Scan In Pull-UP Enable Register
@@ -122,11 +122,11 @@ static void nuc970_keypad_scan_matrix(struct nuc970_keypad *keypad,
 {
 	struct input_dev *input_dev = keypad->input_dev;
 	unsigned int i;
-	unsigned int row;
-	unsigned int col;
+	unsigned int row = 0;
+	unsigned int col = 0;
 	unsigned int code;
 	unsigned int key;
-	unsigned long u32KeyEvent;
+	unsigned long u32KeyEvent = 0;
 
 	if(status & PKEY_INT)
 		u32KeyEvent = __raw_readl(keypad->mmio_base + KPI_KPE);
@@ -136,9 +136,9 @@ static void nuc970_keypad_scan_matrix(struct nuc970_keypad *keypad,
 	for (i=0; i<32; i++)
 	{
 		if(u32KeyEvent & 1<<i)
-		{	
+		{
 			row = i/8;
-			col = i%8;			
+			col = i%8;
 		}
 	}
 

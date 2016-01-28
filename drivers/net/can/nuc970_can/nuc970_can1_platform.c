@@ -47,6 +47,7 @@ static void c_can_plat_write_reg_aligned_to_32bit(struct c_can_priv *priv,
 	writew(val, priv->base + 2 * priv->regs[index]);
 }
 
+#if 0
 static void c_can_hw_raminit(const struct c_can_priv *priv, bool enable)
 {
 	u32 val;
@@ -58,6 +59,7 @@ static void c_can_hw_raminit(const struct c_can_priv *priv, bool enable)
 		val &= ~CAN_RAMINIT_START_MASK(priv->instance);
 	writel(val, priv->raminit_ctrlreg);
 }
+#endif
 
 static struct platform_device_id nuc970_can1_driver_ids[] = {
 	{ "nuc970-can1", 0 },
@@ -80,14 +82,11 @@ static int c_can_plat_probe(struct platform_device *pdev)
 	void __iomem *addr;
 	struct net_device *dev;
 	struct c_can_priv *priv;
-	const struct of_device_id *match;
+	//const struct of_device_id *match;
 	const struct platform_device_id *id;
-	struct pinctrl *pinctrl;
-	struct resource *mem, *res;
+	struct resource *mem;
 	int irq;
 	struct clk *clk;
-
-	int retval = 0;
 
 	id = platform_get_device_id(pdev);
 
@@ -166,7 +165,7 @@ exit_release_mem:
 	release_mem_region(mem->start, resource_size(mem));
 exit_free_clk:
 	clk_put(clk);
-exit:
+//exit:
 	dev_err(&pdev->dev, "probe failed\n");
 
 	return ret;
