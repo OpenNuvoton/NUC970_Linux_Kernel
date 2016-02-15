@@ -32,7 +32,7 @@ typedef struct
 	u32  MTP_REGLCTL;			/*!< Offset: 0x0050   MTP Register Write-Protection Control Register  */ 
 } 	MTP_TypeDef;
 
-#define MTP           		        ((MTP_TypeDef *) (NUC970_VA_MTP))
+#define MTP           		        ((volatile MTP_TypeDef *) (NUC970_VA_MTP))
 
 #define MTP_KEY_PROG_COUNT		    ((MTP->MTP_STATUS >> 16) & 0xf)
 
