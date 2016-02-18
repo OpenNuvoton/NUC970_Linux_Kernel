@@ -35,6 +35,7 @@
 #include <linux/io.h>
 #include <linux/pm.h>
 #include <linux/device.h>
+#include <linux/gpio.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -44,6 +45,162 @@
 
 #include "nuc970fb.h"
 
+#ifdef CONFIG_ILI9431_MPU80_240x320
+void nuc970_mpu_write_cmd(struct fb_info *info, unsigned short uscmd)
+{
+    struct nuc970fb_info *fbi = info->par;	
+	void __iomem *regs = fbi->io;
+    
+    writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<30), regs+REG_LCM_MPU_CMD);        //RS=0
+    writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<29), regs+REG_LCM_MPU_CMD);        //w
+    
+    writel((readl(regs+REG_LCM_DCCS) | (1<<5)), regs+REG_LCM_DCCS);              //CMD ON
+    writel(((readl(regs+REG_LCM_MPU_CMD) & ~0xffff) | uscmd), regs+REG_LCM_MPU_CMD);
+    while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));     
+    writel((readl(regs+REG_LCM_DCCS) & ~(1<<5)), regs+REG_LCM_DCCS);             //CMD OFF
+}
+
+void nuc970_mpu_write_data(struct fb_info *info, unsigned short usdata)
+{
+    struct nuc970fb_info *fbi = info->par;	
+	void __iomem *regs = fbi->io;
+    
+    writel(readl(regs+REG_LCM_MPU_CMD) | (1<<30), regs+REG_LCM_MPU_CMD);        //RS=1
+    writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<29), regs+REG_LCM_MPU_CMD);        //w
+    
+    writel((readl(regs+REG_LCM_DCCS) | (1<<5)), regs+REG_LCM_DCCS);              //CMD ON
+    writel(((readl(regs+REG_LCM_MPU_CMD) & ~0xffff) | usdata), regs+REG_LCM_MPU_CMD);
+    while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));     
+    writel((readl(regs+REG_LCM_DCCS) & ~(1<<5)), regs+REG_LCM_DCCS);             //CMD OFF
+}
+
+static void init_ili9341(struct fb_info *info)
+{
+	struct nuc970fb_info *fbi = info->par;	
+	void __iomem *regs = fbi->io;
+
+    writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_DISP_OUT_EN, regs + REG_LCM_DCCS);
+    
+    nuc970_mpu_write_cmd(info, 0xCB);
+    nuc970_mpu_write_data(info, 0x39);
+    nuc970_mpu_write_data(info, 0x2C);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x34);
+    nuc970_mpu_write_data(info, 0x02);
+
+    nuc970_mpu_write_cmd(info, 0xCF);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0xC1);
+    nuc970_mpu_write_data(info, 0x30);
+
+    nuc970_mpu_write_cmd(info, 0xE8);
+    nuc970_mpu_write_data(info, 0x85);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x78);
+
+    nuc970_mpu_write_cmd(info, 0xEA);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x00);
+
+    nuc970_mpu_write_cmd(info, 0xED);
+    nuc970_mpu_write_data(info, 0x64);
+    nuc970_mpu_write_data(info, 0x03);
+    nuc970_mpu_write_data(info, 0x12);
+    nuc970_mpu_write_data(info, 0x81);
+
+    nuc970_mpu_write_cmd(info, 0xF7);
+    nuc970_mpu_write_data(info, 0x20);
+
+    nuc970_mpu_write_cmd(info, 0xC0);
+    nuc970_mpu_write_data(info, 0x23);
+
+    nuc970_mpu_write_cmd(info, 0xC1);
+    nuc970_mpu_write_data(info, 0x10);
+
+    nuc970_mpu_write_cmd(info, 0xC5);
+    nuc970_mpu_write_data(info, 0x3e);
+    nuc970_mpu_write_data(info, 0x28);
+
+    nuc970_mpu_write_cmd(info, 0xC7);
+    nuc970_mpu_write_data(info, 0x86);
+
+    nuc970_mpu_write_cmd(info, 0x36);
+    nuc970_mpu_write_data(info, 0x48);
+
+    nuc970_mpu_write_cmd(info, 0x3A);
+    nuc970_mpu_write_data(info, 0x55);
+
+    nuc970_mpu_write_cmd(info, 0xB1);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x18);
+
+    nuc970_mpu_write_cmd(info, 0xB6);
+    nuc970_mpu_write_data(info, 0x08);
+    nuc970_mpu_write_data(info, 0x82);
+    nuc970_mpu_write_data(info, 0x27);
+
+    nuc970_mpu_write_cmd(info, 0xF2);
+    nuc970_mpu_write_data(info, 0x00);
+
+    nuc970_mpu_write_cmd(info, 0x26);
+    nuc970_mpu_write_data(info, 0x01);
+
+    nuc970_mpu_write_cmd(info, 0xE0);
+    nuc970_mpu_write_data(info, 0x0F);
+    nuc970_mpu_write_data(info, 0x31);
+    nuc970_mpu_write_data(info, 0x2B);
+    nuc970_mpu_write_data(info, 0x0C);
+    nuc970_mpu_write_data(info, 0x0E);
+    nuc970_mpu_write_data(info, 0x08);
+    nuc970_mpu_write_data(info, 0x4E);
+    nuc970_mpu_write_data(info, 0xF1);
+    nuc970_mpu_write_data(info, 0x37);
+    nuc970_mpu_write_data(info, 0x07);
+    nuc970_mpu_write_data(info, 0x10);
+    nuc970_mpu_write_data(info, 0x03);
+    nuc970_mpu_write_data(info, 0x0E);
+    nuc970_mpu_write_data(info, 0x09);
+    nuc970_mpu_write_data(info, 0x00);
+
+    nuc970_mpu_write_cmd(info, 0xE1);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x0E);
+    nuc970_mpu_write_data(info, 0x14);
+    nuc970_mpu_write_data(info, 0x03);
+    nuc970_mpu_write_data(info, 0x11);
+    nuc970_mpu_write_data(info, 0x07);
+    nuc970_mpu_write_data(info, 0x31);
+    nuc970_mpu_write_data(info, 0xC1);
+    nuc970_mpu_write_data(info, 0x48);
+    nuc970_mpu_write_data(info, 0x08);
+    nuc970_mpu_write_data(info, 0x0F);
+    nuc970_mpu_write_data(info, 0x0C);
+    nuc970_mpu_write_data(info, 0x31);
+    nuc970_mpu_write_data(info, 0x36);
+    nuc970_mpu_write_data(info, 0x0F);
+        
+    //set display location
+    nuc970_mpu_write_cmd(info, 0x2a);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 0x00);
+    nuc970_mpu_write_data(info, 239>>8);
+    nuc970_mpu_write_data(info, 239);
+
+    nuc970_mpu_write_cmd(info, 0x2b);
+    nuc970_mpu_write_data(info, 0);
+    nuc970_mpu_write_data(info, 0);
+    nuc970_mpu_write_data(info, 319>>8);
+    nuc970_mpu_write_data(info, 319);
+        
+    nuc970_mpu_write_cmd(info, 0x11);
+	mdelay(1);
+	
+    nuc970_mpu_write_cmd(info, 0x29);    //Display on    
+    nuc970_mpu_write_cmd(info, 0x2C);    //Write memory
+    
+    writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_VA_EN, regs + REG_LCM_DCCS);
+}
+#endif
 
 /*
  *  Initialize the nuc970 video (dual) buffer address
@@ -64,26 +221,6 @@ static void nuc970fb_set_lcdaddr(struct fb_info *info)
 
 	writel(fbi->regs.lcd_va_fbctrl, regs + REG_LCM_VA_FBCTRL);
 	writel(fbi->regs.lcd_va_scale, regs + REG_LCM_VA_SCALE);
-}
-
-/*
- *	calculate divider for lcd div
- */
-static unsigned int nuc970fb_calc_pixclk(struct nuc970fb_info *fbi,
-					 unsigned long pixclk)
-{
-	unsigned long clk = fbi->clk_rate;
-	unsigned long long div;
-
-	/* pixclk is in picseconds. our clock is in Hz*/
-	/* div = (clk * pixclk)/10^12 */
-	div = (unsigned long long)clk * pixclk;
-	div >>= 12;
-	do_div(div, 625 * 625UL * 625);
-
-	dev_dbg(fbi->dev, "pixclk %ld, divisor is %lld\n", pixclk, div);
-
-	return div;
 }
 
 /*
@@ -226,12 +363,6 @@ static void nuc970fb_activate_var(struct fb_info *info)
 {
 	struct nuc970fb_info *fbi = info->par;
 	void __iomem *regs = fbi->io;
-	struct fb_var_screeninfo *var = &info->var;
-	int clkdiv;
-
-	clkdiv = nuc970fb_calc_pixclk(fbi, var->pixclock) - 1;
-	if (clkdiv < 0)
-		clkdiv = 0;
 
 	nuc970fb_calculate_lcd_regs(info, &fbi->regs);
 
@@ -358,10 +489,9 @@ static inline void modify_gpio(void __iomem *reg,
  */
 static int nuc970fb_init_registers(struct fb_info *info)
 {
-	struct nuc970fb_info *fbi = info->par;
-	struct nuc970fb_mach_info *mach_info = fbi->dev->platform_data;
+	struct nuc970fb_info *fbi = info->par;	
 	void __iomem *regs = fbi->io;
-
+     
 	/*reset the display engine*/
 	writel(0, regs + REG_LCM_DCCS);
 	writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_ENG_RST,
@@ -372,16 +502,22 @@ static int nuc970fb_init_registers(struct fb_info *info)
 	ndelay(100);
 
 	writel(0, regs + REG_LCM_DEV_CTRL);
-
-	/* config gpio output */
-	modify_gpio(NUC970_VA_GPIO + 0x180, mach_info->gpio_dir,
-		    mach_info->gpio_dir_mask);
-	modify_gpio(NUC970_VA_GPIO + 0x184, mach_info->gpio_data,
-		    mach_info->gpio_data_mask);
-
-	return 0;
+    
+#ifdef CONFIG_ILI9431_MPU80_240x320 
+{
+    int ret;
+    struct nuc970fb_mach_info *mach_info = fbi->dev->platform_data;
+        
+    /* control blen pin to let LED on */    
+    ret = gpio_request(mach_info->gpio_blen,NULL);
+    if (ret) 
+        printk("Warning, request gpio fail...\n");
+    gpio_direction_output(mach_info->gpio_blen, 0);
 }
+#endif
 
+    return 0;
+}
 
 /*
  *    Alloc the SDRAM region of nuc970 for the frame buffer.
@@ -512,7 +648,8 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	int i;
 	int size;
 	struct pinctrl *p;
-	
+	struct clk *clkmux, *clkuplldiv;
+    
 	dev_dbg(&pdev->dev, "devinit\n");
 	
 	mach_info = pdev->dev.platform_data;
@@ -596,38 +733,30 @@ static int nuc970fb_probe(struct platform_device *pdev)
 
 	clk_prepare(clk_get(NULL, "lcd_hclk"));
 	clk_enable(clk_get(NULL, "lcd_hclk"));
-
 	fbi->clk = clk_get(NULL, "lcd_eclk");
+    
+    if(display->pixclock > 12000000)
+    { 
+        // change clock source to upll
+        clkmux = clk_get(NULL, "lcd_eclk_mux");
+        if (IS_ERR(clkmux)) {
+            printk(KERN_ERR "nuc970-lcd:failed to get lcd clock mux control\n");
+            ret = PTR_ERR(clkmux);
+            return ret;
+        }
 
-#ifdef CONFIG_A025DL02_320X240	
-	// set lcd clock to 4MHz
-	clk_set_rate(fbi->clk, 4000000);
-#endif
-#ifdef CONFIG_E50A2V1_800X480
-{
-    struct clk *clkmux, *clkuplldiv;
-    
-    clkmux = clk_get(NULL, "lcd_eclk_mux");
-    if (IS_ERR(clkmux)) {
-        printk(KERN_ERR "nuc970-lcd:failed to get lcd clock mux control\n");
-        ret = PTR_ERR(clkmux);
-        return ret;
-    }
-
-    clkuplldiv = clk_get(NULL, "lcd_uplldiv");
-    if (IS_ERR(clkuplldiv)) {
-        printk(KERN_ERR "nuc970-lcd:failed to get lcd clock divider control\n");
-        ret = PTR_ERR(clkuplldiv);
-        return ret;
+        clkuplldiv = clk_get(NULL, "lcd_uplldiv");
+        if (IS_ERR(clkuplldiv)) {
+            printk(KERN_ERR "nuc970-lcd:failed to get lcd clock divider control\n");
+            ret = PTR_ERR(clkuplldiv);
+            return ret;
+        }
+        
+        // select lcd clock from upll
+        clk_set_parent(clkmux, clkuplldiv);
     }
     
-    // select lcd clock from upll
-    clk_set_parent(clkmux, clkuplldiv);
-    
-	// set lcd clock to 20MHz
-	clk_set_rate(fbi->clk, 20000000);
-}
-#endif
+    clk_set_rate(fbi->clk, display->pixclock);
 
 	clk_prepare(fbi->clk);	
 	clk_enable(fbi->clk);
@@ -688,6 +817,10 @@ static int nuc970fb_probe(struct platform_device *pdev)
     }	
 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
 		fbinfo->node, fbinfo->fix.id);
+        
+#ifdef CONFIG_ILI9431_MPU80_240x320
+    init_ili9341(fbinfo);
+#endif
 
 	return 0;
 

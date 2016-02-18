@@ -43,15 +43,15 @@
 #include <mach/regs-aic.h>
 
 #include <mach/map.h>
-#include <mach/fb.h>
 #include <mach/regs-lcd.h>
 #include <mach/gpio.h>
 
 #include <linux/i2c.h>
 #include <linux/i2c-gpio.h>
 #include <linux/i2c/i2c-hid.h>
-#include <linux/platform_data/i2c-nuc970.h>
 
+#include <linux/platform_data/i2c-nuc970.h>
+#include <linux/platform_data/video-nuc970fb.h>
 #include <linux/platform_data/spi-nuc970.h>
 #include <linux/platform_data/dma-nuc970.h>
 #include <linux/platform_data/keypad-nuc970.h>
@@ -306,7 +306,7 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.xres		= 320,
 		.yres		= 240,
 		.bpp		= 16,
-		.pixclock	= 200000,
+		.pixclock	= 4000000,
 		.left_margin	= 10,
 		.right_margin   = 54,
 		.hsync_len	= 10,
@@ -319,6 +319,7 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.scale		= 0x04000400,
 	},
 #endif
+
 #ifdef CONFIG_E50A2V1_800X480
 	/* E50A2V1 800x480 TFT Panel , 24bits*/
 	[0] = {
@@ -333,7 +334,7 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.height		= 480,
 		.xres		= 800,
 		.yres		= 480,
-		.pixclock	= 200000,
+		.pixclock	= 20000000,
 		.left_margin	= 88,
 		.right_margin   = 40,
 		.hsync_len		= 48,
@@ -355,17 +356,37 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.scale		= 0x04000400,
 	},
 #endif
-};
 
+#ifdef CONFIG_ILI9431_MPU80_240x320
+	/* ILI9431 240x320 MPU Panel , 16bits*/
+	[0] = {		
+		.type   = LCM_DCCS_VA_SRC_RGB565,
+		.bpp		= 16,
+		.width		= 240,
+		.height		= 320,
+		.xres		= 240,
+		.yres		= 320,
+		.pixclock	= 6000000,
+		.left_margin	= 6,
+		.right_margin   = 10,
+		.hsync_len		= 2,
+		.upper_margin	= 27,
+		.lower_margin	= 5,
+		.vsync_len		= 11,	
+		.dccs		= 0x0e000400,
+		.fbctrl		= 0x00780078,
+        .devctl		= 0xC50000E0,
+		.scale		= 0x04000400,		
+	},
+#endif
+};
 
 static struct nuc970fb_mach_info nuc970fb_fb_info = {
 	.displays		= &nuc970fb_lcd_info[0],
 	.num_displays		= ARRAY_SIZE(nuc970fb_lcd_info),
 	.default_display	= 0,
-	.gpio_dir		= 0x0000000C,		//io control: PG2/PG3
-	.gpio_dir_mask		= 0xFFFFFFF3,
-	.gpio_data		= 0x0000000C,
-	.gpio_data_mask		= 0xFFFFFFF3,
+    .gpio_blen          = NUC970_PG3,
+    .gpio_lcs           = NUC970_PG2,
 };
 
 static struct resource nuc970fb_lcd_resource[] = {
