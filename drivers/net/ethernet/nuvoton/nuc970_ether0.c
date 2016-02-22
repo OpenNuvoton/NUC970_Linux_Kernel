@@ -350,6 +350,7 @@ static int nuc970_init_desc(struct net_device *dev)
 	for (i = 0; i < TX_DESC_SIZE; i++) {
 		unsigned int offset;
 
+		tx_skb[i] = NULL;
 		tdesc = (ether->tdesc + i);
 
 		if (i == TX_DESC_SIZE - 1)
@@ -604,6 +605,8 @@ static int nuc970_ether_close(struct net_device *dev)
 
 	pdev = ether->pdev;
 
+	ETH_DISABLE_TX;
+	ETH_DISABLE_RX;
 	netif_stop_queue(dev);
 	napi_disable(&ether->napi);
 	free_irq(ether->txirq, dev);
@@ -631,43 +634,26 @@ static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 	struct nuc970_txbd *txbd;
-	unsigned int cur_entry, entry;
 	struct sk_buff *s;
-	static int loop = 0;	// need to loop all descriptor
 
-	cur_entry = __raw_readl( REG_CTXDSA);
-
-	entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
-	while ((entry != cur_entry) || (loop == 1)) {
-		txbd = (ether->tdesc + ether->finish_tx);
-		if(loop == 1) {
-			loop = 0;
-		}
-		s = tx_skb[ether->finish_tx];
+	txbd = ether->tdesc + ether->cur_tx;
+	if(txbd->mode & TX_OWEN_DMA) {
+		netif_stop_queue(dev);
+		return NETDEV_TX_BUSY;
+	}
+	// only recycle descriptor when needed, so tx status shown in ifconfig is not up-to-date.
+	if(likely((s = tx_skb[ether->cur_tx]) != NULL)) {
 		dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
 		dev_kfree_skb(s);
-		tx_skb[ether->finish_tx] = NULL;
-
-		if (++ether->finish_tx >= TX_DESC_SIZE)
-			ether->finish_tx = 0;
-
 		if (txbd->sl & TXDS_TXCP) {
 			ether->stats.tx_packets++;
 			ether->stats.tx_bytes += (txbd->sl & 0xFFFF);
 		} else {
 			ether->stats.tx_errors++;
 		}
-
-		txbd->sl = 0x0;
-		txbd->buffer = (unsigned int)NULL;
-
-		entry = ether->tdesc_phys + sizeof(struct nuc970_txbd) * (ether->finish_tx);
 	}
 
-	txbd = ether->tdesc + ether->cur_tx;
-	if(txbd->mode & TX_OWEN_DMA) {
-		return NETDEV_TX_BUSY;
-	}
+
 	txbd->buffer = dma_map_single(&dev->dev, skb->data,
 					skb->len, DMA_TO_DEVICE);
 
@@ -681,13 +667,6 @@ static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	if (++ether->cur_tx >= TX_DESC_SIZE)
 		ether->cur_tx = 0;
-
-	txbd = (ether->tdesc + ether->cur_tx);
-
-	if (txbd->mode & TX_OWEN_DMA) {
-		netif_stop_queue(dev);
-		loop = 1;
-	}
 
 	return NETDEV_TX_OK;
 }
