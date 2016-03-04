@@ -31,12 +31,60 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         struct usb_hcd *hcd;
         struct ohci_hcd *ohci ;
 		struct clk *clkmux, *clkaplldiv, *clkapll, *clkusb;
+#if !defined(CONFIG_USB_NUC970_EHCI)
+        struct pinctrl *p;
+#endif
 		int ret;
 		
         if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
                 return -1;
         }
+
+#if !defined(CONFIG_USB_NUC970_EHCI)
+
+		/* multi-function pin select */
+#if defined (CONFIG_NUC970_USBH_PWR_PE_2)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+
+    	/* initial USBH_PPWR0 & USBH_PPWR1 pin -> PE.14 & PE.15 */
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pe");
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
+#elif defined (CONFIG_NUC970_USBH_PWR_PF_2)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+
+    	/* initial USBH_PPWR pin -> PF.10 */
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-pf");
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
+#elif defined (CONFIG_NUC970_USBH_OC_ONLY_2)
+        /* set over-current active low */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+
+    	p = devm_pinctrl_get_select(&pdev->dev, "usbh-ppwr-oc");
+    	if (IS_ERR(p))
+    	{
+        	dev_err(&pdev->dev, "unable to reserve pin\n");
+        	retval = PTR_ERR(p);
+    	}
+#else  //  CONFIG_NUC970_USBH_NONE_2
+        /* set over-current active high */
+        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+#endif
+
+#endif   // !CONFIG_USB_NUC970_EHCI
+
+        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_enable(clk_get(NULL, "usb_eclk"));
 
         /* enable USB Host clock */
         clk_prepare(clk_get(NULL, "usbh_hclk"));	
@@ -79,6 +127,10 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         
         clk_set_rate(clkapll, 96000000);
 		clk_set_rate(clkusb, 48000000);
+
+        /* enable PHY 0/1 */
+		__raw_writel(0x160, (volatile void __iomem *)(NUC970_VA_EHCI+0xC4));
+		__raw_writel(0x520, (volatile void __iomem *)(NUC970_VA_EHCI+0xC8));
 		
         hcd = usb_create_hcd(driver, &pdev->dev, "nuc970-ohci");
         if (!hcd)
@@ -103,15 +155,10 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         ohci = hcd_to_ohci(hcd);
         ohci_hcd_init(ohci);
 
-#ifdef  CONFIG_NUC970_USBH_PWR_NONE
-        /* set over-current active high */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, NUC970_VA_OHCI+0x204);
-#else
-        /* set over-current active low */
-        __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, NUC970_VA_OHCI+0x204);
-#endif
-
         retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
+
+		//printk("Port status: 0x%x, 0x%x\n", __raw_readl((volatile void __iomem *)(NUC970_VA_EHCI+0x64)), __raw_readl((volatile void __iomem *)(NUC970_VA_EHCI+0x68)));
+		//printk("Port status: 0x%x, 0x%x\n", __raw_readl((volatile void __iomem *)(NUC970_VA_OHCI+0x54)), __raw_readl((volatile void __iomem *)(NUC970_VA_OHCI+0x58)));
 
         if (retval == 0)
                 return retval;
