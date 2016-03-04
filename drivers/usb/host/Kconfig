@@ -387,6 +387,21 @@ config USB_NUC970_OHCI
 	---help---
 		Enables support for NUC970 USB OHCI controller
 
+choice
+    prompt "NUC970 USB Host port power pin select"
+    default NUC970_USBH_PWR_PE_2
+    depends on (USB_NUC970_OHCI && !USB_NUC970_EHCI)
+	
+    config NUC970_USBH_PWR_PE_2
+	bool "PE.14 and PE.15 for USBH_PPWR0/1, PH.1 for USBH_OVRCUR"
+    config NUC970_USBH_PWR_PF_2
+	bool "PF.10 for USBH_PPWR, PH.1 for USBH_OVRCUR"
+    config NUC970_USBH_OC_ONLY_2
+	bool "No USBH_PPWRx, PH.1 for USBH_OVRCUR"
+    config NUC970_USBH_PWR_NONE_2
+	bool "No USBH_PPWRx and USBH_OVRCUR"
+endchoice
+
 config USB_OHCI_HCD_OMAP1
 	bool "OHCI support for OMAP1/2 chips"
 	depends on ARCH_OMAP1
