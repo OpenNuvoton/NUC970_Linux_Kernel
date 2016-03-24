@@ -1103,8 +1103,7 @@ error:
 
 
 int CmdXfrT1(unsigned int intf,
-	unsigned int tx_length, unsigned char tx_buffer[], unsigned int *rx_length,
-	unsigned char rx_buffer[])
+	unsigned int tx_length, unsigned char tx_buffer[], unsigned char rx_buffer[])
 {
 	int return_value = 0;
 	int ret;
