@@ -1080,6 +1080,87 @@ end:
 	return work_done;
 }
 
+static int c_can_handler(struct net_device *dev)
+{
+	u16 irqstatus;
+        int quota = C_CAN_NAPI_WEIGHT;
+	int lec_type = 0;
+	int work_done = 0;
+	//struct net_device *dev = napi->dev;
+	struct c_can_priv *priv = netdev_priv(dev);
+
+	irqstatus = priv->irqstatus;
+	if (!irqstatus)
+		goto end;
+
+	/* status events have the highest priority */
+	if (irqstatus == STATUS_INTERRUPT) {
+		priv->current_status = priv->read_reg(priv,
+					C_CAN_STS_REG);
+
+		/* handle Tx/Rx events */
+		if (priv->current_status & STATUS_TXOK)
+			priv->write_reg(priv, C_CAN_STS_REG,
+					priv->current_status & ~STATUS_TXOK);
+
+		if (priv->current_status & STATUS_RXOK)
+			priv->write_reg(priv, C_CAN_STS_REG,
+					priv->current_status & ~STATUS_RXOK);
+
+		/* handle state changes */
+		if ((priv->current_status & STATUS_EWARN) &&
+				(!(priv->last_status & STATUS_EWARN))) {
+			netdev_dbg(dev, "entered error warning state\n");
+			work_done += c_can_handle_state_change(dev,
+						C_CAN_ERROR_WARNING);
+		}
+		if ((priv->current_status & STATUS_EPASS) &&
+				(!(priv->last_status & STATUS_EPASS))) {
+			netdev_dbg(dev, "entered error passive state\n");
+			work_done += c_can_handle_state_change(dev,
+						C_CAN_ERROR_PASSIVE);
+		}
+		if ((priv->current_status & STATUS_BOFF) &&
+				(!(priv->last_status & STATUS_BOFF))) {
+			netdev_dbg(dev, "entered bus off state\n");
+			work_done += c_can_handle_state_change(dev,
+						C_CAN_BUS_OFF);
+		}
+
+		/* handle bus recovery events */
+		if ((!(priv->current_status & STATUS_BOFF)) &&
+				(priv->last_status & STATUS_BOFF)) {
+			netdev_dbg(dev, "left bus off state\n");
+			priv->can.state = CAN_STATE_ERROR_ACTIVE;
+		}
+		if ((!(priv->current_status & STATUS_EPASS)) &&
+				(priv->last_status & STATUS_EPASS)) {
+			netdev_dbg(dev, "left error passive state\n");
+			priv->can.state = CAN_STATE_ERROR_ACTIVE;
+		}
+
+		priv->last_status = priv->current_status;
+
+		/* handle lec errors on the bus */
+		lec_type = c_can_has_and_handle_berr(priv);
+		if (lec_type)
+			work_done += c_can_handle_bus_err(dev, lec_type);
+	} else if ((irqstatus >= C_CAN_MSG_OBJ_RX_FIRST) &&
+			(irqstatus <= C_CAN_MSG_OBJ_RX_LAST)) {
+		/* handle events corresponding to receive message objects */
+		work_done += c_can_do_rx_poll(dev, (quota - work_done));
+	} else if ((irqstatus >= C_CAN_MSG_OBJ_TX_FIRST) &&
+			(irqstatus <= C_CAN_MSG_OBJ_TX_LAST)) {
+		/* handle events corresponding to transmit message objects */
+		c_can_do_tx(dev);
+	}
+
+end:
+
+	return work_done;
+}
+
+
 static irqreturn_t c_can_isr(int irq, void *dev_id)
 {
 	struct net_device *dev = (struct net_device *)dev_id;
@@ -1090,8 +1171,11 @@ static irqreturn_t c_can_isr(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	/* disable all interrupts and schedule the NAPI */
-	c_can_enable_all_interrupts(priv, DISABLE_ALL_INTERRUPTS);
-	napi_schedule(&priv->napi);
+	//c_can_enable_all_interrupts(priv, DISABLE_ALL_INTERRUPTS);
+
+        c_can_handler(dev);
+
+	//napi_schedule(&priv->napi);
 
 	return IRQ_HANDLED;
 }
@@ -1119,7 +1203,7 @@ static int c_can_open(struct net_device *dev)
 		goto exit_irq_fail;
 	}
 
-	napi_enable(&priv->napi);
+	//napi_enable(&priv->napi);
 
 	can_led_event(dev, CAN_LED_EVENT_OPEN);
 
@@ -1143,7 +1227,7 @@ static int c_can_close(struct net_device *dev)
 	struct c_can_priv *priv = netdev_priv(dev);
 
 	netif_stop_queue(dev);
-	napi_disable(&priv->napi);
+	//napi_disable(&priv->napi);
 	c_can_stop(dev);
 	free_irq(dev->irq, dev);
 	close_candev(dev);
