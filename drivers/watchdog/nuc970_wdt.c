@@ -116,6 +116,7 @@ static int nuc970wdt_stop(struct watchdog_device *wdd)
 {
 	Unlock_RegWriteProtect();
 	__raw_writel(0, REG_WDT_CR);
+	pr_warn("Stopping WDT is probably not a good idea\n");
 	Lock_RegWriteProtect();
 	return 0;
 }
@@ -143,7 +144,7 @@ static int nuc970wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeo
 
 static const struct watchdog_info nuc970wdt_info = {
 	.identity	= "nuc970 watchdog",
-	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
+	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
 };
 
 static struct watchdog_ops nuc970wdt_ops = {
