@@ -77,7 +77,7 @@ static inline void rtc_reg_write(struct nuc970_rtc *p, int offset, int value)
 
         // wait rtc register write finish
 	while((__raw_readl(p->rtc_reg + REG_RTC_RIIR) & (1 << 31)) && writetimeout--)
-            mdelay(1);
+            udelay(1);
 }
 
 static irqreturn_t nuc970_rtc_interrupt(int irq, void *_rtc)
