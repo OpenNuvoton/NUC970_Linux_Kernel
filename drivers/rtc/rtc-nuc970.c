@@ -71,9 +71,13 @@ static inline unsigned int rtc_reg_read(struct nuc970_rtc *p, int offset)
 
 static inline void rtc_reg_write(struct nuc970_rtc *p, int offset, int value)
 {
+	unsigned int writetimeout = 0x400;
+
 	__raw_writel(value, p->rtc_reg + offset);
 
-	while(__raw_readl(p->rtc_reg + REG_RTC_RIIR) & (1 << 31)); // wait rtc register write finish
+        // wait rtc register write finish
+	while((__raw_readl(p->rtc_reg + REG_RTC_RIIR) & (1 << 31)) && writetimeout--)
+            mdelay(1);
 }
 
 static irqreturn_t nuc970_rtc_interrupt(int irq, void *_rtc)
@@ -100,7 +104,7 @@ static irqreturn_t nuc970_rtc_interrupt(int irq, void *_rtc)
 
 static int *check_rtc_access_enable(struct nuc970_rtc *nuc970_rtc)
 {
-	unsigned int timeout = 0x1000;
+	unsigned int timeout = 0x800;
 
 	rtc_reg_write(nuc970_rtc, REG_RTC_INIR, INIRRESET);
 
