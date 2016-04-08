@@ -2161,10 +2161,12 @@ choice
 		bool "16 bits interface"
 		
     config FB_LCD_18BIT_PIN
-		bool "18 bits interface"
+        bool "18 bits interface"
+        depends on BOARD_NUC972
 	
-    config FB_LCD_24BIT_PIN
+    config FB_LCD_24BIT_PIN    
 		bool "24 bits interface"
+        depends on BOARD_NUC972
 endchoice	
 
 config FB_SM501

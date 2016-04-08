@@ -67,14 +67,17 @@ struct nuc970_adc_device {
 };
 
 static const struct iio_chan_spec nuc970_adc_iio_channels[] = {
+#ifndef CONFIG_BOARD_TOMATO
 	ADC_CHANNEL(0, "adc0"),
 	ADC_CHANNEL(1, "adc1"),
 	ADC_CHANNEL(2, "adc2"),
 	ADC_CHANNEL(3, "adc3"),
-	ADC_CHANNEL(4, "adc4"),
+#endif
+    ADC_CHANNEL(4, "adc4"),
 	ADC_CHANNEL(5, "adc5"),
 	ADC_CHANNEL(6, "adc6"),
 	ADC_CHANNEL(7, "adc7"),
+
 };
 
 static irqreturn_t nuc970_trigger_handler(int irq, void *p)
@@ -83,10 +86,13 @@ static irqreturn_t nuc970_trigger_handler(int irq, void *p)
 	struct iio_dev *indio_dev = pf->indio_dev;
     struct nuc970_adc_device *info = iio_priv(indio_dev);
 	int val;
-    int channel = *indio_dev->active_scan_mask;
+    int channel;
     unsigned long timeout;
 
-	// enable channel
+	channel = find_first_bit(indio_dev->active_scan_mask,
+				 indio_dev->masklength);
+                 
+    // enable channel
     writel((readl(info->regs + CONF) & ~(0x7 << 3)) | (channel << 3), info->regs + CONF);
     
     // enable MST
@@ -96,7 +102,7 @@ static irqreturn_t nuc970_trigger_handler(int irq, void *p)
 			(&info->completion, NUC970_ADC_TIMEOUT);
 	    
     val = readl(info->regs + DATA);
-        
+
 	iio_push_to_buffers(indio_dev, (void *)&val);
 	iio_trigger_notify_done(indio_dev->trig);
     
@@ -109,7 +115,7 @@ static irqreturn_t nuc970_adc_isr(int irq, void *dev_id)
 
     if(readl(info->regs+ISR) & 1)    //check M_F bit
     {
-        writel(1, info->regs + ISR); //clear flag
+        writel(0x401, info->regs + ISR); //clear flag
         complete(&info->completion);
     }   
     
@@ -148,13 +154,13 @@ static int nuc970_adc_read_raw(struct iio_dev *indio_dev,
 			(&info->completion, NUC970_ADC_TIMEOUT);
             
     *val = readl(info->regs + DATA);
-    
+ 
     mutex_unlock(&indio_dev->mlock);
     
     if (timeout == 0)
 		return -ETIMEDOUT;
     
-	return IIO_VAL_INT;
+	return IIO_VAL_INT;    
 }
 
 static int nuc970_ring_preenable(struct iio_dev *indio_dev)
@@ -185,7 +191,7 @@ static int nuc970_adc_probe(struct platform_device *pdev)
     int ret = -ENODEV;
 	struct resource *res;    
 	int irq;
-    
+
     indio_dev = iio_device_alloc(sizeof(struct nuc970_adc_device));
 	if (indio_dev == NULL) {
 		dev_err(&pdev->dev, "failed to allocate iio device\n");
@@ -214,7 +220,11 @@ static int nuc970_adc_probe(struct platform_device *pdev)
 	indio_dev->name = dev_name(&pdev->dev);
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	indio_dev->info = &nuc970_adc_info;
+#ifdef CONFIG_BOARD_TOMATO    
+    indio_dev->num_channels = 4;
+#else
     indio_dev->num_channels = 8;
+#endif
     indio_dev->channels = nuc970_adc_iio_channels;
     indio_dev->masklength = indio_dev->num_channels - 1;
     
@@ -287,7 +297,7 @@ static int nuc970_adc_remove(struct platform_device *pdev)
 {
 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
     struct nuc970_adc_device *info = iio_priv(indio_dev);
-    
+
 	iio_device_unregister(indio_dev);
 	nuc970_adc_channels_remove(indio_dev);
 

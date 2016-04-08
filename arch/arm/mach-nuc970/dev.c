@@ -795,6 +795,15 @@ struct platform_device nuc970_device_i2c1 = {
 #ifdef CONFIG_SPI_NUC970_P0
 /* spi device, spi flash info */
 #ifdef CONFIG_MTD_M25P80
+#ifdef CONFIG_BOARD_TOMATO
+static struct mtd_partition nuc970_spi0_flash_partitions[] = {
+        {
+                .name = "User",
+                .size = 0x0800000,
+                .offset = 0,
+        },
+};
+#else
 static struct mtd_partition nuc970_spi0_flash_partitions[] = {
         {
                 .name = "kernel",
@@ -807,7 +816,7 @@ static struct mtd_partition nuc970_spi0_flash_partitions[] = {
                 .offset = 0x0800000,
         },
 };
-
+#endif
 static struct flash_platform_data nuc970_spi0_flash_data = {
         .name = "m25p80",
         .parts =  nuc970_spi0_flash_partitions,
@@ -883,6 +892,19 @@ struct platform_device nuc970_device_spi0 = {
 
 #ifdef CONFIG_SPI_NUC970_P1
 /* spi device, spi flash info */
+#ifdef CONFIG_BOARD_TOMATO
+#ifdef CONFIG_SPI_SPIDEV
+static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
+        {
+                .modalias = "spidev",
+                .max_speed_hz = 75000000,
+                .bus_num = 1,
+                .chip_select = 0,       //use SS0
+                .mode = SPI_MODE_0,
+        },
+};
+#endif
+#else
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc970_spi1_flash_partitions[] = {
         {
@@ -922,6 +944,7 @@ static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
         },
 #endif
 };
+#endif
 
 static struct nuc970_spi_info nuc970_spi1_platform_data = {
         .num_cs		= 2,
