@@ -19,6 +19,19 @@ config MACH_NUC970
 	   Say Y here if you are using the Nuvoton NUC970
 endmenu
 
+choice 
+    prompt "Nuvoton NUC970 Series Development Board"
+    
+config BOARD_NUC977
+    bool "NUC977 Development Board"
+
+config BOARD_NUC972
+    bool "NUC972 Development Board"
+    
+config BOARD_TOMATO
+    bool "NUC976 Tomato Board"
+endchoice
+
 config NUC970_FIQ
     bool "Nuvoton NUC970 FIQ support"
     select FIQ
