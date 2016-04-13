@@ -1111,6 +1111,23 @@ struct platform_device nuc970_device_can1 = {
 };
 #endif
 
+#ifdef CONFIG_NUC970_EBI
+static struct resource nuc970_ebi_resource[] = {
+        [0] = {
+                .start = NUC970_PA_EBI,
+                .end   = NUC970_PA_EBI + NUC970_SZ_EBI - 1,
+                .flags = IORESOURCE_MEM,
+        },
+};
+
+struct platform_device nuc970_device_ebi = {
+        .name           = "nuc970-ebi",
+        .id             = -1,
+        .num_resources  = ARRAY_SIZE(nuc970_ebi_resource),
+        .resource       = nuc970_ebi_resource,
+};
+#endif
+
 #ifdef CONFIG_PWM_NUC970
 static struct pwm_lookup board_pwm_lookup[] = {
 	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
@@ -1467,6 +1484,10 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 
 #ifdef CONFIG_NUC970_CAN1
 	&nuc970_device_can1,
+#endif
+
+#ifdef CONFIG_NUC970_EBI
+	&nuc970_device_ebi,
 #endif
 
 #ifdef CONFIG_USB_OHCI_HCD

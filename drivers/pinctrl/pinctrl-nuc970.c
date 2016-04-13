@@ -349,16 +349,56 @@ static const unsigned eint6_1_pin[] = {0x81};
 static const unsigned eint7_0_pin[] = {0x77};
 static const unsigned eint7_1_pin[] = {0x82};
 
-static const unsigned ebi0_pin[] = {0x38};  // nCS0
-static const unsigned ebi1_pin[] = {0x39};  // nCS1
-static const unsigned ebi2_pin[] = {0x3A};  // nCS2
-static const unsigned ebi3_pin[] = {0x3B};  // nCS3
-static const unsigned ebi4_pin[] = {0x3C};  // nCS4
-static const unsigned ebi_0_pin[] = {0x3D, 0x3E, 0x3F, 0x74, 0x75, 0x76, 0x77, 0x78,
-				     0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x80, 0x81, 0x82,
-				     0x83, 0x84, 0x85, 0x86, 0x87};  // 8-bit
-
-static const unsigned ebi_1_pin[] = {0x7E, 0x7F, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F};
+static const unsigned ebi8_0_pin[] = {0x38,  // nCS0
+				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                      0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
+static const unsigned ebi8_1_pin[] = {0x39,  // nCS1
+				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                      0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
+static const unsigned ebi8_2_pin[] = {0x3A,  // nCS2
+				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                      0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
+static const unsigned ebi8_3_pin[] = {0x3B,  // nCS3
+				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                      0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
+static const unsigned ebi8_4_pin[] = {0x3C,  // nCS4
+				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                      0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
+static const unsigned ebi16_0_pin[] = {0x38,  // nCS0
+				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				       0x7E, 0x7F, //nBE0,nBE1
+				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // data0~7
+                                       0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F}; //data8~15
+static const unsigned ebi16_1_pin[] = {0x39,  // nCS1
+				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				       0x7E, 0x7F, //nBE0,nBE1
+				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // data0~7
+                                       0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F}; //data8~15
+static const unsigned ebi16_2_pin[] = {0x3A,  // nCS2
+				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				       0x7E, 0x7F, //nBE0,nBE1
+				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // data0~7
+                                       0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F}; //data8~15
+static const unsigned ebi16_3_pin[] = {0x3B,  // nCS3
+				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				       0x7E, 0x7F, //nBE0,nBE1
+				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // data0~7
+                                       0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F}; //data8~15
+static const unsigned ebi16_4_pin[] = {0x3C,  // nCS4
+				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
+				       0x7E, 0x7F, //nBE0,nBE1
+				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
+                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,  // data0~7
+                                       0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F}; //data8~15
 // TODO: CKO
 
 static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
@@ -1228,45 +1268,63 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0xF,
 	},
 	{
-		.name = "ebi0_grp",
-		.pins = ebi0_pin,
-		.num_pins = ARRAY_SIZE(ebi0_pin),
+		.name = "ebi8_0_grp",
+		.pins = ebi8_0_pin,
+		.num_pins = ARRAY_SIZE(ebi8_0_pin),
 		.func = 0xE,
 	},
 	{
-		.name = "ebi1_grp",
-		.pins = ebi1_pin,
-		.num_pins = ARRAY_SIZE(ebi1_pin),
+		.name = "ebi8_1_grp",
+		.pins = ebi8_1_pin,
+		.num_pins = ARRAY_SIZE(ebi8_1_pin),
 		.func = 0xE,
 	},
 	{
-		.name = "ebi2_grp",
-		.pins = ebi2_pin,
-		.num_pins = ARRAY_SIZE(ebi2_pin),
+		.name = "ebi8_2_grp",
+		.pins = ebi8_2_pin,
+		.num_pins = ARRAY_SIZE(ebi8_2_pin),
 		.func = 0xE,
 	},
 	{
-		.name = "ebi3_grp",
-		.pins = ebi3_pin,
-		.num_pins = ARRAY_SIZE(ebi3_pin),
+		.name = "ebi8_3_grp",
+		.pins = ebi8_3_pin,
+		.num_pins = ARRAY_SIZE(ebi8_3_pin),
 		.func = 0xE,
 	},
 	{
-		.name = "ebi4_grp",
-		.pins = ebi4_pin,
-		.num_pins = ARRAY_SIZE(ebi4_pin),
-		.func = 0xF,
-	},
-	{
-		.name = "ebi_0_grp",
-		.pins = ebi_0_pin,
-		.num_pins = ARRAY_SIZE(ebi0_pin),
+		.name = "ebi8_4_grp",
+		.pins = ebi8_4_pin,
+		.num_pins = ARRAY_SIZE(ebi8_4_pin),
 		.func = 0xE,
 	},
 	{
-		.name = "ebi_1_grp",
-		.pins = ebi_1_pin,
-		.num_pins = ARRAY_SIZE(ebi_1_pin),
+		.name = "ebi16_0_grp",
+		.pins = ebi16_0_pin,
+		.num_pins = ARRAY_SIZE(ebi16_0_pin),
+		.func = 0xE,
+	},
+	{
+		.name = "ebi16_1_grp",
+		.pins = ebi16_1_pin,
+		.num_pins = ARRAY_SIZE(ebi16_1_pin),
+		.func = 0xE,
+	},
+	{
+		.name = "ebi16_2_grp",
+		.pins = ebi16_2_pin,
+		.num_pins = ARRAY_SIZE(ebi16_2_pin),
+		.func = 0xE,
+	},
+	{
+		.name = "ebi16_3_grp",
+		.pins = ebi16_3_pin,
+		.num_pins = ARRAY_SIZE(ebi16_3_pin),
+		.func = 0xE,
+	},
+	{
+		.name = "ebi16_4_grp",
+		.pins = ebi16_4_pin,
+		.num_pins = ARRAY_SIZE(ebi16_4_pin),
 		.func = 0xE,
 	},
 };
@@ -1379,14 +1437,17 @@ static const char * const eint4_groups[] = {"eint4_0_grp", "eint4_1_grp"};
 static const char * const eint5_groups[] = {"eint5_0_grp", "eint5_1_grp"};
 static const char * const eint6_groups[] = {"eint6_0_grp", "eint6_1_grp"};
 static const char * const eint7_groups[] = {"eint7_0_grp", "eint7_1_grp"};
-static const char * const ebi0_group[] = {"ebi0_grp"};
-static const char * const ebi1_group[] = {"ebi1_grp"};
-static const char * const ebi2_group[] = {"ebi2_grp"};
-static const char * const ebi3_group[] = {"ebi3_grp"};
-static const char * const ebi4_group[] = {"ebi4_grp"};
-static const char * const ebi_8_group[] = {"ebi_0_grp"};
-static const char * const ebi_16_group[] = {"ebi_1_grp"};
 
+static const char * const ebi8_0_groups[] = {"ebi8_0_grp"};
+static const char * const ebi8_1_groups[] = {"ebi8_1_grp"};
+static const char * const ebi8_2_groups[] = {"ebi8_2_grp"};
+static const char * const ebi8_3_groups[] = {"ebi8_3_grp"};
+static const char * const ebi8_4_groups[] = {"ebi8_4_grp"};;
+static const char * const ebi16_0_groups[] = {"ebi16_0_grp"};
+static const char * const ebi16_1_groups[] = {"ebi16_1_grp"};
+static const char * const ebi16_2_groups[] = {"ebi16_2_grp"};
+static const char * const ebi16_3_groups[] = {"ebi16_3_grp"};
+static const char * const ebi16_4_groups[] = {"ebi16_4_grp"};
 
 static const struct nuc970_pmx_func nuc970_functions[] = {
 	{
@@ -1770,40 +1831,56 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.num_groups = ARRAY_SIZE(eint7_groups),
 	},
 	{
-		.name = "ebi0",
-		.groups = ebi0_group,
-		.num_groups = ARRAY_SIZE(ebi0_group),
+		.name = "ebi_8_0",
+		.groups = ebi8_0_groups,
+		.num_groups = ARRAY_SIZE(ebi8_0_groups),
 	},
 	{
-		.name = "ebi1",
-		.groups = ebi1_group,
-		.num_groups = ARRAY_SIZE(ebi1_group),
+		.name = "ebi_8_1",
+		.groups = ebi8_1_groups,
+		.num_groups = ARRAY_SIZE(ebi8_1_groups),
 	},
 	{
-		.name = "ebi2",
-		.groups = ebi2_group,
-		.num_groups = ARRAY_SIZE(ebi2_group),
+		.name = "ebi_8_2",
+		.groups = ebi8_2_groups,
+		.num_groups = ARRAY_SIZE(ebi8_2_groups),
 	},
 	{
-		.name = "ebi3",
-		.groups = ebi3_group,
-		.num_groups = ARRAY_SIZE(ebi3_group),
+		.name = "ebi_8_3",
+		.groups = ebi8_3_groups,
+		.num_groups = ARRAY_SIZE(ebi8_3_groups),
 	},
 	{
-		.name = "ebi4",
-		.groups = ebi4_group,
-		.num_groups = ARRAY_SIZE(ebi4_group),
+		.name = "ebi_8_4",
+		.groups = ebi8_4_groups,
+		.num_groups = ARRAY_SIZE(ebi8_4_groups),
 	},
 	{
-		.name = "ebi_8",
-		.groups = ebi_8_group,
-		.num_groups = ARRAY_SIZE(ebi_8_group),
+		.name = "ebi_16_0",
+		.groups = ebi16_0_groups,
+		.num_groups = ARRAY_SIZE(ebi16_0_groups),
 	},
 	{
-		.name = "ebi_16",
-		.groups = ebi_16_group,
-		.num_groups = ARRAY_SIZE(ebi_16_group),
+		.name = "ebi_16_1",
+		.groups = ebi16_1_groups,
+		.num_groups = ARRAY_SIZE(ebi16_1_groups),
 	},
+	{
+		.name = "ebi_16_2",
+		.groups = ebi16_2_groups,
+		.num_groups = ARRAY_SIZE(ebi16_2_groups),
+	},
+	{
+		.name = "ebi_16_3",
+		.groups = ebi16_3_groups,
+		.num_groups = ARRAY_SIZE(ebi16_3_groups),
+	},	
+	{
+		.name = "ebi_16_4",
+		.groups = ebi16_4_groups,
+		.num_groups = ARRAY_SIZE(ebi16_4_groups),
+	},
+	
 };
 
 
@@ -3430,67 +3507,83 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi0",
+		.name = "ebi-8bit-0",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi0",
-		.data.mux.group = "ebi0_grp",
+		.data.mux.function = "ebi_8_0",
+		.data.mux.group = "ebi8_0_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi1",
+		.name = "ebi-8bit-1",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi1",
-		.data.mux.group = "ebi1_grp",
+		.data.mux.function = "ebi_8_1",
+		.data.mux.group = "ebi8_1_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi2",
+		.name = "ebi-8bit-2",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi2",
-		.data.mux.group = "ebi2_grp",
+		.data.mux.function = "ebi_8_2",
+		.data.mux.group = "ebi8_2_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi3",
+		.name = "ebi-8bit-3",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi3",
-		.data.mux.group = "ebi3_grp",
+		.data.mux.function = "ebi_8_3",
+		.data.mux.group = "ebi8_3_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi4",
+		.name = "ebi-8bit-4",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi4",
-		.data.mux.group = "ebi4_grp",
+		.data.mux.function = "ebi_8_4",
+		.data.mux.group = "ebi8_4_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi-8bit",
+		.name = "ebi-16bit-0",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi_8",
-		.data.mux.group = "ebi_0_grp",
+		.data.mux.function = "ebi_16_0",
+		.data.mux.group = "ebi16_0_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi-16bit",
+		.name = "ebi-16bit-1",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi_8",
-		.data.mux.group = "ebi_0_grp",
+		.data.mux.function = "ebi_16_1",
+		.data.mux.group = "ebi16_1_grp",
 	},
 	{
 		.dev_name = "nuc970-ebi",
-		.name = "ebi-16bit",
+		.name = "ebi-16bit-2",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "ebi_16",
-		.data.mux.group = "ebi_1_grp",
+		.data.mux.function = "ebi_16_2",
+		.data.mux.group = "ebi16_2_grp",
+	},
+	{
+		.dev_name = "nuc970-ebi",
+		.name = "ebi-16bit-3",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "ebi_16_3",
+		.data.mux.group = "ebi16_3_grp",
+	},
+	{
+		.dev_name = "nuc970-ebi",
+		.name = "ebi-16bit-4",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "ebi_16_4",
+		.data.mux.group = "ebi16_4_grp",
 	},
 };
 

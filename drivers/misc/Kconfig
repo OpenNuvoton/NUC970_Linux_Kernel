@@ -741,6 +741,16 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
+config NUC970_EBI
+        bool "NUC970 EBI driver"
+        depends on ARCH_NUC970
+        select GENERIC_ALLOCATOR
+        help
+        Driver for NUC970 EBI controller.
+        Used to configure the EBI (external bus interface) when the device-
+        tree is used. This bus supports external ethernet controller,
+        SRAMs etc.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
