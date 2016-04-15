@@ -1198,6 +1198,7 @@ MODULE_LICENSE ("GPL");
 
 #ifdef CONFIG_USB_NUC970_OHCI
 #include "ohci-nuc970.c"
+#define PLATFORM_DRIVER		ohci_hcd_nuc970_driver
 #endif
 
 #if	!defined(PCI_DRIVER) &&		\
