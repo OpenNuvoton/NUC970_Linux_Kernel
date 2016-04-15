@@ -41,6 +41,13 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
                 return -1;
         }
 
+        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_enable(clk_get(NULL, "usb_eclk"));
+
+        /* enable USB Host clock */
+        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+        clk_enable(clk_get(NULL, "usbh_hclk"));
+		
 #if !defined(CONFIG_USB_NUC970_EHCI)
 
 		/* multi-function pin select */
@@ -83,14 +90,6 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 
 #endif   // !CONFIG_USB_NUC970_EHCI
 
-        clk_prepare(clk_get(NULL, "usb_eclk"));	
-        clk_enable(clk_get(NULL, "usb_eclk"));
-
-        /* enable USB Host clock */
-        clk_prepare(clk_get(NULL, "usbh_hclk"));	
-        clk_enable(clk_get(NULL, "usbh_hclk"));
-		
-		
 		clkmux = clk_get(NULL, "usb_eclk_mux");
         if (IS_ERR(clkmux)) {
 			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
@@ -119,7 +118,7 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 			ret = PTR_ERR(clkusb);
 			return ret;
 		}
-		
+
 		clk_prepare(clkusb);	
         clk_enable(clkusb);
         
@@ -151,6 +150,8 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
                 retval = -ENOMEM;
                 goto err2;
         }
+
+printk("0x204 = 0x%x\n", __raw_readl(NUC970_VA_OHCI+0x204));
 
         ohci = hcd_to_ohci(hcd);
         ohci_hcd_init(ohci);
@@ -293,15 +294,15 @@ static struct platform_driver ohci_hcd_nuc970_driver = {
         },
 };
 
-static int __init ohci_hcd_nuc970_init(void)
-{
+//static int __init ohci_hcd_nuc970_init(void)
+//{
+//
+//	return platform_driver_register(&ohci_hcd_nuc970_driver);
+//}
 
-	return platform_driver_register(&ohci_hcd_nuc970_driver);
-}
-
-static void __exit ohci_hcd_nuc970_cleanup(void)
-{
-	platform_driver_unregister(&ohci_hcd_nuc970_driver);
-}
-module_init(ohci_hcd_nuc970_init);
-module_exit(ohci_hcd_nuc970_cleanup);
+//static void __exit ohci_hcd_nuc970_cleanup(void)
+//{
+//	platform_driver_unregister(&ohci_hcd_nuc970_driver);
+//}
+//module_init(ohci_hcd_nuc970_init);
+//module_exit(ohci_hcd_nuc970_cleanup);

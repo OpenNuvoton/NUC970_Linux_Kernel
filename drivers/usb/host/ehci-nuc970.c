@@ -37,6 +37,13 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
                 return -1;
         }
 
+		/* Enable USB Host clock */
+        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_enable(clk_get(NULL, "usb_eclk"));
+        
+        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+        clk_enable(clk_get(NULL, "usbh_hclk"));
+
 		/* multi-function pin select */
 #if defined (CONFIG_NUC970_USBH_PWR_PE)
         /* set over-current active low */
@@ -49,6 +56,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	dev_err(&pdev->dev, "unable to reserve pin\n");
         	retval = PTR_ERR(p);
     	}
+
 #elif defined (CONFIG_NUC970_USBH_PWR_PF)
         /* set over-current active low */
         __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
@@ -74,12 +82,6 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         /* set over-current active high */
         __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 #endif
-		/* Enable USB Host clock */
-        clk_prepare(clk_get(NULL, "usb_eclk"));	
-        clk_enable(clk_get(NULL, "usb_eclk"));
-        
-        clk_prepare(clk_get(NULL, "usbh_hclk"));	
-        clk_enable(clk_get(NULL, "usbh_hclk"));
 
         if (pdev->resource[1].flags != IORESOURCE_IRQ) {
                 pr_debug("resource[1] is not IORESOURCE_IRQ");
@@ -120,7 +122,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         /* cache this readonly data; minimize chip reads */
         ehci->hcs_params = readl(&ehci->caps->hcs_params);
         ehci->sbrn = 0x20;
-
+        
         retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
 
         if (retval != 0)
