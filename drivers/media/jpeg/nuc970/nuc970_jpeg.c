@@ -1276,6 +1276,17 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			return -ENODEV;
 #endif        	
             
+        case JPEG_GET_JPEG_FB:
+		{
+			u32 fb_bufferaddr = readl(NUC970_VA_LCD + REG_LCM_VA_BADDR0);
+			if (copy_to_user((void*)arg, (void *)&fb_bufferaddr, sizeof(fb_bufferaddr))) 
+			{
+				ret = -EFAULT;
+				break;
+			}
+			break;
+        }
+
         case JPEG_G_PARAM:
             param.vaddr_src = priv->vaddr_src;
             param.vaddr_dst = priv->vaddr_dst;
@@ -1494,380 +1505,9 @@ static void  jpegcodec_bh(struct work_struct *work)
     /* Get the interrupt status */       
     u32interruptStatus = priv->irq_status; 
         
-    if (u32interruptStatus & DHE_INTS)
-    {
-        __u16 u16Width,UVWidth,UVHeight, height;
-    
-        /* Get the JPEG format */
-        priv->yuvformat = _DRVJPEG_DEC_GET_DECODED_IMAGE_FORMAT();
-        /* Get the decoded image dimension */
-        nuc970_jpeg_GetDecodedDimension((__u16*)&priv->height,(__u16*)&priv->width);    
 
-        current_data_row = 0;
-    
-        total_data_row = priv->height;
-        if ((total_data_row % 2) && priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_YUV422)
-        total_data_row++;
-
-        //printk("<Header Decode Complete> -> %d x %d  JINTCR 0x%X JITCR 0x%X JDOWFBS 0x%X\n", priv->width, priv->height,readl(REG_JINTCR), readl(REG_JITCR),readl(REG_JDOWFBS) );  
-
-        if (priv->windec_en) 
-        {
-            int max_mcux,max_mcuy;
-            max_mcux = priv->width/16-1;
-            max_mcuy = priv->height/16-1;
-            if (priv->windec_mcux_end > max_mcux || priv->windec_mcuy_end > max_mcuy)    
-            {
-                priv->state = JPEG_DECODE_PARAM_ERROR;
-                nuc970_jpeg_init();
-                enc_reserved_size = 0;
-                enc_reserved = 0;
-                enc_buffer_from_user = 0;
-                jpeg_thumbnail_size = 0;
-                jpeg_thumbnail_bitstreamsize = 0;
-                jpeg_thumbnail_offset = 0;  
-                enc_thumbnail = 0;
-                priv->decopw_en = 0;
-                priv->decopw_tcount = 0;
-                priv->decopw_end = 0;
-                writel(0x2, REG_JMCR);
-                writel(0, REG_JMCR);
-                wake_up_interruptible(&jpeg_wq);
-            }
-        }
-
-        if (priv->scale)
-        {
-            u16 u16RatioH,u16RatioW,orignal_width,orignal_height;   
-            u32 output;
-            
-            if (priv->decode_output_format != DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
-                    output = DRVJPEG_DEC_PACKET_DOWNSCALE_MODE;
-            else
-                output = DRVJPEG_DEC_PLANAR_DOWNSCALE_MODE;
-            
-            if (priv->windec_en)
-            {
-                if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
-                {
-                    priv->state = JPEG_DECODE_PARAM_ERROR;
-                    nuc970_jpeg_init();
-                    enc_reserved_size = 0;
-                    enc_reserved = 0;
-                    enc_buffer_from_user = 0;
-                    jpeg_thumbnail_size = 0;
-                    jpeg_thumbnail_bitstreamsize = 0;
-                    jpeg_thumbnail_offset = 0;  
-                    enc_thumbnail = 0;
-                    priv->decopw_en = 0;
-                    priv->decopw_tcount = 0;
-                    priv->decopw_end = 0;
-                    writel(0x2, REG_JMCR);
-                    writel(0, REG_JMCR);
-                    wake_up_interruptible(&jpeg_wq);
-                }
-                orignal_height = Windec_height;
-                orignal_width = Windec_width;
-            }
-            else
-            {
-                orignal_height = priv->height;
-                orignal_width = priv->width;
-            }       
-
-            if (nuc970_jpeg_CalScalingFactor(
-                    output ,            //Up / Down Scaling
-                    orignal_height,             //Original Height
-                    orignal_width,              //Original Width
-                    priv->scaled_height,            //Scaled Height
-                    priv->scaled_width,         //Scaled Width
-                    &u16RatioH,             //Horizontal Ratio
-                    &u16RatioW              //Vertical Ratio
-                    ) != 0)
-            {
-                //printf("Downscale Fail\n");
-                priv->state = JPEG_DECODE_PARAM_ERROR;
-                nuc970_jpeg_init();
-                enc_reserved_size = 0;
-                enc_reserved = 0;
-                enc_buffer_from_user = 0;
-                jpeg_thumbnail_size = 0;
-                jpeg_thumbnail_bitstreamsize = 0;
-                jpeg_thumbnail_offset = 0;  
-                enc_thumbnail = 0;
-                priv->decopw_en = 0;
-                priv->decopw_tcount = 0;
-                priv->decopw_end = 0;
-                writel(0x2, REG_JMCR);
-                writel(0, REG_JMCR);
-                wake_up_interruptible(&jpeg_wq);
-            }
-            else
-            {
-                //printf("Downscale OK\n");
-                nuc970_jpeg_SetScalingFactor(output,u16RatioH,u16RatioW);
-                priv->width = priv->scaled_width;
-                priv->height = priv->scaled_height;
-                if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
-                {
-                    if (priv->width % 2) 
-                        UVWidth = priv->width / 2 + 1;       
-                    else
-                        UVWidth = priv->width / 2;
-                    UVHeight = height = priv->height;   
-                    
-                    /* Sets the height of U and V for YUV420 image */    
-                    if ((priv->yuvformat == DRVJPEG_DEC_YUV420)|| (priv->yuvformat == DRVJPEG_DEC_YUV422T))
-                    {
-                        if (height % 2)
-                        {
-                            UVHeight = height / 2 + 1;
-                            height++;            
-                        }    
-                        else
-                            UVHeight = height / 2;            
-                    }
-                    _DRVJPEG_SET_UADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height);
-                    _DRVJPEG_SET_VADDR(priv->paddr + priv->src_bufsize  + priv->width * priv->height + UVWidth * UVHeight); 
-                    g_JPEG_RAW_SIZE = priv->width * priv->height + 2 * UVWidth * UVHeight;              
-                    priv->dec_stride = 0;   
-                }
-            }
-        }
-        else
-        {
-            if (priv->yuvformat == DRVJPEG_DEC_YUV411)   
-            {
-                /* 32-pixel alignment for YUV411 raw data */
-                if (priv->width % 32)
-                    priv->width = (priv->width & 0xFFFFFFE0) + 32;
-            }
-            else if ((priv->yuvformat == DRVJPEG_DEC_YUV444) || (priv->yuvformat == DRVJPEG_DEC_YUV422T))
-            {
-                /* 8-pixel alignment for YUV444 raw data */
-                if (priv->width % 8)
-                    priv->width = (priv->width & 0xFFFFFFF8) + 8;
-            }
-            else
-            {
-                /* 16-pixel alignment for YUV422 or YUV420 raw data */
-                if (priv->width % 16)
-                    priv->width = (priv->width & 0xFFFFFFF0) + 16;
-            }
-            
-            if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
-            {
-                if (priv->yuvformat == DRVJPEG_DEC_YUV411)
-                {   /* For YUV411 raw data */
-                    UVWidth = priv->width/4;        
-                }
-                else if ((priv->yuvformat == DRVJPEG_DEC_YUV444) || (priv->yuvformat == DRVJPEG_DEC_YUV422T))
-                {   /* For YUV444 raw data */   
-                    UVWidth = priv->width;
-                }
-                /* Set the U-component and V-componente width for YUV422 or YUV420 raw data */         
-                else if (priv->width % 2) 
-                    UVWidth = priv->width / 2 + 1;       
-                else
-                    UVWidth = priv->width / 2;
-                
-                UVHeight = height = priv->height;   
-            
-                /* Sets the height of U and V for YUV420 image */
-                if (priv->yuvformat == DRVJPEG_DEC_YUV420)
-                {
-                    /* 16-pixel alignment for YUV422 or YUV420 raw data */
-                    if (priv->height % 16)
-                        priv->height = (priv->height & 0xFFFFFFF0) + 16;            
-                    UVHeight = priv->height / 2;
-                }
-                else if (priv->yuvformat == DRVJPEG_DEC_YUV422)
-                {
-                    /* 8-pixel alignment for YUV444 raw data */
-                    if( priv->height % 8)
-                        priv->height = (priv->height & 0xFFFFFFF8) + 8; 
-                    UVHeight = priv->height;                
-                }
-                else if (priv->yuvformat == DRVJPEG_DEC_YUV444)
-                {
-                    /* 8-pixel alignment for YUV444 raw data */
-                    if (priv->height % 8)
-                        priv->height = (priv->height & 0xFFFFFFF8) + 8; 
-                    UVHeight = priv->height;                
-                }   
-                else if (priv->yuvformat == DRVJPEG_DEC_YUV411)
-                {
-                    /* 8-pixel alignment for YUV444 raw data */
-                    if (priv->height % 8)
-                        priv->height = (priv->height & 0xFFFFFFF8) + 8; 
-                    UVHeight = priv->height;        
-                }
-                else if (priv->yuvformat == DRVJPEG_DEC_YUV422T)
-                {
-                    /* 16-pixel alignment for YUV422 or YUV420 raw data */
-                    if(priv->height % 16)
-                        priv->height = (priv->height & 0xFFFFFFF0) + 16;                    
-                    UVHeight = priv->height / 2;
-                }
-                else
-                {
-                    /* 8-pixel alignment for raw data */
-                    if(priv->height % 8)
-                        priv->height = (priv->height & 0xFFFFFFF8) + 8;             
-                    UVHeight = priv->height;
-                }
-                _DRVJPEG_SET_UADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height);
-                _DRVJPEG_SET_VADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height + UVWidth * UVHeight);
-                g_JPEG_RAW_SIZE = priv->width * priv->height + 2 * UVWidth * UVHeight;
-                priv->dec_stride = 0;
-            }
-        }
-        
-        jpeg_align_width = priv->width;
-        if (jpeg_width > jpeg_align_width)
-            jpeg_width = jpeg_align_width;
-
-        if (priv->dec_stride >= priv->width)
-        {
-            priv->dec_stride = priv->dec_stride - priv->width;
-            _DRVJPEG_SET_YSTRIDE(priv->dec_stride);
-            u16Width = priv->width + priv->dec_stride; 
-        }
-        else
-        {
-            _DRVJPEG_SET_YSTRIDE(0);   
-            priv->dec_stride = 0;
-            u16Width = priv->width;
-        }
-    
-        /* Set the image dimension */   
-        nuc970_jpeg_SetDimension(priv->height, u16Width);     
-
-        //printk("priv->decopw_en -> %d\n", priv->decopw_en);
-        if (priv->decopw_en)
-        {
-            __u32   u32BufferSize,height;
-
-            priv->decopw_mcuy = priv->height / 16 - 1;
-            if ((priv->height % 16) != 0)
-            {
-                priv->decopw_mcuy++;    
-                height = (priv->height & 0xFFFFFFF0) + 16;
-            }
-            else
-                height = priv->height;
-        
-            priv->decopw_mcux = u16Width / 16 - 1;
-
-            if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
-            {
-                u32BufferSize =/* (CONFIG_JPEG_CODEC_BUFFER_SIZE - priv->src_bufsize )*/priv->dst_bufsize  / u16Width / 4;  
-                priv->decopw_tmcuynum = u32BufferSize  / 16;
-                if (priv->decopw_tmcuynum > priv->decopw_mcuy)
-                    priv->decopw_tmcuynum = priv->decopw_mcuy;
-                priv->decopw_tsize =  u16Width * priv->decopw_tmcuynum * 16 * 4;
-                TotalDataSize = height * u16Width * 4;  
-            }
-            else
-            {
-                u32BufferSize = /*(CONFIG_JPEG_CODEC_BUFFER_SIZE - priv->src_bufsize )*/priv->dst_bufsize  / u16Width / 2;
-                priv->decopw_tmcuynum = u32BufferSize  / 16;
-                if (priv->decopw_tmcuynum > priv->decopw_mcuy)
-                    priv->decopw_tmcuynum = priv->decopw_mcuy;
-                priv->decopw_tsize =  u16Width * priv->decopw_tmcuynum * 16 * 2;
-                TotalDataSize = height * u16Width * 2;  
-            }
-            priv->decopw_tnum = TotalDataSize / priv->decopw_tsize ;
-        
-            if ((TotalBufferSize % priv->decopw_tsize)  != 0)            
-                priv->decopw_tnum++; 
-
-            if (priv->decopw_tsize > TotalDataSize)
-                writel(TotalDataSize/4, REG_JDOWFBS);
-            else
-                writel(priv->decopw_tsize/4, REG_JDOWFBS);
-        
-            //printk("<First Trigger in DHE 0x%X>\n",readl(REG_JDOWFBS) * 4);
-            //printk("  <Remaining 0x%X>\n",TotalDataSize);
-            if (u32BufferSize < 1)
-            {
-                printk("Config Buffer size is 0x%X\nNeed Buffer size is 0x%X\n",CONFIG_JPEG_CODEC_BUFFER_SIZE, u32BufferSize);
-                priv->state = JPEG_MEM_SHORTAGE;
-                nuc970_jpeg_init();
-                enc_reserved_size = 0;
-                enc_reserved = 0;
-                enc_buffer_from_user = 0;
-                jpeg_thumbnail_size = 0;
-                jpeg_thumbnail_bitstreamsize = 0;
-                jpeg_thumbnail_offset = 0;
-                enc_thumbnail = 0;
-                priv->decopw_en = 0;
-                priv->decopw_tcount = 0;
-                priv->decopw_end = 0;
-                wake_up_interruptible(&jpeg_wq);
-            }
-            else
-            {
-                priv->state = JPEG_DECODED_HEADER;  
-                nuc970_jpeg_GetDecodedDimension((__u16*)&priv->height,(__u16*)&priv->width);    
-                if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_YUV422 && priv->width % 2)
-                    priv->width++;              
-                writel(readl(REG_JITCR) | BIT18, REG_JITCR);
-            }
-        }
-        else
-        {
-            if (priv->windec_en)
-            {
-                if (priv->scale)
-                    u32BufferSize = priv->scaled_width * priv->scaled_height;   
-                else
-                    u32BufferSize  = 16 * (priv->windec_mcux_end - priv->windec_mcux_start + 1) * 16 * (priv->windec_mcuy_end - priv->windec_mcuy_start + 1);
-                
-                if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
-                    u32BufferSize = priv->src_bufsize + u32BufferSize  * 4;
-                else
-                    u32BufferSize = priv->src_bufsize + u32BufferSize  * 2;
-            }
-            else
-            {
-                if (priv->paddr_dst == 0)
-                {
-                    if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
-                        u32BufferSize = priv->src_bufsize + priv->height * u16Width * 4;
-                    else
-                        u32BufferSize = priv->src_bufsize + priv->height * u16Width * 2;
-                }
-                else
-                {
-                    u32BufferSize = priv->src_bufsize;
-                }
-            } 
-
-            if (u32BufferSize  > CONFIG_JPEG_CODEC_BUFFER_SIZE)
-            {
-                printk("Config Buffer size is 0x%X\nNeed Buffer size is 0x%X\n",CONFIG_JPEG_CODEC_BUFFER_SIZE, u32BufferSize);
-                priv->state = JPEG_MEM_SHORTAGE;
-                nuc970_jpeg_init();
-                enc_reserved_size =0;
-                enc_buffer_from_user = 0;
-                jpeg_thumbnail_size = 0;
-                jpeg_thumbnail_bitstreamsize = 0;
-                jpeg_thumbnail_offset = 0;
-                enc_thumbnail = 0;
-                priv->decopw_en = 0;
-                priv->decopw_tcount = 0;
-                priv->decopw_end = 0;
-                wake_up_interruptible(&jpeg_wq);
-            }
-            else
-                priv->state = JPEG_DECODED_HEADER;          
-        }
-        /* Clear interrupt status */  
-        _DRVJPEG_CLEAR_INT(DHE_INTS);
-    }
     /* It's Encode Complete Interrupt */
-    else if (u32interruptStatus & ENC_INTS)
+    if (u32interruptStatus & ENC_INTS)
     {   
         //printk("Encode Complete\n");
     
@@ -2262,14 +1902,388 @@ static irqreturn_t jpegirq_handler(int irq, void *dev_id, struct pt_regs *r)
 {
     jpeg_priv_t *priv = (jpeg_priv_t *)dev_id;
     __u32 u32interruptStatus;
+    __u32 u32BufferSize;
     
     /* Get the interrupt status */       
     u32interruptStatus = _DRVJPEG_GET_INT_STATUS();
 
-    if (u32interruptStatus & (DHE_INTS | DOW_INTS| DEC_INTS | ENC_INTS))
+
+    if (u32interruptStatus & DHE_INTS)
+    {
+				__u16 u16Width,UVWidth,UVHeight, height;
+			
+				/* Get the JPEG format */
+				priv->yuvformat = _DRVJPEG_DEC_GET_DECODED_IMAGE_FORMAT();
+				/* Get the decoded image dimension */
+				nuc970_jpeg_GetDecodedDimension((__u16*)&priv->height,(__u16*)&priv->width);	
+		
+				current_data_row = 0;
+			
+				total_data_row = priv->height;
+				if ((total_data_row % 2) && priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_YUV422)
+				total_data_row++;
+		
+				//printk("<Header Decode Complete> -> %d x %d  JINTCR 0x%X JITCR 0x%X JDOWFBS 0x%X\n", priv->width, priv->height,readl(REG_JINTCR), readl(REG_JITCR),readl(REG_JDOWFBS) );	
+		
+				if (priv->windec_en) 
+				{
+					int max_mcux,max_mcuy;
+					max_mcux = priv->width/16-1;
+					max_mcuy = priv->height/16-1;
+					if (priv->windec_mcux_end > max_mcux || priv->windec_mcuy_end > max_mcuy)	 
+					{
+						priv->state = JPEG_DECODE_PARAM_ERROR;
+						nuc970_jpeg_init();
+						enc_reserved_size = 0;
+						enc_reserved = 0;
+						enc_buffer_from_user = 0;
+						jpeg_thumbnail_size = 0;
+						jpeg_thumbnail_bitstreamsize = 0;
+						jpeg_thumbnail_offset = 0;	
+						enc_thumbnail = 0;
+						priv->decopw_en = 0;
+						priv->decopw_tcount = 0;
+						priv->decopw_end = 0;
+						writel(0x2, REG_JMCR);
+						writel(0, REG_JMCR);
+						wake_up_interruptible(&jpeg_wq);
+					}
+				}
+		
+				if (priv->scale)
+				{
+					u16 u16RatioH,u16RatioW,orignal_width,orignal_height;	
+					u32 output;
+					
+					if (priv->decode_output_format != DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
+							output = DRVJPEG_DEC_PACKET_DOWNSCALE_MODE;
+					else
+						output = DRVJPEG_DEC_PLANAR_DOWNSCALE_MODE;
+					
+					if (priv->windec_en)
+					{
+						if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
+						{
+							priv->state = JPEG_DECODE_PARAM_ERROR;
+							nuc970_jpeg_init();
+							enc_reserved_size = 0;
+							enc_reserved = 0;
+							enc_buffer_from_user = 0;
+							jpeg_thumbnail_size = 0;
+							jpeg_thumbnail_bitstreamsize = 0;
+							jpeg_thumbnail_offset = 0;	
+							enc_thumbnail = 0;
+							priv->decopw_en = 0;
+							priv->decopw_tcount = 0;
+							priv->decopw_end = 0;
+							writel(0x2, REG_JMCR);
+							writel(0, REG_JMCR);
+							wake_up_interruptible(&jpeg_wq);
+						}
+						orignal_height = Windec_height;
+						orignal_width = Windec_width;
+					}
+					else
+					{
+						orignal_height = priv->height;
+						orignal_width = priv->width;
+					}		
+		
+					if (nuc970_jpeg_CalScalingFactor(
+							output ,			//Up / Down Scaling
+							orignal_height, 			//Original Height
+							orignal_width,				//Original Width
+							priv->scaled_height,			//Scaled Height
+							priv->scaled_width, 		//Scaled Width
+							&u16RatioH, 			//Horizontal Ratio
+							&u16RatioW				//Vertical Ratio
+							) != 0)
+					{
+						//printf("Downscale Fail\n");
+						priv->state = JPEG_DECODE_PARAM_ERROR;
+						nuc970_jpeg_init();
+						enc_reserved_size = 0;
+						enc_reserved = 0;
+						enc_buffer_from_user = 0;
+						jpeg_thumbnail_size = 0;
+						jpeg_thumbnail_bitstreamsize = 0;
+						jpeg_thumbnail_offset = 0;	
+						enc_thumbnail = 0;
+						priv->decopw_en = 0;
+						priv->decopw_tcount = 0;
+						priv->decopw_end = 0;
+						writel(0x2, REG_JMCR);
+						writel(0, REG_JMCR);
+						wake_up_interruptible(&jpeg_wq);
+					}
+					else
+					{
+						//printf("Downscale OK\n");
+						nuc970_jpeg_SetScalingFactor(output,u16RatioH,u16RatioW);
+						priv->width = priv->scaled_width;
+						priv->height = priv->scaled_height;
+						if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
+						{
+							if (priv->width % 2) 
+								UVWidth = priv->width / 2 + 1;		 
+							else
+								UVWidth = priv->width / 2;
+							UVHeight = height = priv->height;	
+							
+							/* Sets the height of U and V for YUV420 image */	 
+							if ((priv->yuvformat == DRVJPEG_DEC_YUV420)|| (priv->yuvformat == DRVJPEG_DEC_YUV422T))
+							{
+								if (height % 2)
+								{
+									UVHeight = height / 2 + 1;
+									height++;			 
+								}	 
+								else
+									UVHeight = height / 2;			  
+							}
+							_DRVJPEG_SET_UADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height);
+							_DRVJPEG_SET_VADDR(priv->paddr + priv->src_bufsize	+ priv->width * priv->height + UVWidth * UVHeight); 
+							g_JPEG_RAW_SIZE = priv->width * priv->height + 2 * UVWidth * UVHeight;				
+							priv->dec_stride = 0;	
+						}
+					}
+				}
+				else
+				{
+					if (priv->yuvformat == DRVJPEG_DEC_YUV411)	 
+					{
+						/* 32-pixel alignment for YUV411 raw data */
+						if (priv->width % 32)
+							priv->width = (priv->width & 0xFFFFFFE0) + 32;
+					}
+					else if ((priv->yuvformat == DRVJPEG_DEC_YUV444) || (priv->yuvformat == DRVJPEG_DEC_YUV422T))
+					{
+						/* 8-pixel alignment for YUV444 raw data */
+						if (priv->width % 8)
+							priv->width = (priv->width & 0xFFFFFFF8) + 8;
+					}
+					else
+					{
+						/* 16-pixel alignment for YUV422 or YUV420 raw data */
+						if (priv->width % 16)
+							priv->width = (priv->width & 0xFFFFFFF0) + 16;
+					}
+					
+					if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PLANAR_YUV)
+					{
+						if (priv->yuvformat == DRVJPEG_DEC_YUV411)
+						{	/* For YUV411 raw data */
+							UVWidth = priv->width/4;		
+						}
+						else if ((priv->yuvformat == DRVJPEG_DEC_YUV444) || (priv->yuvformat == DRVJPEG_DEC_YUV422T))
+						{	/* For YUV444 raw data */	
+							UVWidth = priv->width;
+						}
+						/* Set the U-component and V-componente width for YUV422 or YUV420 raw data */		   
+						else if (priv->width % 2) 
+							UVWidth = priv->width / 2 + 1;		 
+						else
+							UVWidth = priv->width / 2;
+						
+						UVHeight = height = priv->height;	
+					
+						/* Sets the height of U and V for YUV420 image */
+						if (priv->yuvformat == DRVJPEG_DEC_YUV420)
+						{
+							/* 16-pixel alignment for YUV422 or YUV420 raw data */
+							if (priv->height % 16)
+								priv->height = (priv->height & 0xFFFFFFF0) + 16;			
+							UVHeight = priv->height / 2;
+						}
+						else if (priv->yuvformat == DRVJPEG_DEC_YUV422)
+						{
+							/* 8-pixel alignment for YUV444 raw data */
+							if( priv->height % 8)
+								priv->height = (priv->height & 0xFFFFFFF8) + 8; 
+							UVHeight = priv->height;				
+						}
+						else if (priv->yuvformat == DRVJPEG_DEC_YUV444)
+						{
+							/* 8-pixel alignment for YUV444 raw data */
+							if (priv->height % 8)
+								priv->height = (priv->height & 0xFFFFFFF8) + 8; 
+							UVHeight = priv->height;				
+						}	
+						else if (priv->yuvformat == DRVJPEG_DEC_YUV411)
+						{
+							/* 8-pixel alignment for YUV444 raw data */
+							if (priv->height % 8)
+								priv->height = (priv->height & 0xFFFFFFF8) + 8; 
+							UVHeight = priv->height;		
+						}
+						else if (priv->yuvformat == DRVJPEG_DEC_YUV422T)
+						{
+							/* 16-pixel alignment for YUV422 or YUV420 raw data */
+							if(priv->height % 16)
+								priv->height = (priv->height & 0xFFFFFFF0) + 16;					
+							UVHeight = priv->height / 2;
+						}
+						else
+						{
+							/* 8-pixel alignment for raw data */
+							if(priv->height % 8)
+								priv->height = (priv->height & 0xFFFFFFF8) + 8; 			
+							UVHeight = priv->height;
+						}
+						_DRVJPEG_SET_UADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height);
+						_DRVJPEG_SET_VADDR(priv->paddr + priv->src_bufsize + priv->width * priv->height + UVWidth * UVHeight);
+						g_JPEG_RAW_SIZE = priv->width * priv->height + 2 * UVWidth * UVHeight;
+						priv->dec_stride = 0;
+					}
+				}
+				
+				jpeg_align_width = priv->width;
+				if (jpeg_width > jpeg_align_width)
+					jpeg_width = jpeg_align_width;
+		
+				if (priv->dec_stride >= priv->width)
+				{
+					priv->dec_stride = priv->dec_stride - priv->width;
+					_DRVJPEG_SET_YSTRIDE(priv->dec_stride);
+					u16Width = priv->width + priv->dec_stride; 
+				}
+				else
+				{
+					_DRVJPEG_SET_YSTRIDE(0);   
+					priv->dec_stride = 0;
+					u16Width = priv->width;
+				}
+			
+				/* Set the image dimension */	
+				nuc970_jpeg_SetDimension(priv->height, u16Width);	  
+		
+				//printk("priv->decopw_en -> %d\n", priv->decopw_en);
+				if (priv->decopw_en)
+				{
+					__u32	u32BufferSize,height;
+		
+					priv->decopw_mcuy = priv->height / 16 - 1;
+					if ((priv->height % 16) != 0)
+					{
+						priv->decopw_mcuy++;	
+						height = (priv->height & 0xFFFFFFF0) + 16;
+					}
+					else
+						height = priv->height;
+				
+					priv->decopw_mcux = u16Width / 16 - 1;
+		
+					if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
+					{
+						u32BufferSize =/* (CONFIG_JPEG_CODEC_BUFFER_SIZE - priv->src_bufsize )*/priv->dst_bufsize  / u16Width / 4;	
+						priv->decopw_tmcuynum = u32BufferSize  / 16;
+						if (priv->decopw_tmcuynum > priv->decopw_mcuy)
+							priv->decopw_tmcuynum = priv->decopw_mcuy;
+						priv->decopw_tsize =  u16Width * priv->decopw_tmcuynum * 16 * 4;
+						TotalDataSize = height * u16Width * 4;	
+					}
+					else
+					{
+						u32BufferSize = /*(CONFIG_JPEG_CODEC_BUFFER_SIZE - priv->src_bufsize )*/priv->dst_bufsize  / u16Width / 2;
+						priv->decopw_tmcuynum = u32BufferSize  / 16;
+						if (priv->decopw_tmcuynum > priv->decopw_mcuy)
+							priv->decopw_tmcuynum = priv->decopw_mcuy;
+						priv->decopw_tsize =  u16Width * priv->decopw_tmcuynum * 16 * 2;
+						TotalDataSize = height * u16Width * 2;	
+					}
+					priv->decopw_tnum = TotalDataSize / priv->decopw_tsize ;
+				
+					if ((TotalBufferSize % priv->decopw_tsize)	!= 0)			 
+						priv->decopw_tnum++; 
+		
+					if (priv->decopw_tsize > TotalDataSize)
+						writel(TotalDataSize/4, REG_JDOWFBS);
+					else
+						writel(priv->decopw_tsize/4, REG_JDOWFBS);
+				
+					//printk("<First Trigger in DHE 0x%X>\n",readl(REG_JDOWFBS) * 4);
+					//printk("	<Remaining 0x%X>\n",TotalDataSize);
+					if (u32BufferSize < 1)
+					{
+						printk("Config Buffer size is 0x%X\nNeed Buffer size is 0x%X\n",CONFIG_JPEG_CODEC_BUFFER_SIZE, u32BufferSize);
+						priv->state = JPEG_MEM_SHORTAGE;
+						nuc970_jpeg_init();
+						enc_reserved_size = 0;
+						enc_reserved = 0;
+						enc_buffer_from_user = 0;
+						jpeg_thumbnail_size = 0;
+						jpeg_thumbnail_bitstreamsize = 0;
+						jpeg_thumbnail_offset = 0;
+						enc_thumbnail = 0;
+						priv->decopw_en = 0;
+						priv->decopw_tcount = 0;
+						priv->decopw_end = 0;
+						wake_up_interruptible(&jpeg_wq);
+					}
+					else
+					{
+						priv->state = JPEG_DECODED_HEADER;	
+						nuc970_jpeg_GetDecodedDimension((__u16*)&priv->height,(__u16*)&priv->width);	
+						if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_YUV422 && priv->width % 2)
+							priv->width++;				
+						writel(readl(REG_JITCR) | BIT18, REG_JITCR);
+					}
+				}
+				else
+				{
+					if (priv->windec_en)
+					{
+						if (priv->scale)
+							u32BufferSize = priv->scaled_width * priv->scaled_height;	
+						else
+							u32BufferSize  = 16 * (priv->windec_mcux_end - priv->windec_mcux_start + 1) * 16 * (priv->windec_mcuy_end - priv->windec_mcuy_start + 1);
+						
+						if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
+							u32BufferSize = priv->src_bufsize + u32BufferSize  * 4;
+						else
+							u32BufferSize = priv->src_bufsize + u32BufferSize  * 2;
+					}
+					else
+					{
+						if (priv->paddr_dst == 0)
+						{
+							if (priv->decode_output_format == DRVJPEG_DEC_PRIMARY_PACKET_RGB888)
+								u32BufferSize = priv->src_bufsize + priv->height * u16Width * 4;
+							else
+								u32BufferSize = priv->src_bufsize + priv->height * u16Width * 2;
+						}
+						else
+						{
+							u32BufferSize = priv->src_bufsize;
+						}
+					} 
+		
+					if (u32BufferSize  > CONFIG_JPEG_CODEC_BUFFER_SIZE)
+					{
+						printk("Config Buffer size is 0x%X\nNeed Buffer size is 0x%X\n",CONFIG_JPEG_CODEC_BUFFER_SIZE, u32BufferSize);
+						priv->state = JPEG_MEM_SHORTAGE;
+						nuc970_jpeg_init();
+						enc_reserved_size =0;
+						enc_buffer_from_user = 0;
+						jpeg_thumbnail_size = 0;
+						jpeg_thumbnail_bitstreamsize = 0;
+						jpeg_thumbnail_offset = 0;
+						enc_thumbnail = 0;
+						priv->decopw_en = 0;
+						priv->decopw_tcount = 0;
+						priv->decopw_end = 0;
+						wake_up_interruptible(&jpeg_wq);
+					}
+					else
+						priv->state = JPEG_DECODED_HEADER;			
+				}
+				/* Clear interrupt status */  
+				_DRVJPEG_CLEAR_INT(DHE_INTS);
+    }
+    else if (u32interruptStatus & (DOW_INTS| DEC_INTS | ENC_INTS))
     {
     	priv->irq_status = u32interruptStatus;
-    	_DRVJPEG_CLEAR_INT(DHE_INTS | DOW_INTS| DEC_INTS | ENC_INTS);
+    	_DRVJPEG_CLEAR_INT(DOW_INTS| DEC_INTS | ENC_INTS);
     	/* It's Decode/Encode Complete Interrupt */
 		schedule_work(&priv->tqueue);         /* left to bottom half */    
     }
