@@ -118,11 +118,11 @@ choice
 	config NUC970_UART6_PB
 		bool "Tx:PB2, Rx:PB3"
 	config NUC970_UART6_FC_PB
-		bool "Tx:PB2, Rx:PB3, CTS:PB4, RTS:PB5"
+		bool "Tx:PB2, Rx:PB3, RTS:PB4, CTS:PB5"
 	config NUC970_UART6_PG
 		bool "Tx:PG11, Rx:PG12"
 	config NUC970_UART6_FC_PG
-		bool "Tx:PG11, Rx:PG12, CTS:PG13, RTS:PG14"
+		bool "Tx:PG11, Rx:PG12, RTS:PG13, CTS:PG14"
 endchoice
 
 config NUC970_UART7
