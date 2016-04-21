@@ -346,7 +346,7 @@ static unsigned int nuc970serial_get_mctrl(struct uart_port *port)
 
 	status = serial_in(up, UART_REG_MSR);;
 
-	if(status & 0x10)
+	if(!(status & 0x10))
 		ret |= TIOCM_CTS;
 
 	return ret;
@@ -355,7 +355,7 @@ static unsigned int nuc970serial_get_mctrl(struct uart_port *port)
 static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
-	unsigned char mcr = 0;
+	unsigned int mcr = 0;
 
 	if (mctrl & TIOCM_RTS)
 	{
