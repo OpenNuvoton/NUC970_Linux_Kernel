@@ -114,7 +114,7 @@ static int ebi_open(struct inode *inode, struct file *filp){
 		return ret;
 	}
 	nuc970_set_ebi_mode(nuc970_ebi->bank,NUC970_EBI_80TYPE_nWE_WRITE);
-	nuc970_set_ebi_attrib(nuc970_ebi->bank,nuc970_ebi->base_addr,NUC970_EBI_512K,NUC970_EBI_16BIT);
+	nuc970_set_ebi_attrib(nuc970_ebi->bank,nuc970_ebi->base_addr,0,NUC970_EBI_16BIT);
 	nuc970_set_ebi_timing(nuc970_ebi->bank,8/*tACC*/,1/*tCOH*/,0/*tACS*/,7/*tCOS*/);
 	LEAVE();
 	return 0;
