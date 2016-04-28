@@ -308,8 +308,6 @@ static const unsigned pwm3_0_pin[] = {0x0F};
 static const unsigned pwm3_1_pin[] = {0x73};
 static const unsigned pwm3_2_pin[] = {0x3F};
 
-static const unsigned wdt_pin[] = {0x5A};  // nrst
-
 static const unsigned rtc_0_pin[] = {74};
 static const unsigned rtc_1_pin[] = {83};
 
@@ -1052,12 +1050,6 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0xD,
 	},
 	{
-		.name = "wdt_grp",
-		.pins = wdt_pin,
-		.num_pins = ARRAY_SIZE(wdt_pin),
-		.func = 0xD,
-	},
-	{
 		.name = "rtc_0_grp",
 		.pins = rtc_0_pin,
 		.num_pins = ARRAY_SIZE(rtc_0_pin),
@@ -1418,7 +1410,6 @@ static const char * const pwm0_groups[] = {"pwm0_0_grp", "pwm0_1_grp", "pwm0_2_g
 static const char * const pwm1_groups[] = {"pwm1_0_grp", "pwm1_1_grp", "pwm1_2_grp"};
 static const char * const pwm2_groups[] = {"pwm2_0_grp", "pwm2_1_grp", "pwm2_2_grp"};
 static const char * const pwm3_groups[] = {"pwm3_0_grp", "pwm3_1_grp", "pwm3_2_grp"};
-static const char * const wdt_groups[] = {"wdt_grp"};
 static const char * const rtc_groups[] = {"rtc_0_grp", "rtc_1_grp"};
 static const char * const etimer0_tgl_groups[] = {"etimer0_0_grp", "etimer0_2_grp"};
 static const char * const etimer0_cap_groups[] = {"etimer0_1_grp", "etimer0_3_grp"};
@@ -1734,11 +1725,6 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "pwm3",
 		.groups = pwm3_groups,
 		.num_groups = ARRAY_SIZE(pwm3_groups),
-	},
-	{
-		.name = "wdt",
-		.groups = wdt_groups,
-		.num_groups = ARRAY_SIZE(wdt_groups),
 	},
 	{
 		.name = "rtc",
@@ -3240,14 +3226,6 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "pwm3",
 		.data.mux.group = "pwm3_2_grp",
-	},
-	{
-		.dev_name = "nuc970-wdt",
-		.name = PINCTRL_STATE_DEFAULT,
-		.type = PIN_MAP_TYPE_MUX_GROUP,
-		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "wdt",
-		.data.mux.group = "wdt_grp",
 	},
 	{
 		.dev_name = "nuc970-rtc",
