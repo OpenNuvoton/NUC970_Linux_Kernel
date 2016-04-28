@@ -898,9 +898,9 @@ if(pdev->id == 1)
 }
 else if(pdev->id == 2)
 {
-#if defined (CONFIG_NUC970_UART2)
+#if defined (CONFIG_NUC970_UART2_PF)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart2");
-#elif defined (CONFIG_NUC970_UART2_FC)
+#elif defined (CONFIG_NUC970_UART2_PF_FC)
 	p = devm_pinctrl_get_select(&pdev->dev, "uart2_fc");
 #endif
 
