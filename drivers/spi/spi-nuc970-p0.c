@@ -402,7 +402,7 @@ static int nuc970_spi0_update_state(struct spi_device *spi,
     
     spimode = spi->mode & 0xff; //remove dual/quad bit
 
-    if ((spimode == SPI_MODE_0) || (spimode == SPI_MODE_3)) {
+    if ((spimode == SPI_MODE_0) || (spimode == SPI_MODE_2)) {
         hw->pdata->txneg = 1;
         hw->pdata->rxneg = 0;
     } else {
