@@ -172,9 +172,11 @@ choice
         Select reference voltage source
         
     config NUC970_NADC_BANDGAP
-		bool "Internal band gap"
+		bool "Internal bandgap, 2.5V"
+    config NUC970_NADC_I33V
+		bool "Internal AVDD, 3.3V"    
 	config NUC970_NADC_VREF
-		bool "VREF"
+		bool "VREF input"    
 endchoice
         
 endmenu

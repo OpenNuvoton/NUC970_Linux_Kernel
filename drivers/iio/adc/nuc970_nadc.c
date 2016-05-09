@@ -263,6 +263,10 @@ static int nuc970_adc_probe(struct platform_device *pdev)
 #ifdef CONFIG_NUC970_NADC_VREF
     writel(1, info->regs + CTL); //enable AD_EN
 #endif
+#ifdef CONFIG_NUC970_NADC_I33V
+    writel(0x3<<6, info->regs + CONF); //select AGND33 vs AVDD33
+    writel(1, info->regs + CTL); //enable AD_EN, disable bandgap
+#endif
 
     writel(1, info->regs + IER); //enable M_IEN
     
@@ -279,7 +283,7 @@ static int nuc970_adc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, indio_dev);
     
-    writel(1<<2, info->regs + CONF); //enable NACEN
+    writel((readl(info->regs + CONF) | 1<<2), info->regs + CONF); //enable NACEN
     
     printk("%s: nuc970 Normal ADC adapter\n",
 						indio_dev->name);
