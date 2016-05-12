@@ -1391,6 +1391,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_sha_digest,
 	.halg = {
 		.digestsize	= SHA1_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha1_state),
 		.base	= {
 			.cra_name		= "sha1",
 			.cra_driver_name	= "nuc970-sha1",
@@ -1413,6 +1414,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_sha_digest,
 	.halg = {
 		.digestsize	= SHA224_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha256_state),
 		.base	= {
 			.cra_name		= "sha224",
 			.cra_driver_name	= "nuc970-sha224",
@@ -1435,6 +1437,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_sha_digest,
 	.halg = {
 		.digestsize	= SHA256_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha256_state),
 		.base	= {
 			.cra_name		= "sha256",
 			.cra_driver_name	= "nuc970-sha256",
@@ -1457,6 +1460,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_sha_digest,
 	.halg = {
 		.digestsize	= SHA384_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha512_state),
 		.base	= {
 			.cra_name		= "sha384",
 			.cra_driver_name	= "nuc970-sha384",
@@ -1479,6 +1483,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_sha_digest,
 	.halg = {
 		.digestsize	= SHA512_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha512_state),
 		.base	= {
 			.cra_name		= "sha512",
 			.cra_driver_name	= "nuc970-sha512",
@@ -1502,6 +1507,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_hmac_digest,
 	.halg = {
 		.digestsize	= SHA1_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha1_state),
 		.base	= {
 			.cra_name		= "hmac-sha1",
 			.cra_driver_name	= "nuc970-hmac-sha1",
@@ -1525,6 +1531,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_hmac_digest,
 	.halg = {
 		.digestsize	= SHA224_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha256_state),
 		.base	= {
 			.cra_name		= "hmac-sha224",
 			.cra_driver_name	= "nuc970-hmac-sha224",
@@ -1548,6 +1555,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_hmac_digest,
 	.halg = {
 		.digestsize	= SHA256_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha256_state),
 		.base	= {
 			.cra_name		= "hmac-sha256",
 			.cra_driver_name	= "nuc970-hmac-sha256",
@@ -1571,6 +1579,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_hmac_digest,
 	.halg = {
 		.digestsize	= SHA384_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha512_state),
 		.base	= {
 			.cra_name		= "hmac-sha384",
 			.cra_driver_name	= "nuc970-hmac-sha384",
@@ -1594,6 +1603,7 @@ static struct ahash_alg nuc970_hash_algs[] = {
 	.digest		= nuc970_hmac_digest,
 	.halg = {
 		.digestsize	= SHA512_DIGEST_SIZE,
+		.statesize  = sizeof(struct sha512_state),
 		.base	= {
 			.cra_name		= "hmac-sha512",
 			.cra_driver_name	= "nuc970-hmac-sha512",
@@ -1681,14 +1691,14 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(nuc970_crypto_algs); i++) 
 	{
 		err = crypto_register_alg(&nuc970_crypto_algs[i].crypto);
-		if (err)
+		if (err) 
 			goto failed;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(nuc970_hash_algs); i++)
 	{
 		err = crypto_register_ahash(&nuc970_hash_algs[i]);
-		if (err)
+		if (err) 
 			goto failed;
 	}
 	
