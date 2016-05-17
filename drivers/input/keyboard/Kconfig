@@ -632,12 +632,20 @@ config KEYBOARD_W90P910
 config KEYBOARD_NUC970
 	tristate "NUC970 Matrix Keypad support"
 	select INPUT_MATRIXKMAP
+	select GPIO_NUC970
 	help
 	  Say Y here to enable the matrix keypad on evaluation board
 	  based on NUC970.
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_keypad.
+
+config  PULL_UP_MATRIX_KEYPAD_PIN
+        tristate "Pull-up NUC970 Matrix Keypad Pin"
+        default y
+        depends on KEYBOARD_NUC970
+        help
+	  Select keypad pin pull-up or not.
 
 choice
 	prompt "NUC970 matrix keypad pin selection"
