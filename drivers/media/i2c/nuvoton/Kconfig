@@ -5,6 +5,15 @@ config VIDEO_NUC970
 	select VIDEOBUF_DMA_CONTIG 
 	---help---
 	Support for built-in video-in interface for NUC970.
+config MAX_DEVICES
+	int "Max video device"
+	depends on VIDEO_NUC970
+	default "2"
+	---help---
+	MAX_DEVICES set to 1, /dev/video0 support packet
+	or planar.
+	MAX_DEVICES set to 2, /dev/video0 support packet 
+	and /dev/video1 support planar at same time.
 
 config MAX_FRAME_BUFFER
 	int "Max frame buffer"

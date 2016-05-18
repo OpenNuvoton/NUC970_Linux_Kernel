@@ -40,8 +40,8 @@
 
 #include "nuc970_sensor.h"
 
-#define NUVOTON_MAX_DEVICES         2
-#define NUVOTON_MAX_FRAMES 		      CONFIG_MAX_FRAME_BUFFER
+#define NUVOTON_MAX_DEVICES	CONFIG_MAX_DEVICES
+#define NUVOTON_MAX_FRAMES	CONFIG_MAX_FRAME_BUFFER
 #define NUVOTON_FORCE_MUNMAP        0
 #define NUVOTON_FRAME_TIMEOUT       2
 
@@ -103,6 +103,11 @@ enum nuvoton_vin_stream_state {
 struct nuvoton_vin_module_param {
 	u8 force_munmap;
 	u16 frame_timeout;
+};
+
+struct cap_format{
+	char *desc;
+	u32 pixelformat;
 };
 
 static DECLARE_RWSEM(nuvoton_vin_dev_lock);
