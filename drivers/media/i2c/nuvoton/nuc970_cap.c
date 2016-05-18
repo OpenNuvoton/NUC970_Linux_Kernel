@@ -165,9 +165,41 @@ static int nuvoton_vidioc_g_fmt(struct file *file,void *priv,struct v4l2_format 
 #endif
 
 /* enum all supported formats of specific device */
+static const struct cap_format cap_formats[] = {
+	{
+		.desc        = "Packet YUV422",
+		.pixelformat = V4L2_PIX_FMT_YUYV,
+	},
+	{
+		.desc        = "Packet GREY",
+		.pixelformat = V4L2_PIX_FMT_GREY,
+	},
+	{
+		.desc        = "Packet RGB 565",
+		.pixelformat = V4L2_PIX_FMT_RGB565,
+	},
+	{
+		.desc        = "Packet RGB 555",
+		.pixelformat = V4L2_PIX_FMT_RGB555,
+	},
+	
+	{
+		.desc        = "Planar YUV422",
+		.pixelformat = V4L2_PIX_FMT_YUV422P,
+	},
+	{
+		.desc        = "Planar YUV420",
+		.pixelformat = V4L2_PIX_FMT_YUV411P,
+	},
+};
 static int nuvoton_vidioc_enum_fmt_vid_cap(struct file *file,void  *priv,struct v4l2_fmtdesc *f)
 {
 	ENTRY();
+	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (f->index >= sizeof(cap_formats)/sizeof(struct cap_format))
+		return -EINVAL;
+	strlcpy(f->description,cap_formats[f->index].desc,sizeof(f->description));
+	f->pixelformat = cap_formats[f->index].pixelformat;
 	LEAVE();
 	return 0;	
 }
