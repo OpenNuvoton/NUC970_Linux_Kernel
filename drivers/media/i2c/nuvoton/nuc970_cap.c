@@ -110,9 +110,14 @@ static int nuvoton_vidioc_querycap(struct file* file,void* priv,struct v4l2_capa
 	return 0;
 }
 
-#if 0
+#if 1
 /* set the parameters of frame rate control of capture DMA of NUVOTON */
-static int nuvoton_vidioc_s_parm(struct file* file,void* priv,struct v4l2_streamparm *parm){return 0;}
+static int nuvoton_vidioc_s_parm(struct file* file,void* priv,struct v4l2_streamparm *parm)
+{
+	ENTRY();
+	LEAVE();
+	return 0;
+}
 
 /* get the frame rate parameters */
 static int nuvoton_vidioc_g_parm(struct file* file,void* priv,struct v4l2_streamparm *parm)
@@ -561,7 +566,7 @@ static int nuvoton_vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffe
 	if (list_empty(&cam->outqueue)) {
 		if (cam->stream == STREAM_OFF)
 			return -EINVAL;
-			err = wait_event_interruptible( cam->wait_frame,(!list_empty(&cam->outqueue)));			
+			err = wait_event_interruptible( cam->wait_frame,(!list_empty(&cam->outqueue)));
 			if (err) return err;	
 	}
 	spin_lock_irqsave(&cam->queue_lock, lock_flags);
@@ -611,7 +616,7 @@ static int nuvoton_vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_
 					__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 					__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
 				}else
-					VDEBUG("PlanarEnable : cam->frame_current == NULL\n");				
+					VDEBUG("PlanarEnable : cam->frame_current == NULL\n");
 		}
 	}
 	/* Capture engine enable and packer/planar mode enable */	
@@ -931,6 +936,8 @@ static const struct v4l2_ioctl_ops nuvoton_vdi_ioctl_ops =
 	.vidioc_s_jpegcomp = nuvoton_vin_vidioc_s_jpegcomp,
 	.vidioc_g_fbuf = nuvoton_vidioc_g_fbuf,
 	.vidioc_s_fbuf = nuvoton_vidioc_s_fbuf,
+	.vidioc_s_parm = nuvoton_vidioc_s_parm,
+	.vidioc_g_parm = nuvoton_vidioc_g_parm,
 	/*  VIDIOC_G_FBUF and VIDIOC_S_FBUF ioctl to get and set 
 	    the framebuffer parameters for a Video Overlay 
 	    or Video Output Overlay (OSD) */
@@ -1237,7 +1244,7 @@ static ssize_t nuvoton_vdi_read(struct file* filp, char __user * buf, size_t cou
 						__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 						__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
 					}else
-						VDEBUG("PlanarEnable : cam->frame_current == NULL\n");				
+						VDEBUG("PlanarEnable : cam->frame_current == NULL\n");
 			}
 			
 			VDEBUG("cam->frame_current->bufmem=0x%08x\n",cam->frame_current->bufmem);
@@ -1317,7 +1324,6 @@ static const struct vm_operations_struct nuvoton_vin_vm_ops = {
 
 static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 {
-	
 	struct nuvoton_vin_device *cam = video_drvdata(filp);
 	unsigned long size = vma->vm_end - vma->vm_start,start = vma->vm_start;
 	void *pos;
@@ -1348,7 +1354,6 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 
 	vma->vm_flags |= VM_IO | VM_DONTEXPAND | VM_DONTDUMP;
 	pos = cam->frame[i].bufmem;
-	#if 1
 	while (size > 0) { /* size is page-aligned */
 		if (vm_insert_page(vma, start, vmalloc_to_page(pos))) {
 			mutex_unlock(&cam->fileop_mutex);
@@ -1358,23 +1363,6 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 		pos += PAGE_SIZE;
 		size -= PAGE_SIZE;
 	}
-	#else	
-	while (size > 0)
-	{
-		page = vmalloc_to_pfn((void *)pos);
-		if (remap_pfn_range(vma, start, page, PAGE_SIZE, PAGE_SHARED))
-		{			
-			return -EAGAIN;
-		}
-		start += PAGE_SIZE;
-		pos += PAGE_SIZE;
-		if (size > PAGE_SIZE)
-			size -= PAGE_SIZE;
-		else
-			size = 0;
-	}
-
-	#endif
 
 	vma->vm_ops = &nuvoton_vin_vm_ops;
 	vma->vm_private_data = &cam->frame[i];
@@ -1383,7 +1371,6 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 	mutex_unlock(&cam->fileop_mutex);
 	LEAVE();
 	return 0;	
-	
 }
 
 /* ISR for buffer handling                   *
@@ -1411,23 +1398,23 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 				__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
 				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
 			}
-				wake_up_interruptible(&cam->wait_frame);	
+				wake_up_interruptible(&cam->wait_frame);
 				continue;
-			} 
+		}
 			if (!(*f))
-			{	
+			{
 				wake_up_interruptible(&cam->wait_frame);	
 				continue;
 			}
 			spin_lock(&cam->queue_lock);
-			list_move_tail(&(*f)->frame, &cam->outqueue);
+			if((*f)->state == F_QUEUED)
+				list_move_tail(&(*f)->frame, &cam->outqueue);
 			if (!list_empty(&cam->inqueue))
-			{		
+			{
 				(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
 				
 				/* Update New frame */
 				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
-				
 				if(cam->vpe.PacketEnable==1)
 				{				
 					/* Setting packet buffer start address */
@@ -1438,7 +1425,7 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 							__raw_writel((unsigned int)(*f)->pbuf,REG_CAP_YBA);
 							__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 							__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
-					}			
+					}
 		  }	
 	  spin_unlock(&cam->queue_lock);
 	  wake_up_interruptible(&cam->wait_frame);	
@@ -1527,6 +1514,7 @@ int nuvoton_vdi_device_register(void)
 	cam->v4ldev->tvnorms		= V4L2_STD_525_60;		
 	cam->v4ldev->ioctl_ops = &nuvoton_vdi_ioctl_ops; /* for V4L2 ioctl handler */
 	cam->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	cam->frame_current = NULL;
 	video_set_drvdata(cam->v4ldev, cam);
 	
 	init_completion(&cam->probe);
