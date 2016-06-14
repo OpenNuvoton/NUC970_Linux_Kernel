@@ -31,7 +31,7 @@ config TOUCHSCREEN_NUC970ADC
 config SAMPLE_NUC970ADC
         int "ADC Sample Counter"
         depends on NUC970_ADC
-        default "0"
+        default "200"
         help
 	  Set the counter value to extend the ADC start signal period 
           to get more sampling time for precise conversion.
