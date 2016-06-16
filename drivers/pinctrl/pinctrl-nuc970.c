@@ -2792,7 +2792,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "uart10_2_grp",
 	},
 	{
-		.dev_name = "nuc970-uart",
+		.dev_name = "nuc970-uart.10",
 		.name = "uart10-PC",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
