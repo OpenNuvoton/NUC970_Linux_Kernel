@@ -106,18 +106,30 @@ static int nuc970_irq_gpio_type(struct irq_data *d, unsigned int type)
 		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) |(0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
 		return 0;
 	}
-
-	if (type & IRQ_TYPE_EDGE_RISING)
-	{
-		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x10)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x10));
-	}else
+	if(type&IRQ_TYPE_LEVEL_MASK){
+		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x0C)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x0C));
 		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x10)) &~(0x1<<num),(volatile unsigned int *)(Port[port]+0x10));
-
-	if (type & IRQ_TYPE_EDGE_FALLING){
-		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
-	}else
 		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) &~(0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
-
+		if(type==IRQ_TYPE_LEVEL_HIGH){
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x10)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x10));
+			return 0;
+		}
+		if(type==IRQ_TYPE_LEVEL_LOW){
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
+			return 0;
+		}
+	}else{
+		__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x0C)) &~(0x1<<num),(volatile unsigned int *)(Port[port]+0x0C));
+		if (type & IRQ_TYPE_EDGE_RISING)
+		{
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x10)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x10));
+		}else
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x10)) &~(0x1<<num),(volatile unsigned int *)(Port[port]+0x10));
+		if (type & IRQ_TYPE_EDGE_FALLING){
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) | (0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
+		}else
+			__raw_writel(__raw_readl((volatile unsigned int *)(Port[port]+0x14)) &~(0x1<<num),(volatile unsigned int *)(Port[port]+0x14));
+	}
 	return 0;
 }
 
