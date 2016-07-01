@@ -30,6 +30,9 @@ config BOARD_NUC972
     
 config BOARD_TOMATO
     bool "NUC976 Tomato Board"
+
+config BOARD_ETH2UART
+    bool "NUC972 Ethernet To UART Board"
 endchoice
 
 config NUC970_FIQ

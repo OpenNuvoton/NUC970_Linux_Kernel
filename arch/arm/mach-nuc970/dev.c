@@ -796,6 +796,18 @@ struct platform_device nuc970_device_i2c1 = {
 /* spi device, spi flash info */
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc970_spi0_flash_partitions[] = {
+ #ifdef CONFIG_BOARD_ETH2UART
+         {
+                .name = "kernel",
+                .size = 0x0800000,
+                .offset = 0x1000000,
+        },
+        {
+                .name = "rootfs",
+                .size = 0x0800000,
+                .offset = 0x1800000,
+        },
+ #else
         {
                 .name = "kernel",
                 .size = 0x0800000,
@@ -806,6 +818,7 @@ static struct mtd_partition nuc970_spi0_flash_partitions[] = {
                 .size = 0x0800000,
                 .offset = 0x0800000,
         },
+ #endif
 };
 static struct flash_platform_data nuc970_spi0_flash_data = {
         .name = "m25p80",
