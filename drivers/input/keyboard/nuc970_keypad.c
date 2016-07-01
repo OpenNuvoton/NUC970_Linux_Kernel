@@ -95,7 +95,9 @@ void nuc970_keypad_mfp_set(struct platform_device *pdev)
 	struct pinctrl *p = NULL;
 	int retval = 0; 
 
-	#if defined (CONFIG_NUC970_KEYPAD_PA_4x2)
+        #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
+        p = devm_pinctrl_get_select(&pdev->dev, "kpi_3x2-PA");
+	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
 	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x2-PA");
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
 	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x4-PA");
@@ -195,7 +197,9 @@ static int nuc970_keypad_open(struct input_dev *dev)
 
 	val = INPU | RKINTEN | PKINTEN | INTEN | ENKP;
 
-	#if defined (CONFIG_NUC970_KEYPAD_PA_4x2)
+        #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
+        val |= ((3 - 1) << 28) | ((2 - 1) << 24);
+	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
 	val |= ((4 - 1) << 28) | ((2 - 1) << 24);
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
 	val |= ((4 - 1) << 28) | ((4 - 1) << 24);
@@ -209,12 +213,14 @@ static int nuc970_keypad_open(struct input_dev *dev)
 	val |= ((4 - 1) << 28) | ((8 - 1) << 24);
 	#endif
 
-	config = (pdata->prescale << KPI_PRESCALE) | (pdata->debounce << DEBOUNCE_BIT) | DB_EN;
+	//config = (pdata->prescale << KPI_PRESCALE) | (pdata->debounce << DEBOUNCE_BIT) | DB_EN;
+	config = (0xff << KPI_PRESCALE) | (0xd << DEBOUNCE_BIT) | DB_EN;
 
 	val |= config;
 
 	__raw_writel(val, keypad->mmio_base + KPI_CONF);
-	__raw_writel(0x1f, keypad->mmio_base + KPI_PRESCALDIV);
+	//__raw_writel(0x1f, keypad->mmio_base + KPI_PRESCALDIV);
+	__raw_writel(0xff, keypad->mmio_base + KPI_PRESCALDIV);
 
 	return 0;
 }

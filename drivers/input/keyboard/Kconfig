@@ -654,6 +654,8 @@ choice
 	help
 	  Select keypad multi-function pin.
 
+	config NUC970_KEYPAD_PA_3x2
+		bool "Keypad pins are 3x2 matrix PA pin"
 	config NUC970_KEYPAD_PA_4x2
 		bool "Keypad pins are 4x2 matrix PA pin"
 	config NUC970_KEYPAD_PA_4x4

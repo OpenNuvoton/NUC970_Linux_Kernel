@@ -199,6 +199,8 @@ static const unsigned kpi_4_pins[] = {0x74, 0x75, 0x76, 0x77}; // row
 static const unsigned kpi_5_pins[] = {0x78, 0x79}; // 2 col
 static const unsigned kpi_6_pins[] = {0x7A, 0x7B}; // 4 col
 static const unsigned kpi_7_pins[] = {0x7C, 0x7D, 0x7E, 0x7F}; // 8 col
+static const unsigned kpi_8_pins[] = {0x04, 0x05, 0x6}; // 3 row
+
 
 #ifdef CONFIG_BOARD_TOMATO
 static const unsigned sd0_pins[] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
@@ -498,6 +500,12 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.name = "kpi_7_grp",
 		.pins = kpi_7_pins,
 		.num_pins = ARRAY_SIZE(kpi_7_pins),
+		.func = 0x4,
+	},
+	{
+		.name = "kpi_8_grp",
+		.pins = kpi_8_pins,
+		.num_pins = ARRAY_SIZE(kpi_8_pins),
 		.func = 0x4,
 	},
 	{
@@ -1366,6 +1374,7 @@ static const char * const lcd1_groups[] = {"lcd1_grp"};
 static const char * const lcd2_groups[] = {"lcd2_grp"};
 static const char * const vcap_groups[] = {"vcap_grp"};
 static const char * const kpi_row_groups[] = {"kpi_0_grp", "kpi_4_grp"};
+static const char * const kpi_3row_groups[] = {"kpi_8_grp"};
 static const char * const kpi_2col_groups[] = {"kpi_1_grp", "kpi_5_grp"};
 static const char * const kpi_4col_groups[] = {"kpi_2_grp", "kpi_6_grp"};
 static const char * const kpi_8col_groups[] = {"kpi_3_grp", "kpi_7_grp"};
@@ -1489,6 +1498,11 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "kpi_row",
 		.groups = kpi_row_groups,
 		.num_groups = ARRAY_SIZE(kpi_row_groups),
+	},
+	{
+		.name = "kpi_3row",
+		.groups = kpi_3row_groups,
+		.num_groups = ARRAY_SIZE(kpi_3row_groups),
 	},
 	{
 		.name = "kpi_2col",
@@ -2073,6 +2087,22 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	{
 		.dev_name = "nuc970-kpi",
 		.name = "kpi_4x2-PA",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "kpi_2col",
+		.data.mux.group = "kpi_1_grp",
+	},
+	{
+		.dev_name = "nuc970-kpi",
+		.name = "kpi_3x2-PA",
+		.type = PIN_MAP_TYPE_MUX_GROUP,
+		.ctrl_dev_name = "pinctrl-nuc970",
+		.data.mux.function = "kpi_3row",
+		.data.mux.group = "kpi_8_grp",
+	},
+	{
+		.dev_name = "nuc970-kpi",
+		.name = "kpi_3x2-PA",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "kpi_2col",
