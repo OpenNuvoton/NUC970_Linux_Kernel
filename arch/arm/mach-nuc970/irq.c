@@ -56,10 +56,19 @@ static void nuc970_irq_unmask(struct irq_data *d)
 		__raw_writel(1 << (d->irq - 32), REG_AIC_MECRH);	
 }
 
+static int nuc970_irq_set_wake(struct irq_data *d, unsigned int on)
+{
+	return 0;
+}
+
+
 static struct irq_chip nuc970_irq_chip = {
+	.irq_disable	= nuc970_irq_mask,
+	.irq_enable	= nuc970_irq_unmask,
 	.irq_ack	= nuc970_irq_ack,
 	.irq_mask	= nuc970_irq_mask,
 	.irq_unmask	= nuc970_irq_unmask,
+	.irq_set_wake	= nuc970_irq_set_wake,
 };
 
 #ifdef CONFIG_GPIO_NUC970
@@ -135,10 +144,13 @@ static int nuc970_irq_gpio_type(struct irq_data *d, unsigned int type)
 
 static struct irq_chip nuc970_irq_gpio = {
 	.name		= "GPIO-IRQ",
+	.irq_disable	= nuc970_irq_gpio_mask,
+	.irq_enable	= nuc970_irq_gpio_unmask,
 	.irq_ack	= nuc970_irq_gpio_ack,
 	.irq_mask	= nuc970_irq_gpio_mask,
 	.irq_unmask	= nuc970_irq_gpio_unmask,
 	.irq_set_type	= nuc970_irq_gpio_type,
+	.irq_set_wake	= nuc970_irq_set_wake,
 };
 
 static void nuc970_irq_demux_intgroup(unsigned int irq,
@@ -256,10 +268,13 @@ static int nuc970_irq_ext_type(struct irq_data *d, unsigned int type)
 
 static struct irq_chip nuc970_irq_ext = {
 	.name		= "EXT-IRQ",
+	.irq_disable	= nuc970_irq_ext_mask,
+	.irq_enable	= nuc970_irq_ext_unmask,
 	.irq_ack	= nuc970_irq_ext_ack,
 	.irq_mask	= nuc970_irq_ext_mask,
 	.irq_unmask	= nuc970_irq_ext_unmask,
 	.irq_set_type	= nuc970_irq_ext_type,
+	.irq_set_wake	= nuc970_irq_set_wake,
 };
 
 static void nuc970_irq_demux_intgroup2(unsigned int irq,
