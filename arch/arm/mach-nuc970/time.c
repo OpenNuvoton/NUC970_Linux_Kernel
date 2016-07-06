@@ -48,6 +48,7 @@
 #include <mach/regs-timer.h>
 #include <mach/hardware.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-aic.h>
 
 #define RESETINT	0x1f
 #define PERIOD		(0x01 << 27)
@@ -105,12 +106,45 @@ static int nuc970_clockevent_setnextevent(unsigned long evt,
 	return 0;
 }
 
+static int tmr0_msk;
+static void nuc970_clockevent_suspend(struct clock_event_device *clk)
+{
+	unsigned long flags;
+	
+	local_irq_save(flags);
+	if(__raw_readl(REG_AIC_IMR) & (1 << 16)) {
+		tmr0_msk = 1;
+		__raw_writel(0x10000, REG_AIC_MDCR);  //timer0
+	} else
+		tmr0_msk = 0;
+	
+	local_irq_restore(flags);
+
+	printk("clk event suspend\n");
+}
+
+static void nuc970_clockevent_resume(struct clock_event_device *clk)
+{
+	unsigned long flags;
+
+	local_irq_save(flags);
+	if(tmr0_msk == 1)
+		__raw_writel(0x10000, REG_AIC_MECR);  //timer0
+	local_irq_restore(flags);
+
+	printk("clk event resume\n");
+}
+
 static struct clock_event_device nuc970_clockevent_device = {
 	.name		= "nuc970-timer0",
 	.shift		= 32,
 	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
 	.set_mode	= nuc970_clockevent_setmode,
 	.set_next_event	= nuc970_clockevent_setnextevent,
+#ifdef CONFIG_PM
+	.suspend	= nuc970_clockevent_suspend,
+	.resume		= nuc970_clockevent_resume,
+#endif
 	.rating		= 300,
 };
 
@@ -167,6 +201,36 @@ static cycle_t nuc970_get_cycles(struct clocksource *cs)
 	return (__raw_readl(REG_TMR_TDR1)) & TDR_MASK;
 }
 
+static int tmr1_msk;
+static void nuc970_clocksource_suspend(struct clocksource *cs)
+{
+	unsigned long flags;
+
+	local_irq_save(flags);
+	if(__raw_readl(REG_AIC_IMR) & (1 << 17)) {
+		tmr1_msk = 1;
+		__raw_writel(0x20000, REG_AIC_MDCR);  //timer1
+	} else
+		tmr1_msk = 0;
+	
+	local_irq_restore(flags);
+
+	printk("clk source suspend\n");
+}
+
+static void nuc970_clocksource_resume(struct clocksource *cs)
+{
+	unsigned long flags;
+
+
+	local_irq_save(flags);
+	if(tmr1_msk == 1)
+		__raw_writel(0x20000, REG_AIC_MECR);  //timer1
+	local_irq_restore(flags);
+
+	printk("clk source resume\n");
+}
+
 static struct clocksource clocksource_nuc970 = {
 	.name	= "nuc970-timer1",
 	.rating	= 200,
@@ -174,6 +238,10 @@ static struct clocksource clocksource_nuc970 = {
 	.mask	= CLOCKSOURCE_MASK(TDR_SHIFT),
 	.shift	= 10,
 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+#ifdef CONFIG_PM
+	.suspend	= nuc970_clocksource_suspend,
+	.resume		= nuc970_clocksource_resume,
+#endif
 };
 
 static void __init nuc970_clocksource_init(void)
