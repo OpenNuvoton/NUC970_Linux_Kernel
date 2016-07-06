@@ -26,7 +26,7 @@
 #include <mach/regs-gcr.h>
 #include <mach/regs-aic.h>
 #include "cpu.h"
-
+#include "pm.h"
 
 /* Initial IO mappings */	//TODO: MAP ENABLED IP ONLY
 static struct map_desc nuc970_iodesc[] __initdata = {
@@ -76,12 +76,18 @@ static void __init nuc970_init(void)
 	nuc970_platform_init(nuc970_dev, ARRAY_SIZE(nuc970_dev));
 }
 
+static void __init nuc970_init_late(void)
+{
+	nuc970_init_suspend();
+}
+
 MACHINE_START(NUC970, "NUC970")
 	.atag_offset	= 0x100,
 	.map_io		= nuc970_map_io,
 	.init_irq	= nuc970_init_irq,
 	.init_machine	= nuc970_init,
 	.init_time	= nuc970_timer_init,
+	.init_late	= nuc970_init_late,
 	.restart	= nuc970_restart,
 MACHINE_END
 
