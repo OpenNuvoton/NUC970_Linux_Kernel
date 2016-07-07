@@ -422,6 +422,7 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
             nuc970_sd_write(REG_SDTMOUT, 0x3fffff);
             host->total_length = 0;
             nuc970_sd_write(REG_DMACSAR2, host->physical_address);
+            csr = csr | SDCSR_DI_EN;
             nuc970_sd_debug("SDH - Reading %d bytes [phy_addr = 0x%x]\n", block_length * blocks, host->physical_address);
         }
         else if (data->flags & MMC_DATA_WRITE)
@@ -526,6 +527,14 @@ static void nuc970_sd_send_stop(struct nuc970_sd_host *host, struct mmc_command 
  */
 static void nuc970_sd_send_request(struct nuc970_sd_host *host)
 {
+#if 0
+	/***************************************************/
+	nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_SW_RST);
+	while(nuc970_sd_read(REG_SDCSR) & SDCSR_SW_RST);
+	nuc970_sd_write(REG_SDISR, 0xffffffff);
+	/***************************************************/
+#endif
+
     if (!(host->flags & FL_SENT_COMMAND)) {
         host->flags |= FL_SENT_COMMAND;
         nuc970_sd_send_command(host, host->request->cmd);
@@ -593,13 +602,13 @@ static void nuc970_sd_completed_command(struct nuc970_sd_host *host, unsigned in
 
         if (data)
         {
-            data->bytes_xfered = 0;
-            host->transfer_index = 0;
-            host->in_use_index = 0;
-            if (data->flags & MMC_DATA_READ)
-            {
-                nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_DI_EN);
-            }
+//            data->bytes_xfered = 0;
+//            host->transfer_index = 0;
+//            host->in_use_index = 0;
+//            if (data->flags & MMC_DATA_READ)
+//            {
+//                nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_DI_EN);
+//            }
             wait_event_interruptible(sd_wq_xfer, (sd_state_xfer != 0));
         }
     }
@@ -931,7 +940,7 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     }
 
     mmc->ops = &nuc970_sd_ops;
-    mmc->f_min = 300000;
+    mmc->f_min = 400000;
     mmc->f_max = 50000000;
     mmc->ocr_avail = MMC_VDD_27_28|MMC_VDD_28_29|MMC_VDD_29_30|MMC_VDD_30_31|MMC_VDD_31_32|MMC_VDD_32_33 | MMC_VDD_33_34;
     mmc->caps = 0;
