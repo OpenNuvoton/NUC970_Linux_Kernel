@@ -382,6 +382,21 @@ static irqreturn_t nuc970_i2c_irq(int irqno, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+/* nuc970_i2c1_hangup
+ *
+ * send out some dummy clocks to let SDA free
+*/
+static void nuc970_i2c1_hangup(struct nuc970_i2c *i2c)
+{
+	int i;
+
+	for(i=0;i<2;i++) {        
+		writel(0x6, i2c->regs + SWR);		//CLK Low
+		ndelay(2);
+		writel(0x7, i2c->regs + SWR);		//CLK High
+		ndelay(2);
+	}
+}
 
 /* nuc970_i2c1_set_master
  *
@@ -435,14 +450,6 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 	spin_unlock_irq(&i2c->lock);
 
 	timeout = wait_event_timeout(i2c->wait, i2c->msg_num == 0, HZ * 5);
-	
-	
-	if(i2c->arblost) {
-		printk("arb lost, stop\n");
-		i2c->arblost = 0;
-		nuc970_i2c1_stop(i2c, 0);
-	}
-		
 	ret = i2c->msg_idx;
 
 	/* having these next two as dev_err() makes life very
@@ -470,7 +477,17 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 
 	if (iicstat & I2CBUSY)
 		dev_warn(i2c->dev, "timeout waiting for bus idle\n");
-
+    
+	if(i2c->arblost) {
+		dev_dbg(i2c->dev, "arb lost, stop\n");
+		i2c->arblost = 0;
+		nuc970_i2c1_stop(i2c, 0);
+        msleep(1);
+        nuc970_i2c1_disable_irq(i2c);
+        nuc970_i2c1_hangup(i2c);
+        ret = -EAGAIN;
+	}
+    
  out:
 	return ret;
 }
