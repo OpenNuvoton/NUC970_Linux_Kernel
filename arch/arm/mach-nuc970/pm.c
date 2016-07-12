@@ -35,7 +35,7 @@ static int nuc970_suspend_enter(suspend_state_t state)
 	__raw_writel(__raw_readl(REG_CLK_PMCON) & ~1, REG_CLK_PMCON);	// clear bit 0 so NUC970 enter pd mode instead of idle in next function call
 	cpu_do_idle();
 	
-	__raw_writel(__raw_readl(REG_WKUPSSR), REG_WKUPSER);	// clear wake source flag
+	__raw_writel(__raw_readl(REG_WKUPSER), REG_WKUPSSR);	// clear wake source flag
 
 
 	return 0;
