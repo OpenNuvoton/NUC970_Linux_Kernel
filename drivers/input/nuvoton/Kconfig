@@ -13,11 +13,18 @@ config KEYBOARD_NUC970ADC
         tristate "Keypad support"
         depends on ARCH_NUC970        
         help
-          Say Y here to enable the matrix keypad on evaluation board
+          Say Y here to enable the keypad on evaluation board
           based on NUC970.
 
-          To compile this driver as a module, choose M here: the
-          module will be called nuc970adc keypad.
+	  To compile this driver as a module, choose M here: the
+          module will be called nuc970adc keypad
+
+config KEYBOARD_NUC970ADC_WKUP
+        tristate "Keypad wake-up support"
+        depends on KEYBOARD_NUC970ADC
+        help
+          Say Y here to enable the keypad wakeup function on evaluation board
+          based on NUC970.
 
 config TOUCHSCREEN_NUC970ADC
         tristate "Touchscreen support"
@@ -28,6 +35,13 @@ config TOUCHSCREEN_NUC970ADC
 
           To compile this driver as a module, choose M here: the
           module will be called nuc970adc touchscreen.
+config TOUCHSCREEN_NUC970ADC_WKUP
+        tristate "Touchscreen wake-up support"
+        depends on TOUCHSCREEN_NUC970ADC
+        help
+          Say Y here to enable the touchscreen wakeup function on evaluation board
+          base on NUC970.
+
 config SAMPLE_NUC970ADC
         int "ADC Sample Counter"
         depends on NUC970_ADC
