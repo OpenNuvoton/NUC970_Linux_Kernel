@@ -12,6 +12,8 @@
 #define __ASM_MACH_NUC970_GPIO_H
 
 #define ARCH_NR_GPIOS		512
+#include <mach/irqs.h>
+#include <linux/interrupt.h>
 #include <asm-generic/gpio.h>
 
 #define	NUC970_PA0	(0x00 + 0)
@@ -172,6 +174,13 @@
 #define	NUC970_PJ2	(0x120 + 2)
 #define	NUC970_PJ3	(0x120 + 3)
 #define	NUC970_PJ4	(0x120 + 4)
+
+typedef struct nuc970_eint_pins{
+	u32	pin;
+	irq_handler_t handler;
+        u32   trigger;
+        char *name;
+}eint_wakeup_pins;
 
 
 

@@ -29,6 +29,8 @@
 #include <linux/platform_device.h>
 #include <mach/gpio.h>
 #include <linux/clk.h>
+#include <linux/interrupt.h>
+#include <linux/delay.h>
 
 #include <mach/map.h>
 #include <mach/regs-gpio.h>
@@ -37,6 +39,14 @@
 
 #include <mach/irqs.h>
 
+//#define GPIO_DEBUG_ENABLE_ENTER_LEAVE
+#ifdef GPIO_DEBUG_ENABLE_ENTER_LEAVE
+#define ENTRY()					printk("[%-20s] : Enter...\n", __FUNCTION__)
+#define LEAVE()					printk("[%-20s] : Leave...\n", __FUNCTION__)
+#else
+#define ENTRY()
+#define LEAVE()
+#endif
 
 
 static DEFINE_SPINLOCK(gpio_lock);
@@ -279,6 +289,161 @@ static struct gpio_chip nuc970_gpio_port = {
 	.ngpio = NUMGPIO,
 };
 
+/* example :
+ * {IRQ_EXT0_H0,nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,"eint0"},
+ * 
+ * Set external interrup pin as bellow:
+ * IRQ_EXT0_H0  / IRQ_EXT1_H1  / IRQ_EXT2_H2  / IRQ_EXT3_H3
+ * IRQ_EXT4_H4  / IRQ_EXT5_H5  / IRQ_EXT6_H6  / IRQ_EXT7_H7
+ * IRQ_EXT0_F11 / IRQ_EXT1_F12 / IRQ_EXT2_F13 / IRQ_EXT3_F14
+ * IRQ_EXT4_F15 / IRQ_EXT5_G15 / IRQ_EXT6_I1  / IRQ_EXT7_I2
+ *
+ * Set callback function as below:
+ * static irqreturn_t nuc970_eint0_interrupt(int irq, void *dev_id){
+ *       return IRQ_HANDLED;
+ * }
+ *
+ * Set trigger type as below:
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ *
+ */ 
+struct nuc970_eint_pins eint[]={
+//ex.{IRQ_EXT0_H0,nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,"eint0"}
+//Add your external interrup pin here.
+
+
+{0,0,0,0}
+};
+
+/*
+ * flag=1 : Enable external interrupt and wakeup functions.
+ * flag=0 : Enable external interrupt function only.
+ */
+void nuc970_enable_eint_wakeup(uint32_t flag){
+	int err;
+	struct nuc970_eint_pins *peint=eint;
+	while(peint->pin!=(u32)0){
+		if ((err = request_irq(peint->pin,peint->handler, peint->trigger, peint->name, 0)) != 0) {
+			printk("register %s irq failed %d\n",peint->name ,err);
+		}
+		switch(peint->pin){
+			case IRQ_EXT0_H0:
+				if(flag==1){
+					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT0_H0);
+				}
+				__raw_writel(0xF|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT0_F11:
+				if(flag==1){
+					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT0_F11);
+				}
+				__raw_writel(0xF000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
+			break;
+			case IRQ_EXT1_H1:
+				if(flag==1){
+					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT1_H1);
+				}
+				__raw_writel(0xF0|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT1_F12 :
+				if(flag==1){
+					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT1_F12);
+				}
+				__raw_writel(0xF0000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
+			break;
+			case IRQ_EXT2_H2:
+				if(flag==1){
+					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT2_H2);
+				}
+				__raw_writel(0xF00|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT2_F13: 
+				if(flag==1){
+					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT2_F13);
+				}
+				__raw_writel(0xF00000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
+			break;
+			case IRQ_EXT3_H3:
+				if(flag==1){
+					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT3_H3);
+				}
+				__raw_writel(0xF000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT3_F14:
+				if(flag==1){
+					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT3_F14);
+				}
+				__raw_writel(0xF000000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
+			break;
+			case IRQ_EXT4_H4:
+				if(flag==1){
+					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT4_H4);
+				}
+				__raw_writel(0xF0000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT4_F15:
+				if(flag==1){
+					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT4_F15);
+				}
+				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
+			break;
+			case IRQ_EXT5_H5:
+				if(flag==1){
+					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT5_H5);
+				}
+				__raw_writel(0xF00000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT5_G15:
+				if(flag==1){
+					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT5_G15);
+				}
+				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPG_H) ,REG_MFP_GPG_H);
+			break;
+			case IRQ_EXT6_H6:
+				if(flag==1){
+					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT6_H6);
+				}
+				__raw_writel(0xF000000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT6_I1:
+				if(flag==1){
+					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT6_I1);
+				}
+				__raw_writel(0xF0|__raw_readl(REG_MFP_GPI_L) ,REG_MFP_GPI_L);
+			break;
+			case IRQ_EXT7_H7:
+				if(flag==1){
+					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT7_H7);
+				}
+				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
+			break;
+			case IRQ_EXT7_I2:
+				if(flag==1){
+					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT7_I2);
+				}
+				 __raw_writel(0xF00|__raw_readl(REG_MFP_GPI_L) ,REG_MFP_GPI_L);
+			break;
+		}
+	peint++;
+	}
+}
+
 static int nuc970_gpio_probe(struct platform_device *pdev)
 {
 	int err;
@@ -343,6 +508,11 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 	#endif
 	#endif
 
+#ifdef CONFIG_GPIO_NUC970_EINT_WKUP
+	nuc970_enable_eint_wakeup(1);
+#else
+	nuc970_enable_eint_wakeup(0);
+#endif
 
 	return 0;
 
@@ -385,9 +555,23 @@ static int nuc970_gpio_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int nuc970_gpio_resume(struct platform_device *pdev){
+ENTRY();
+LEAVE();
+return 0;
+}
+
+static int nuc970_gpio_suspend(struct platform_device *pdev,pm_message_t state){
+ENTRY();
+LEAVE();
+return 0;
+}
+
 static struct platform_driver nuc970_gpio_driver = {
 	.probe		= nuc970_gpio_probe,
 	.remove		= nuc970_gpio_remove,
+	.resume		= nuc970_gpio_resume,
+	.suspend	= nuc970_gpio_suspend,
 	.driver		= {
 		.name	= DRIVER_NAME,
 		.owner	= THIS_MODULE,

@@ -114,6 +114,12 @@ config GPIO_NUC970
 	select NEED_MACH_GPIO_H
 	help
 	  Say yes here to support GPIO functionality of NUC970 chip
+config GPIO_NUC970_EINT_WKUP
+	tristate "NUC970 external I/O wake-up support"
+	depends on GPIO_NUC970
+	default no
+        help
+          Say yes here to support GPIO wakeup functionality of NUC970 chip
 
 config GPIO_CLPS711X
 	def_bool y
