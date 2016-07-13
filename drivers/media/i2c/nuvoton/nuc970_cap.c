@@ -1060,6 +1060,23 @@ static void nuvoton_vin_release_resources(struct kref *kref)
 	kfree(cam);	
 }
 
+
+int capture_uninit(void){
+	
+	/* GPIOI0 set to low  */
+#ifdef CONFIG_SENSOR_PD_PI0
+	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
+	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+#endif
+
+#ifdef CONFIG_SENSOR_PD_PI2
+        __raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
+        __raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+        __raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+#endif
+return 0;
+}
 int capture_init(struct nuvoton_vin_device* cam)
 {
   int ret;
@@ -1534,7 +1551,7 @@ int nuvoton_vdi_device_register(void)
 	/* Setting Interrupt(IRQ) for nuvoton sensor interface  */	
 	if(dev_nr==0)
 	{
-		err = request_irq(IRQ_CAP, nuvoton_vdi_isr, IRQF_SHARED, "camera sensor 0", cam);
+		err = request_irq(IRQ_CAP, nuvoton_vdi_isr, IRQF_NO_SUSPEND|IRQF_SHARED, "camera sensor 0", cam);
 			if(err < 0)	
 			{        
 				VDEBUG("Interrupt(IRQ_CAP) setup failed\n");
@@ -1603,6 +1620,21 @@ static int nuvoton_cap_device_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int nuvoton_cap_device_resume(struct platform_device *pdev){
+	ENTRY();
+	capture_init(0);
+	nuvoton_vin_probe(nuvoton_cam[0]);
+	LEAVE();
+	return 0;
+}
+
+static int nuvoton_cap_device_suspend(struct platform_device *pdev,pm_message_t state){
+	ENTRY();
+	capture_uninit();
+	LEAVE();
+	return 0;
+}
+
 static struct platform_device_id nuc970_cap_driver_ids[] = {	
 	{ "nuc970-videoin", 0 },
 	{ },
@@ -1611,6 +1643,8 @@ static struct platform_device_id nuc970_cap_driver_ids[] = {
 static struct platform_driver nuc970_cap_driver = {
 		.probe		= nuvoton_cap_device_probe,
 		.remove 	= nuvoton_cap_device_remove,
+		.resume   = nuvoton_cap_device_resume,
+		.suspend  = nuvoton_cap_device_suspend,
 		.driver 	= {
 			.name	= "nuc970-cap",
 			.owner	= THIS_MODULE,
