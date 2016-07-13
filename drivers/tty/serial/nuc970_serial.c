@@ -356,6 +356,7 @@ static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
 	struct uart_nuc970_port *up = (struct uart_nuc970_port *)port;
 	unsigned int mcr = 0;
+	unsigned int ier = 0;
 
 	if (mctrl & TIOCM_RTS)
 	{
@@ -374,6 +375,19 @@ static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 
 		// enable CTS/RTS auto-flow control
 		serial_out(up, UART_REG_IER, (serial_in(up, UART_REG_IER) | (0x3000)));
+		
+		// Set hardware flow control
+		up->port.flags |= UPF_HARD_FLOW;
+	}
+	else
+	{
+              // disable CTS/RTS auto-flow control
+              ier = serial_in(up, UART_REG_IER);
+              ier &= ~(0x3000);
+	      serial_out(up, UART_REG_IER, ier);
+	      
+	      //un-set hardware flow control
+              up->port.flags &= ~UPF_HARD_FLOW;
 	}
 
 	// set CTS high level trigger
