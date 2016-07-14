@@ -289,159 +289,398 @@ static struct gpio_chip nuc970_gpio_port = {
 	.ngpio = NUMGPIO,
 };
 
-/* example :
- * {IRQ_EXT0_H0,nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,"eint0"},
- * 
- * Set external interrup pin as bellow:
- * IRQ_EXT0_H0  / IRQ_EXT1_H1  / IRQ_EXT2_H2  / IRQ_EXT3_H3
- * IRQ_EXT4_H4  / IRQ_EXT5_H5  / IRQ_EXT6_H6  / IRQ_EXT7_H7
- * IRQ_EXT0_F11 / IRQ_EXT1_F12 / IRQ_EXT2_F13 / IRQ_EXT3_F14
- * IRQ_EXT4_F15 / IRQ_EXT5_G15 / IRQ_EXT6_I1  / IRQ_EXT7_I2
- *
- * Set callback function as below:
- * static irqreturn_t nuc970_eint0_interrupt(int irq, void *dev_id){
- *       return IRQ_HANDLED;
- * }
- *
- * Set trigger type as below:
+/*
+ * @brief       External Interrupt 0 Handler
+ * @details     This function will be used by EINT0,
+ *              when enable IRQ_EXT0_H0 or IRQ_EXT0_F11 in eint0
+ */
+/*
+static irqreturn_t nuc970_eint0_interrupt(int irq, void *dev_id){
+	printk("@0\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT0_H0 or IRQ_EXT0_F11 , linux will enable EINT0
+ * User can modify trigger tiypes as below :
  * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
- *
- */ 
-struct nuc970_eint_pins eint[]={
-//ex.{IRQ_EXT0_H0,nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND,"eint0"}
-//Add your external interrup pin here.
-
-
+ */
+struct nuc970_eint_pins eint0[]={
+//{IRQ_EXT0_H0, nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint0"},
+//{IRQ_EXT0_F11,nuc970_eint0_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint0"},
 {0,0,0,0}
 };
 
 /*
- * flag=1 : Enable external interrupt and wakeup functions.
- * flag=0 : Enable external interrupt function only.
+ * @brief       External Interrupt 0 Handler
+ * @details     This function will be used by EINT1,
+ *              when enable IRQ_EXT1_H1 or IRQ_EXT1_F12 in eint1
  */
-void nuc970_enable_eint_wakeup(uint32_t flag){
+/*
+static irqreturn_t nuc970_eint1_interrupt(int irq, void *dev_id){
+	printk("@1\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT1_H1 or IRQ_EXT1_F12 , linux will enable EINT1
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint1[]={
+//{IRQ_EXT1_H1, nuc970_eint1_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint1"},
+//{IRQ_EXT1_F12,nuc970_eint1_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint1"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 2 Handler
+ * @details     This function will be used by EINT2,
+ *              when enable IRQ_EXT2_H2 or IRQ_EXT2_F13 in eint2
+ */
+/*
+static irqreturn_t nuc970_eint2_interrupt(int irq, void *dev_id){
+	printk("@2\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT2_H2 or IRQ_EXT2_F13 , linux will enable EINT2
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint2[]={
+//{IRQ_EXT2_H2, nuc970_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
+//{IRQ_EXT2_F13,nuc970_eint2_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint2"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 3 Handler
+ * @details     This function will be used by EINT3,
+ *              when enable IRQ_EXT3_H3 or IRQ_EXT3_F14 in eint3
+ */
+/*
+static irqreturn_t nuc970_eint3_interrupt(int irq, void *dev_id){
+	printk("@3\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT3_H3 or IRQ_EXT3_F14 , linux will enable EINT31
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint3[]={
+//{IRQ_EXT3_H3, nuc970_eint3_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint3"},
+//{IRQ_EXT3_F14,nuc970_eint3_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint3"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 3 Handler
+ * @details     This function will be used by EINT3,
+ *              when enable IRQ_EXT4_H4 or IRQ_EXT4_F15 in eint4
+ */
+/*
+static irqreturn_t nuc970_eint4_interrupt(int irq, void *dev_id){
+	printk("@4\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT4_H4 or IRQ_EXT4_F15 , linux will enable EINT4
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint4[]={
+//{IRQ_EXT4_H4, nuc970_eint4_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint4"},
+//{IRQ_EXT4_F15,nuc970_eint4_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint4"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 4 Handler
+ * @details     This function will be used by EINT4,
+ *              when enable IRQ_EXT5_H5 or IRQ_EXT5_G15 in eint5
+ */
+/*
+static irqreturn_t nuc970_eint5_interrupt(int irq, void *dev_id){
+	printk("@5\n");
+	return IRQ_HANDLED;
+}
+*/
+
+/* If enable IRQ_EXT5_H5 or IRQ_EXT5_G15 , linux will enable EINT5
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint5[]={
+//{IRQ_EXT5_H5, nuc970_eint5_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint5"},
+//{IRQ_EXT5_G15,nuc970_eint5_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint5"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 6 Handler
+ * @details     This function will be used by EINT5,
+ *              when enable IRQ_EXT6_H6 or IRQ_EXT6_I1 in eint6
+ */
+/*
+static irqreturn_t nuc970_eint6_interrupt(int irq, void *dev_id){
+	printk("@6\n");
+	return IRQ_HANDLED;
+}
+
+*/
+/* If enable IRQ_EXT6_H6 or IRQ_EXT6_I1 , linux will enable EINT6
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint6[]={
+//{IRQ_EXT6_H6,nuc970_eint6_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint6"},
+//{IRQ_EXT6_I1,nuc970_eint6_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint6"},
+{0,0,0,0}
+};
+
+/*
+ * @brief       External Interrupt 7 Handler
+ * @details     This function will be used by EINT1,
+ *              when enable IRQ_EXT7_H7 or IRQ_EXT7_I2 in eint7
+ */
+/*
+static irqreturn_t nuc970_eint7_interrupt(int irq, void *dev_id){
+	printk("@7\n");
+	return IRQ_HANDLED;
+}
+
+*/
+/* If enable IRQ_EXT7_H7 or IRQ_EXT7_I2 , linux will enable EINT7
+ * User can modify trigger tiypes as below :
+ * IRQF_TRIGGER_FALLING / IRQF_TRIGGER_RISING / IRQF_TRIGGER_HIGH / IRQF_TRIGGER_LOW
+ */
+struct nuc970_eint_pins eint7[]={
+//{IRQ_EXT7_H7,nuc970_eint7_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint7"},
+//{IRQ_EXT7_I2,nuc970_eint7_interrupt,IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,"eint7"},
+{0,0,0,0}
+};
+
+static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 	int err;
-	struct nuc970_eint_pins *peint=eint;
-	while(peint->pin!=(u32)0){
-		if ((err = request_irq(peint->pin,peint->handler, peint->trigger, peint->name, 0)) != 0) {
-			printk("register %s irq failed %d\n",peint->name ,err);
+	struct nuc970_eint_pins *peint;
+	struct pinctrl *p = NULL;
+	switch(pdev->id)
+	{
+		case 1:
+			peint=eint0;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
+				switch(peint->pin){
+					case IRQ_EXT0_H0:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint0-PH");
+					break;
+					case IRQ_EXT0_F11:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint0-PF");
+					break;
+				}
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
 		}
-		switch(peint->pin){
-			case IRQ_EXT0_H0:
-				if(flag==1){
-					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT0_H0);
+		break;
+		case 2:
+			peint=eint1;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
 				}
-				__raw_writel(0xF|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT0_F11:
-				if(flag==1){
-					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT0_F11);
-				}
-				__raw_writel(0xF000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
-			break;
-			case IRQ_EXT1_H1:
 				if(flag==1){
 					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT1_H1);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF0|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT1_F12 :
-				if(flag==1){
-					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT1_F12);
+				switch(peint->pin){
+					case IRQ_EXT1_H1:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint1-PH");
+					break;
+					case IRQ_EXT1_F12:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint1-PF");
+					break;
 				}
-				__raw_writel(0xF0000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
-			break;
-			case IRQ_EXT2_H2:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 3:
+			peint=eint2;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT2_H2);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF00|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT2_F13: 
-				if(flag==1){
-					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT2_F13);
+				switch(peint->pin){
+					case IRQ_EXT2_H2:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint2-PH");
+					break;
+					case IRQ_EXT2_F13:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint2-PF");
+					break;
 				}
-				__raw_writel(0xF00000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
-			break;
-			case IRQ_EXT3_H3:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 4:
+			peint=eint3;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT3_H3);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT3_F14:
-				if(flag==1){
-					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT3_F14);
+				switch(peint->pin){
+					case IRQ_EXT3_H3:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint3-PH");
+					break;
+					case IRQ_EXT3_F14:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint3-PF");
+					break;
 				}
-				__raw_writel(0xF000000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
-			break;
-			case IRQ_EXT4_H4:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 5:
+			peint=eint4;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT4_H4);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF0000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT4_F15:
-				if(flag==1){
-					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT4_F15);
+				switch(peint->pin){
+					case IRQ_EXT4_H4:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint4-PH");
+					break;
+					case IRQ_EXT4_F15:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint4-PF");
+					break;
 				}
-				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPF_H) ,REG_MFP_GPF_H);
-			break;
-			case IRQ_EXT5_H5:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 6:
+			peint=eint5;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT5_H5);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF00000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT5_G15:
-				if(flag==1){
-					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT5_G15);
+				switch(peint->pin){
+					case IRQ_EXT5_H5:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint5-PH");
+					break;
+					case IRQ_EXT5_G15:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint5-PG");
+					break;
 				}
-				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPG_H) ,REG_MFP_GPG_H);
-			break;
-			case IRQ_EXT6_H6:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 7:
+			peint=eint6;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT6_H6);
+					enable_irq_wake(peint->pin);
 				}
-				__raw_writel(0xF000000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT6_I1:
-				if(flag==1){
-					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT6_I1);
+				switch(peint->pin){
+					case IRQ_EXT6_H6:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint6-PH");
+					break;
+					case IRQ_EXT6_I1:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint6-PI");
+					break;
 				}
-				__raw_writel(0xF0|__raw_readl(REG_MFP_GPI_L) ,REG_MFP_GPI_L);
-			break;
-			case IRQ_EXT7_H7:
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
+		}
+		break;
+		case 8:
+			peint=eint7;
+			while(peint->pin!=(u32)0){
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
 				if(flag==1){
 					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
 					enable_irq_wake(IRQ_EXT7_H7);
 				}
-				__raw_writel(0xF0000000|__raw_readl(REG_MFP_GPH_L) ,REG_MFP_GPH_L);
-			break;
-			case IRQ_EXT7_I2:
-				if(flag==1){
-					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT7_I2);
+				switch(peint->pin){
+					case IRQ_EXT7_H7:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint7-PH");
+					break;
+					case IRQ_EXT7_I2:
+						p = devm_pinctrl_get_select(&pdev->dev, "eint7-PI");
+					break;
 				}
-				 __raw_writel(0xF00|__raw_readl(REG_MFP_GPI_L) ,REG_MFP_GPI_L);
-			break;
+				if (IS_ERR(p))
+				{
+					dev_err(&pdev->dev, "unable to reserve pin\n");
+					return PTR_ERR(p);
+				}
+				peint++;
 		}
-	peint++;
+		break;
 	}
+	return 0;
 }
 
 static int nuc970_gpio_probe(struct platform_device *pdev)
@@ -449,70 +688,72 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 	int err;
 
 	struct clk *clk;
+	if(pdev->id == 1)
+	{
+		/* Enable GPIO clock */
+		clk = clk_get(NULL, "gpio");
+	        if (IS_ERR(clk)) {
+			printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
+			err = PTR_ERR(clk);
+			return err;
+		}
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	/* Enable GPIO clock */
-	clk = clk_get(NULL, "gpio");
-        if (IS_ERR(clk)) {
-		printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
-		err = PTR_ERR(clk);
-		return err;
+		clk = clk_get(NULL, "gpio_eclk");
+	        if (IS_ERR(clk)) {
+			printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
+			err = PTR_ERR(clk);
+			return err;
+		}
+
+		clk_prepare(clk);
+		clk_enable(clk);
+
+		nuc970_gpio_port.dev = &pdev->dev;
+		err = gpiochip_add(&nuc970_gpio_port);
+		if (err < 0) {
+			goto err_nuc970_gpio_port;
+		}
+
+		#if defined (CONFIG_PULL_UP_MATRIX_KEYPAD_PIN)
+		#if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
+	                __raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc1f), (void *)(NUC970_VA_GPIO+0x24));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x370), (void *)(NUC970_VA_GPIO+0x20));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PA_3x2 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x24));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x20));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x2 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x24));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xff0), (void *)(NUC970_VA_GPIO+0x20));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x4 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x8)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x24));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x20));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x8 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x2)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x1e4));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x1e0));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x2 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x4)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x1e4));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xff0), (void *)(NUC970_VA_GPIO+0x1e0));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x4 \n");
+		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x1e4));
+			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x1e0));
+			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x8 \n");
+		#endif
+		#endif
 	}
-	clk_prepare(clk);
-	clk_enable(clk);
 
-	clk = clk_get(NULL, "gpio_eclk");
-        if (IS_ERR(clk)) {
-		printk(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
-		err = PTR_ERR(clk);
-		return err;
-	}
-
-	clk_prepare(clk);
-	clk_enable(clk);
-
-	nuc970_gpio_port.dev = &pdev->dev;
-	err = gpiochip_add(&nuc970_gpio_port);
-	if (err < 0) {
-		goto err_nuc970_gpio_port;
-	}
-
-	#if defined (CONFIG_PULL_UP_MATRIX_KEYPAD_PIN)
-	#if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-                __raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc1f), (void *)(NUC970_VA_GPIO+0x24));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x370), (void *)(NUC970_VA_GPIO+0x20));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PA_3x2 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x24));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x20));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x2 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x24));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xff0), (void *)(NUC970_VA_GPIO+0x20));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x4 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x8)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x24));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x20));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x8 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x2)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x1e4));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x1e0));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x2 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x4)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x1e4));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xff0), (void *)(NUC970_VA_GPIO+0x1e0));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x4 \n");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x1e4));
-		__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x1e0));
-		//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x8 \n");
+	#ifdef CONFIG_GPIO_NUC970_EINT_WKUP
+		nuc970_enable_eint(1,pdev);
+	#else
+		nuc970_enable_eint(0,pdev);
 	#endif
-	#endif
-
-#ifdef CONFIG_GPIO_NUC970_EINT_WKUP
-	nuc970_enable_eint_wakeup(1);
-#else
-	nuc970_enable_eint_wakeup(0);
-#endif
 
 	return 0;
 

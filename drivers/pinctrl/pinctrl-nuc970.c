@@ -336,18 +336,19 @@ static const unsigned etimer3_3_pin[] = {0x5E}; // cap
 
 static const unsigned jtag_pins[] = {0x90, 0x91, 0x92, 0x93, 0x94};
 
-static const unsigned eint0_0_pin[] = {0x5B};
-static const unsigned eint0_1_pin[] = {0x70};
-static const unsigned eint1_0_pin[] = {0x5C};
-static const unsigned eint1_1_pin[] = {0x71};
-static const unsigned eint2_0_pin[] = {0x5D};
-static const unsigned eint2_1_pin[] = {0x72};
-static const unsigned eint3_0_pin[] = {0x5E};
-static const unsigned eint3_1_pin[] = {0x73};
-static const unsigned eint4_0_pin[] = {0x5F};
-static const unsigned eint4_1_pin[] = {0x74};
-static const unsigned eint5_0_pin[] = {0x6F};
-static const unsigned eint5_1_pin[] = {0x75};
+
+static const unsigned eint0_0_pin[] = {0x70};
+static const unsigned eint0_1_pin[] = {0x5B};
+static const unsigned eint1_0_pin[] = {0x71};
+static const unsigned eint1_1_pin[] = {0x5C};
+static const unsigned eint2_0_pin[] = {0x72};
+static const unsigned eint2_1_pin[] = {0x5D};
+static const unsigned eint3_0_pin[] = {0x73};
+static const unsigned eint3_1_pin[] = {0x5E};
+static const unsigned eint4_0_pin[] = {0x74};
+static const unsigned eint4_1_pin[] = {0x5F};
+static const unsigned eint5_0_pin[] = {0x75};
+static const unsigned eint5_1_pin[] = {0x6F};
 static const unsigned eint6_0_pin[] = {0x76};
 static const unsigned eint6_1_pin[] = {0x81};
 static const unsigned eint7_0_pin[] = {0x77};
@@ -3414,103 +3415,103 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "jtag_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint0-PF",
+		.dev_name = "nuc970-gpio.1",
+		.name = "eint0-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint0",
 		.data.mux.group = "eint0_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint0-PH",
+		.dev_name = "nuc970-gpio.1",
+		.name = "eint0-PF",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint0",
 		.data.mux.group = "eint0_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint1-PF",
+		.dev_name = "nuc970-gpio.2",
+		.name = "eint1-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint1",
 		.data.mux.group = "eint1_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint1-PH",
+		.dev_name = "nuc970-gpio.2",
+		.name = "eint1-PF",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint1",
 		.data.mux.group = "eint1_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint2-PF",
+		.dev_name = "nuc970-gpio.3",
+		.name = "eint2-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint2",
 		.data.mux.group = "eint2_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint2-PH",
+		.dev_name = "nuc970-gpio.3",
+		.name = "eint2-PF",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint2",
 		.data.mux.group = "eint2_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint3-PF",
+		.dev_name = "nuc970-gpio.4",
+		.name = "eint3-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint3",
 		.data.mux.group = "eint3_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint3-PH",
+		.dev_name = "nuc970-gpio.4",
+		.name = "eint3-PF",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint3",
 		.data.mux.group = "eint3_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint4-PF",
+		.dev_name = "nuc970-gpio.5",
+		.name = "eint4-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint4",
 		.data.mux.group = "eint4_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint4-PH",
+		.dev_name = "nuc970-gpio.5",
+		.name = "eint4-PF",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint4",
 		.data.mux.group = "eint4_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint5-PF",
+		.dev_name = "nuc970-gpio.6",
+		.name = "eint5-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint5",
 		.data.mux.group = "eint5_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
-		.name = "eint5-PH",
+		.dev_name = "nuc970-gpio.6",
+		.name = "eint5-PG",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "eint5",
 		.data.mux.group = "eint5_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
+		.dev_name = "nuc970-gpio.7",
 		.name = "eint6-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -3518,7 +3519,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "eint6_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
+		.dev_name = "nuc970-gpio.7",
 		.name = "eint6-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -3526,7 +3527,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "eint6_1_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
+		.dev_name = "nuc970-gpio.8",
 		.name = "eint7-PH",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
@@ -3534,7 +3535,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.data.mux.group = "eint7_0_grp",
 	},
 	{
-		.dev_name = "nuc970-gpio",
+		.dev_name = "nuc970-gpio.8",
 		.name = "eint7-PI",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",

@@ -1395,9 +1395,49 @@ static struct resource nuc970_gpio_resource[] = {
 
 struct platform_device nuc970_device_gpio = {
 	.name = "nuc970-gpio",
-	.id = -1,
+	.id = 0,
 	.num_resources = ARRAY_SIZE(nuc970_gpio_resource),
 	.resource = nuc970_gpio_resource,
+};
+
+struct platform_device nuc970_device_eint0 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 1,
+};
+
+struct platform_device nuc970_device_eint1 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 2,
+};
+
+struct platform_device nuc970_device_eint2 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 3,
+};
+
+struct platform_device nuc970_device_eint3 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 4,
+};
+
+struct platform_device nuc970_device_eint4 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 5,
+};
+
+struct platform_device nuc970_device_eint5 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 6,
+};
+
+struct platform_device nuc970_device_eint6 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 7,
+};
+
+struct platform_device nuc970_device_eint7 = {
+        .name		  = "nuc970-gpio",
+        .id		  = 8,
 };
 
 #endif
@@ -1586,6 +1626,14 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #ifdef CONFIG_GPIO_NUC970
 	&nuc970_device_gpio,
+	&nuc970_device_eint0,
+	&nuc970_device_eint1,
+	&nuc970_device_eint2,
+	&nuc970_device_eint3,
+	&nuc970_device_eint4,
+	&nuc970_device_eint5,
+	&nuc970_device_eint6,
+	&nuc970_device_eint7,
 #endif
 #ifdef CONFIG_I2C_ALGOBIT
 	&i2c_gpio,
