@@ -306,7 +306,7 @@ static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	if (skb == NULL)
 		return NULL;
 
-	//skb_reserve(skb, 2);    // reserve 2 bytes to align IP header
+	skb_reserve(skb, 2);    // reserve 2 bytes to align IP header
 	skb->dev = dev;
 
 	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
@@ -739,7 +739,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			ether->stats.rx_packets++;
 			ether->stats.rx_bytes += length;
 
-			//skb_reserve(skb, 2);
+			skb_reserve(skb, 2);
 			skb->dev = dev;
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
