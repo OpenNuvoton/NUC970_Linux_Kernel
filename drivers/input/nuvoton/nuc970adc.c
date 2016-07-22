@@ -166,7 +166,7 @@ static void nuc970_touch2detect(void)
     __raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_TEN | ADC_CONF_ZEN), REG_ADC_CONF);
     __raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN)), REG_ADC_IER); /*Disable Interrupt */
     __raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN | ADC_CTL_PEDEEN), REG_ADC_CTL); /* Enable pen down event */
-    udelay(100);
+    udelay(10);
     __raw_writel(ADC_ISR_PEDEF|ADC_ISR_PEUEF|ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);/* Clear pen down/up interrupt status */
     __raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_PEDEIEN), REG_ADC_IER); /*Enable Interrupt */
     LEAVE();
@@ -814,7 +814,7 @@ static int nuc970adc_suspend(struct platform_device *pdev,pm_message_t state){
     __raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_TEN | ADC_CONF_ZEN), REG_ADC_CONF);
     __raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_WKTIEN|ADC_IER_PEDEIEN)), REG_ADC_IER); /*Disable Interrupt */
     __raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN| ADC_CTL_WKTEN | ADC_CTL_PEDEEN), REG_ADC_CTL); /* Enable pen down event */
-    udelay(100);
+    udelay(10);
     __raw_writel(ADC_ISR_PEDEF|ADC_ISR_PEUEF|ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);/* Clear pen down/up interrupt status */
     __raw_writel(ADC_WKISR_WPEDEF,REG_ADC_WKISR);  /* Clear ts wakeup up flag */
     __raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_PEDEIEN|ADC_IER_WKTIEN), REG_ADC_IER); /*Enable Interrupt */
