@@ -721,7 +721,7 @@ static int usb_string_sub(struct usb_device *dev, unsigned int langid,
 	if (dev->quirks & USB_QUIRK_STRING_FETCH_255)
 		rc = -EIO;
 	else
-		rc = usb_get_string(dev, langid, index, buf, 255);
+		rc = usb_get_string(dev, langid, index, buf, 248);
 
 	/* If that failed try to read the descriptor length, then
 	 * ask for just that many bytes */
