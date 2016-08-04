@@ -1,6 +1,6 @@
 /* linux/driver/misc/nuc970-sc.c
  *
- * Copyright (c) 2015 Nuvoton technology corporation
+ * Copyright (c) 2015-2016 Nuvoton Technology Corporation
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -113,7 +113,7 @@ static void config_reader(struct nuc970_sc *sc)
 			sc->base + REG_SC_CTL);
 		__raw_writel(GT - 12, sc->base + REG_SC_EGT);
 	} else {
-		printk("set EGT to %d\n", GT - 11);
+		//printk("set EGT to %d\n", GT - 11);
 		__raw_writel((__raw_readl(sc->base + REG_SC_CTL) & ~SC_CTL_BGT) | SC_CTL_NSB | ((22 - 1) << 8),
 			sc->base + REG_SC_CTL);
 		__raw_writel(GT - 11, sc->base + REG_SC_EGT);
@@ -121,7 +121,7 @@ static void config_reader(struct nuc970_sc *sc)
 	// Set retry count
 	while(__raw_readl(sc->base + REG_SC_CTL) & SC_CTL_SYNC);
 	if(sc->protocol == 0) { // retry 4 times max for T0
-		printk("set retry count %d\n", __raw_readl(sc->base + REG_SC_ETUCTL));
+		//printk("set retry count %d\n", __raw_readl(sc->base + REG_SC_ETUCTL));
 		__raw_writel((__raw_readl(sc->base + REG_SC_CTL) & ~(SC_CTL_TXRTY | SC_CTL_RXRTY)) | SC_CTL_TXRTYEN | SC_CTL_RXRTYEN | 0x00330000,
 			sc->base + REG_SC_CTL);
 		__raw_writel(SC_ALTCTL_RXRST | SC_ALTCTL_TXRST, sc->base + REG_SC_ALTCTL);
@@ -414,7 +414,6 @@ static ssize_t sc_read(struct file *filp, char __user *buf, size_t count, loff_t
 {
 
 	struct nuc970_sc *sc = (struct nuc970_sc *)filp->private_data;
-
 	int ret = 0;
 
 	if(unlikely((count == 0) || (sc->rhead == sc->rtail)))
@@ -428,9 +427,10 @@ static ssize_t sc_read(struct file *filp, char __user *buf, size_t count, loff_t
 
 
 	mutex_lock(&sc->lock);
-	if(sc->err != 0)
+
+	if(sc->err != 0) {
 		ret = -EFAULT;
-	else {
+	} else {
 		if(copy_to_user(buf, &sc->rbuf[0], count))
 			ret = -EFAULT;
 		else {
@@ -452,12 +452,12 @@ static ssize_t sc_write(struct file *filp, const char __user *buf, size_t count,
 	int intf = sc->intf;
 	int ret = 0;
 
+	mutex_lock(&sc->lock);
 	if(unlikely(count == 0))
 		goto out;
 	if(unlikely(sc->act != 1))
 		goto out;
 
-	mutex_lock(&sc->lock);
 
 	if(unlikely(count > MAX_LEN))
 		sc->tcnt = MAX_LEN;
@@ -469,7 +469,6 @@ static ssize_t sc_write(struct file *filp, const char __user *buf, size_t count,
 	sc->rhead = sc->rtail = 0; // this is a new transaction, drop old data
 	if (copy_from_user(sc->tbuf, buf, count)) {
 		ret = -EFAULT;
-		mutex_unlock(&sc->lock);
 		goto out;
 	}
 	if(sc->protocol == 0) {
@@ -482,15 +481,18 @@ static ssize_t sc_write(struct file *filp, const char __user *buf, size_t count,
 		ret = -EFAULT;
 	else
 		ret = sc->tcnt; // transfer complete...
-	mutex_unlock(&sc->lock);
 out:
+	mutex_unlock(&sc->lock);
 	return ret;
 }
 
 static int sc_release(struct inode *inode, struct file *filp)
 {
 	struct nuc970_sc *sc = (struct nuc970_sc *)filp->private_data;
+	int ret = 0;
 	// free irq
+	mutex_lock(&sc->lock);
+
 	free_irq(sc->irq, (void *)sc);
 
 	// deactivate
@@ -517,8 +519,10 @@ static int sc_release(struct inode *inode, struct file *filp)
 	clk_put(sc->eclk);
 
 	filp->private_data = NULL;
+	sc->open = 0;
 
-	return(0);
+	mutex_unlock(&sc->lock);
+	return(ret);
 }
 
 static int sc_open(struct inode *inode, struct file *filp)
@@ -530,6 +534,11 @@ static int sc_open(struct inode *inode, struct file *filp)
 		if(MINOR(inode->i_rdev) == sc[intf].minor) {
 			break;
 		}
+	mutex_lock(&sc[intf].lock);
+	if(sc->open == 1) {
+		mutex_unlock(&sc[intf].lock);
+		return -EBUSY;
+	}
 	filp->private_data = (void *)&sc[intf];
 
 	if(intf == 0) {
@@ -559,23 +568,23 @@ static int sc_open(struct inode *inode, struct file *filp)
 
 	if(intf == 0) {
 #ifdef CONFIG_NUC970_SC0_PWRINV
-	__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
+		__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
 #endif
 
 #ifdef CONFIG_NUC970_SC0_CDLV_H
-	__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
+		__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
 #elif defined(CONFIG_NUC970_SC0_CD_IGNORE)
-	sc[intf].ignorecd = 1;
+		sc[intf].ignorecd = 1;
 #endif
 	} else {
 #ifdef CONFIG_NUC970_SC1_PWRINV
-	__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
+		__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
 #endif
 
 #ifdef CONFIG_NUC970_SC1_CDLV_H
-	__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
+		__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
 #elif defined(CONFIG_NUC970_SC1_CD_IGNORE)
-	sc[intf].ignorecd = 1;
+		sc[intf].ignorecd = 1;
 #endif
 	}
 	// enable SC engine
@@ -586,7 +595,8 @@ static int sc_open(struct inode *inode, struct file *filp)
 		ret = -EAGAIN;
 		goto out1;
 	}
-
+	sc[intf].open = 1;
+	mutex_unlock(&sc[intf].lock);
 	return 0;
 
 
@@ -594,6 +604,7 @@ out1:
 
 	free_irq(sc[intf].irq, (void *)&sc[intf]);
 out2:
+	mutex_unlock(&sc[intf].lock);
 	return ret;
 
 }
@@ -605,6 +616,7 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct sc_transact *sc_t;
 	unsigned int param;
 
+	mutex_lock(&sc->lock);
 
 	switch(cmd) {
 		case SC_IOC_ACTIVATE:
@@ -648,6 +660,7 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				if(sc->err == 0)
 					sc->err = parse_atr(sc, 1);
 			}
+
 			if(sc->err != 0) { // no matter what error, deactivate...
 				schedule_timeout_interruptible(HZ/100);
 				sc->act = 0;
@@ -657,17 +670,22 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				memset(&sc->T1, 0, sizeof(sc->T1));
 				memset(&sc->T0_dat, 0, sizeof(sc->T0_dat));
 				memset(&sc->T1_dat, 0, sizeof(sc->T1_dat));
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
 			} else {
 				sc->act = 1;
+				mutex_unlock(&sc->lock);
 				return sc->atrlen;
 			}
 		case SC_IOC_READATR:
 			if(sc->act != 1) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
 			}
-			if(copy_to_user((void *)arg, (const void *)sc->atrbuf, sc->atrlen))
+			if(copy_to_user((void *)arg, (const void *)sc->atrbuf, sc->atrlen)) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
+			}
 			break;
 
 		case SC_IOC_DEACTIVATE:
@@ -734,8 +752,10 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 			}
 
-			if(copy_to_user((void *)arg, (const void *)&param, sizeof(unsigned int)))
+			if(copy_to_user((void *)arg, (const void *)&param, sizeof(unsigned int))) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
+			}
 			break;
 
 		case SC_IOC_SETPARAM:
@@ -749,17 +769,23 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		case SC_IOC_TRANSACT:
 			sc_t = (struct sc_transact *)arg;
 
-			if(unlikely(sc_t == NULL))
+			if(unlikely(sc_t == NULL)) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
-			if(unlikely(sc_t->tx_len == 0 || sc_t->rx_len == 0))
+			}
+			if(unlikely(sc_t->tx_len == 0 || sc_t->rx_len == 0)) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
-			if(unlikely(sc_t->tx_buf == NULL || sc_t->rx_buf == NULL))
+			}
+			if(unlikely(sc_t->tx_buf == NULL || sc_t->rx_buf == NULL)) {
+				mutex_unlock(&sc->lock);
 				return -EFAULT;
-			if(unlikely(sc->act != 1))
+			}
+			if(unlikely(sc->act != 1)) {
+				mutex_unlock(&sc->lock);
 				return -EIO;
+			}
 
-			// write
-			mutex_lock(&sc->lock);
 
 			if(unlikely(sc_t->tx_len > MAX_LEN))
 				sc->tcnt = MAX_LEN;
@@ -791,14 +817,16 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				mutex_unlock(&sc->lock);
 				return -EFAULT;
 			}
-			mutex_unlock(&sc->lock);
+
 
 			break;
 		default:
+			mutex_unlock(&sc->lock);
 			return -ENOTTY;
 
 
 	}
+	mutex_unlock(&sc->lock);
 	return 0;
 }
 
@@ -868,6 +896,7 @@ static int nuc970_sc_probe(struct platform_device *pdev)
 	res = (void __iomem *)platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	sc[intf].res = request_mem_region(res->start, resource_size(res), pdev->name);
 	sc[intf].base = ioremap(res->start, resource_size(res));
+	sc[intf].open = 0;
 	if (sc[intf].base == NULL) {
 		dev_err(&pdev->dev, "cannot request IO\n");
 		return -ENXIO;
@@ -897,12 +926,39 @@ static int nuc970_sc_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nuc970_sc_suspend(struct platform_device *pdev, pm_message_t state)
 {
+	struct nuc970_sc *_sc = &sc[pdev->id];
+
+	// Holds the lock until wake up. Avoid application access the card.
+	mutex_lock(&_sc->lock);
+
+	if(_sc->open == 0)
+		goto out;
+	// Make sure the card enter deactivate state before system power down
+	if(__raw_readl(_sc->base + REG_SC_PINCTL) & SC_PINCTL_RSTSTS) {
+		// only deactivate if card is activated
+		_sc->state = SC_OP_DEACTIVATE;
+		__raw_writel(__raw_readl(_sc->base + REG_SC_ALTCTL) | SC_ALTCTL_DACTEN, _sc->base + REG_SC_ALTCTL);
+		wait_event_interruptible(_sc->wq, _sc->state != SC_OP_DEACTIVATE);
+	}
+	_sc->atrlen = _sc->protocol = 0;
+	_sc->rtail = _sc->rhead = 0;
+	_sc->act = 0;
+	_sc->err = 0;
+	memset(&_sc->T0, 0, sizeof(_sc->T0));
+	memset(&_sc->T1, 0, sizeof(_sc->T1));
+	memset(&_sc->T0_dat, 0, sizeof(_sc->T0_dat));
+	memset(&_sc->T1_dat, 0, sizeof(_sc->T1_dat));
+	memset(&_sc->atr, 0, sizeof(_sc->atr));
+out:
 	return 0;
 }
 
 static int nuc970_sc_resume(struct platform_device *pdev)
 {
+	struct nuc970_sc *_sc = &sc[pdev->id];
 
+	// Release the lock so application can start access the card.
+	mutex_unlock(&_sc->lock);
 	return 0;
 }
 
