@@ -191,6 +191,7 @@ struct nuc970_sc {
 	struct clk *clk;
 	struct clk *eclk;
 	wait_queue_head_t wq;
+	int open;
 	int protocol;			// T0, T1
 	int intf;			// 0, 1
 	int minor;			// dynamic allocate device minor number
