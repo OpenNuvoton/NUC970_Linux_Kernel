@@ -718,7 +718,7 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 
 		#if defined (CONFIG_PULL_UP_MATRIX_KEYPAD_PIN)
 		#if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-	                __raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc1f), (void *)(NUC970_VA_GPIO+0x24));
+	                __raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc8f), (void *)(NUC970_VA_GPIO+0x24));
 			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x370), (void *)(NUC970_VA_GPIO+0x20));
 			//printk("\n select CONFIG_NUC970_KEYPAD_PA_3x2 \n");
 		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
