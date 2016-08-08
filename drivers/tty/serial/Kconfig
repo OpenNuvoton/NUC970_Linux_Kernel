@@ -23,6 +23,12 @@ config NUC970_UART1
 	help
 	  This selects NUC970 uart1 driver
 
+config ENABLE_UART1_CTS_WAKEUP
+	bool "Enable UART1 CTS wake-up function"
+	depends on NUC970_UART1
+	help
+	  This selects NUC970 uart1 CTS wake-up function
+
 choice
 	prompt "NUC970 UART1 pin selection"
 	default NUC970_UART1_PE
@@ -52,6 +58,12 @@ config NUC970_UART2
 	help
 	  This selects NUC970 uart2 driver
 
+config ENABLE_UART2_CTS_WAKEUP
+	bool "Enable UART2 CTS wake-up function"
+	depends on NUC970_UART2
+	help
+	  This selects NUC970 uart2 CTS wake-up function
+
 choice
 	prompt "NUC970 UART2 pin selection"
 	default NUC970_UART2_PF
@@ -76,6 +88,12 @@ config NUC970_UART4
 	depends on SERIAL_NUC970=y
 	help
 	  This selects NUC970 uart4 driver
+
+config ENABLE_UART4_CTS_WAKEUP
+	bool "Enable UART4 CTS wake-up function"
+	depends on NUC970_UART4
+	help
+	  This selects NUC970 uart4 CTS wake-up function
 
 choice
 	prompt "NUC970 UART4 pin selection"
@@ -107,6 +125,12 @@ config NUC970_UART6
 	depends on SERIAL_NUC970=y
 	help
 	  This selects NUC970 uart6 driver
+
+config ENABLE_UART6_CTS_WAKEUP
+	bool "Enable UART6 CTS wake-up function"
+	depends on NUC970_UART6
+	help
+	  This selects NUC970 uart6 CTS wake-up function
 
 choice
 	prompt "NUC970 UART6 pin selection"
@@ -149,6 +173,12 @@ config NUC970_UART8
 	depends on SERIAL_NUC970=y
 	help
 	  This selects NUC970 uart8 driver
+
+config ENABLE_UART8_CTS_WAKEUP
+	bool "Enable UART8 CTS wake-up function"
+	depends on NUC970_UART8
+	help
+	  This selects NUC970 uart8 CTS wake-up function
 
 choice
 	prompt "NUC970 UART8 pin selection"
@@ -197,6 +227,12 @@ config NUC970_UART10
 	depends on SERIAL_NUC970=y
 	help
 	  This selects NUC970 uart10 driver
+
+config ENABLE_UART10_CTS_WAKEUP
+	bool "Enable UART10 CTS wake-up function"
+	depends on NUC970_UART10
+	help
+	  This selects NUC970 uart10 CTS wake-up function
 
 choice
 	prompt "NUC970 UART10 pin selection"

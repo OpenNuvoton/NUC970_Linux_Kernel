@@ -426,7 +426,7 @@ static int nuc970serial_startup(struct uart_port *port)
 	/* Clear pending interrupts (not every bit are write 1 clear though...) */
 	serial_out(up, UART_REG_ISR, 0xFFFFFFFF);
 
-	retval = request_irq(port->irq, nuc970serial_interrupt, 0,
+	retval = request_irq(port->irq, nuc970serial_interrupt, IRQF_NO_SUSPEND,
 			tty ? tty->name : "nuc970_serial", port);
 
 	if (retval) {
@@ -1224,12 +1224,73 @@ static int nuc970serial_remove(struct platform_device *dev)
 static int nuc970serial_suspend(struct platform_device *dev, pm_message_t state)
 {
 	int i;
+	int wakeup_flag = 0;
 
-	for (i = 0; i < UART_NR; i++) {
-		struct uart_nuc970_port *up = &nuc970serial_ports[i];
+	struct uart_nuc970_port *up;
 
-		if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
-			uart_suspend_port(&nuc970serial_reg, &up->port);
+	i = dev->id;
+
+        //printk("\n uart suspend !! %d \n", i);
+
+        up = &nuc970serial_ports[i];
+
+        //if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
+	//		uart_suspend_port(&nuc970serial_reg, &up->port);
+
+        #ifdef CONFIG_ENABLE_UART1_CTS_WAKEUP
+        if(i == 1)
+        {
+            __raw_writel((1<<8) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        }
+        #endif
+
+        #ifdef CONFIG_ENABLE_UART2_CTS_WAKEUP
+        if(i == 2)
+        {
+            __raw_writel((1<<9) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        }
+        #endif
+
+        #ifdef CONFIG_ENABLE_UART4_CTS_WAKEUP
+        if(i == 4)
+        {
+            __raw_writel((1<<10) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        }
+        #endif
+
+        #ifdef CONFIG_ENABLE_UART6_CTS_WAKEUP
+        if(i == 6)
+        {
+            __raw_writel((1<<11) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        }
+        #endif
+
+        #ifdef CONFIG_ENABLE_UART8_CTS_WAKEUP
+        if(i == 8)
+            __raw_writel((1<<12) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        #endif
+
+        #ifdef CONFIG_ENABLE_UART10_CTS_WAKEUP
+        if(i == 10)
+        {
+            __raw_writel((1<<13) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+            wakeup_flag = 1;
+        }
+        #endif
+
+        if(wakeup_flag == 1)
+        {
+	    //request_irq(up->port.irq, nuc970serial_interrupt, IRQF_NO_SUSPEND,
+	    //		"nuc970_serial", 0);
+
+            serial_out(up, UART_REG_IER, serial_in(up, UART_REG_IER) | (0x1 << 6));
+
+            enable_irq_wake(up->port.irq);
 	}
 
 	return 0;
@@ -1237,6 +1298,7 @@ static int nuc970serial_suspend(struct platform_device *dev, pm_message_t state)
 
 static int nuc970serial_resume(struct platform_device *dev)
 {
+        #if 0
 	int i;
 
 	for (i = 0; i < UART_NR; i++) {
@@ -1244,7 +1306,11 @@ static int nuc970serial_resume(struct platform_device *dev)
 
 		if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
 			nuc970serial_resume_port(i);
+
 	}
+	#endif
+
+        //printk("\n uart resume !\n");
 
 	return 0;
 }
