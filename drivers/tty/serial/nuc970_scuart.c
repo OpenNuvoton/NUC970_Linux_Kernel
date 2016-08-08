@@ -1,10 +1,10 @@
 /*
- *  linux/drivers/serial/nuc970_scuart.c
+ *  linux/drivers/tty/serial/nuc970_scuart.c
  *
  *  NUC970 Smartcard UART mode driver
  *
  *
- *  Copyright (C) 2014 Nuvoton Technology Corp.
+ *  Copyright (C) 2014~2016 Nuvoton Technology Corp.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -291,13 +291,10 @@ static int nuc970serial_startup(struct uart_port *port)
 	/*
 	 * Now, initialize the UART
 	 */
-	serial_out(up, REG_SC_CTL, 0x1041);	// 1 stop bit, trigger level 2 bytes
-	serial_out(up, REG_SC_UARTCTL, 1);	// 8 bit, uart mode enable
+	serial_out(up, REG_SC_CTL, 0x41);	// enable SC engine, trigger level 2 bytes
+	serial_out(up, REG_SC_UARTCTL, serial_in(up, REG_SC_UARTCTL) | 1);	// enable UART mode
 	serial_out(up, REG_SC_RXTOUT, 0x40);
 	serial_out(up, REG_SC_INTEN, SC_INTEN_RXTOIEN | SC_INTEN_RDAIEN);
-
-	/* 12MHz reference clock input, 115200bps */
-	serial_out(up, REG_SC_ETUCTL, 0x67);
 
 	return 0;
 }
@@ -320,7 +317,7 @@ static unsigned int nuc970serial_get_divisor(struct uart_port *port, unsigned in
 {
 	unsigned int quot;
 
-	quot = (port->uartclk / baud) - 1;
+	quot = ((port->uartclk + baud / 2) / baud) - 1;
 
 	return quot;
 }
@@ -516,7 +513,7 @@ static struct uart_driver nuc970serial_reg = {
 	.driver_name		= "sc_serial",
 	.dev_name		= "ttySCU",
 	.major			= TTY_MAJOR,
-	.minor			= 80,//64,  reerve at least 11 for real UART
+	.minor			= 80,//64,  reserve at least 11 for real UART
 	.nr			= SCUART_NR,
 };
 
@@ -568,28 +565,27 @@ static int nuc970serial_pinctrl(struct platform_device *pdev)
 	return retval;
 }
 
-static void nuc970serial_set_clock(void)
+static void nuc970serial_set_clock(int id)
 {
 	struct clk *clk;
-#ifdef CONFIG_NUC970_SCUART0
-	clk = clk_get(NULL, "smc0");
-	clk_prepare(clk);
-	clk_enable(clk);
 
-	clk = clk_get(NULL, "smc0_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
-#endif
+	if(id == 0) {
+		clk = clk_get(NULL, "smc0");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-#ifdef CONFIG_NUC970_SCUART1
-	clk = clk_get(NULL, "smc1");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "smc0_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	} else {
+		clk = clk_get(NULL, "smc1");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "smc1_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
-#endif
+		clk = clk_get(NULL, "smc1_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 
 }
 
@@ -603,18 +599,16 @@ static int nuc970serial_probe(struct platform_device *pdev)
 	struct plat_nuc970serial_port *p = pdev->dev.platform_data;
 	struct uart_nuc970_port *up;
 
-	int ret, i, retval;
+	int retval;
 
 	retval = nuc970serial_pinctrl(pdev);
 	if(retval != 0)
 		return retval;
 
-	nuc970serial_set_clock();
+	nuc970serial_set_clock(pdev->id);
 
-	i = pdev->id;
-
-	up = &nuc970serial_ports[i];
-	up->port.line 		= i;
+	up = &nuc970serial_ports[pdev->id];
+	up->port.line 		= pdev->id;
 	up->port.iobase       	= (long)p->membase;
 	up->port.membase      	= p->membase;
 	up->port.irq          	= p->irq;
@@ -628,54 +622,33 @@ static int nuc970serial_probe(struct platform_device *pdev)
 	spin_lock_init(&up->port.lock);
 
 
-	ret = uart_add_one_port(&nuc970serial_reg, &up->port);
-
-
-	return 0;
+	return uart_add_one_port(&nuc970serial_reg, &up->port);
 }
 
 /*
  * Remove serial ports registered against a platform device.
  */
-static int nuc970serial_remove(struct platform_device *dev)
+static int nuc970serial_remove(struct platform_device *pdev)
 {
-	int i;
+	struct uart_nuc970_port *up = &nuc970serial_ports[pdev->id];
 
-	// FIXME: remove all or one-by-one???
-	for (i = 0; i < SCUART_NR; i++) {
-		struct uart_nuc970_port *up = &nuc970serial_ports[i];
-
-		if (up->port.dev == &dev->dev)
-			uart_remove_one_port(&nuc970serial_reg, &up->port);
-	}
+	uart_remove_one_port(&nuc970serial_reg, &up->port);
 	return 0;
 }
 
-static int nuc970serial_suspend(struct platform_device *dev, pm_message_t state)
+static int nuc970serial_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	int i;
+	struct uart_nuc970_port *up = &nuc970serial_ports[pdev->id];
 
-	for (i = 0; i < SCUART_NR; i++) {
-		struct uart_nuc970_port *up = &nuc970serial_ports[i];
-
-		if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
-			uart_suspend_port(&nuc970serial_reg, &up->port);
-	}
-
+	uart_suspend_port(&nuc970serial_reg, &up->port);
 	return 0;
 }
 
-static int nuc970serial_resume(struct platform_device *dev)
+static int nuc970serial_resume(struct platform_device *pdev)
 {
-	int i;
+	struct uart_nuc970_port *up = &nuc970serial_ports[pdev->id];
 
-	for (i = 0; i < SCUART_NR; i++) {
-		struct uart_nuc970_port *up = &nuc970serial_ports[i];
-
-		if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
-			nuc970scuart_resume_port(i);
-	}
-
+	uart_resume_port(&nuc970serial_reg, &up->port);
 	return 0;
 }
 
