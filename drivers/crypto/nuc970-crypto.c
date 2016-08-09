@@ -77,6 +77,8 @@ struct cryp_algo_template {
 };
 
 
+static volatile bool  mtp_is_enabled = false;
+
 static void dump_mtp_status(void)
 {
     printk("MTP_STATUS: 0x%x\n", MTP->MTP_STATUS);
@@ -239,11 +241,13 @@ static int nuc970_mtp_init(struct crypto_tfm *tfm)
 	/* Enable MTP clock */
     clk_prepare(clk_get(NULL, "mtpc"));	
     clk_enable(clk_get(NULL, "mtpc"));
+    mtp_is_enabled = true;
 	return 0;
 }
 
 static void nuc970_mtp_exit(struct crypto_tfm *tfm)
 {
+    mtp_is_enabled = false;
     clk_disable(clk_get(NULL, "mtpc"));
 }
 
@@ -1620,31 +1624,6 @@ static struct ahash_alg nuc970_hash_algs[] = {
 },
 };
 
-static int nuc970_crypto_remove(struct platform_device *pdev)
-{
-	int  i;
-	struct device *dev = &pdev->dev;
-	struct resource *res;
-
-	for (i = 0; i < ARRAY_SIZE(nuc970_crypto_algs); i++) 
-		crypto_unregister_alg(&nuc970_crypto_algs[i].crypto);
-
-	for (i = 0; i < ARRAY_SIZE(nuc970_hash_algs); i++)
-		crypto_unregister_ahash(&nuc970_hash_algs[i]);
-
-	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.aes_inbuf, nuc970_crdev.aes_inbuf_dma_addr);
-	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.aes_outbuf, nuc970_crdev.aes_outbuf_dma_addr);
-	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.des_inbuf, nuc970_crdev.des_inbuf_dma_addr);
-	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.des_outbuf, nuc970_crdev.des_outbuf_dma_addr);
-	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.hmac_inbuf, nuc970_crdev.hmac_inbuf_dma_addr);
-
-	iounmap(nuc970_crdev.regs);
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	release_mem_region(res->start, resource_size(res));
-	return 0;
-}
-
 static int nuc970_crypto_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1729,10 +1708,80 @@ failed:
 	return ret;
 }
 
+static int nuc970_crypto_remove(struct platform_device *pdev)
+{
+	int  i;
+	struct device *dev = &pdev->dev;
+	struct resource *res;
+
+	for (i = 0; i < ARRAY_SIZE(nuc970_crypto_algs); i++) 
+		crypto_unregister_alg(&nuc970_crypto_algs[i].crypto);
+
+	for (i = 0; i < ARRAY_SIZE(nuc970_hash_algs); i++)
+		crypto_unregister_ahash(&nuc970_hash_algs[i]);
+
+	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.aes_inbuf, nuc970_crdev.aes_inbuf_dma_addr);
+	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.aes_outbuf, nuc970_crdev.aes_outbuf_dma_addr);
+	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.des_inbuf, nuc970_crdev.des_inbuf_dma_addr);
+	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.des_outbuf, nuc970_crdev.des_outbuf_dma_addr);
+	dma_free_coherent(dev, DMA_BUFSZ, nuc970_crdev.hmac_inbuf, nuc970_crdev.hmac_inbuf_dma_addr);
+
+	iounmap(nuc970_crdev.regs);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	release_mem_region(res->start, resource_size(res));
+	
+	clk_disable(clk_get(NULL, "crypto_hclk"));
+	
+	return 0;
+}
+
+static int nuc970_crypto_suspend(struct platform_device *pdev,pm_message_t state)
+{
+	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
+	unsigned long  timeout;
+	
+	timeout = jiffies+200;   // 2 seconds time out
+
+	while (time_before(jiffies, timeout))
+	{
+		if ((mtp_is_enabled == true) && (MTP->MTP_PSTART != 0))
+			continue;
+
+		if (crpt_regs->CRPT_AES_CTL & AES_START)
+			continue;
+				
+		if (crpt_regs->CRPT_TDES_CTL & TDES_START)
+			continue;
+				
+		if (crpt_regs->CRPT_HMAC_STS & HMAC_BUSY)
+			continue;
+				
+		break;
+	}
+	
+	if (mtp_is_enabled == true)
+		clk_disable(clk_get(NULL, "mtpc"));
+		
+	clk_disable(clk_get(NULL, "crypto_hclk"));
+
+	return 0;
+}
+
+static int nuc970_crypto_resume(struct platform_device *pdev)
+{
+	if (mtp_is_enabled == true)
+		clk_enable(clk_get(NULL, "mtpc"));
+		
+	clk_enable(clk_get(NULL, "crypto_hclk"));
+	return 0;
+}
 
 static struct platform_driver nuc970_crypto_driver = {
 	.probe		= nuc970_crypto_probe,
 	.remove		= nuc970_crypto_remove,
+	.resume		= nuc970_crypto_resume,
+	.suspend	= nuc970_crypto_suspend,
 	.driver		= {
 		.name	= "nuc970-crypto",
 		.owner	= THIS_MODULE,

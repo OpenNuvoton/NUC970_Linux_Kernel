@@ -121,6 +121,12 @@ choice
 	bool "No USBH_PPWRx and USBH_OVRCUR"
 endchoice
 
+config USB_NUC970_PM_VBUS_OFF
+	bool "NUC970 turn off USB Host VBUS power while power down"
+	depends on USB_NUC970_EHCI && (NUC970_USBH_PWR_PE || NUC970_USBH_PWR_PF)
+	---help---
+		While kernel in power down mode, turn off USB Host port VBUS power supply.
+		After kernel resumed, all connected USB devices will be re-enumerated. 
 
 config USB_EHCI_PCI
 	tristate
@@ -401,6 +407,13 @@ choice
     config NUC970_USBH_PWR_NONE_2
 	bool "No USBH_PPWRx and USBH_OVRCUR"
 endchoice
+
+config USB_NUC970_PM_VBUS_OFF_2
+	bool "NUC970 turn off USB Host VBUS power while power down"
+	depends on USB_NUC970_OHCI && (NUC970_USBH_PWR_PE_2 || NUC970_USBH_PWR_PF_2)
+	---help---
+		While kernel in power down mode, turn off USB Host port VBUS power supply.
+		After kernel resumed, all connected USB devices will be re-enumerated. 
 
 config USB_OHCI_HCD_OMAP1
 	bool "OHCI support for OMAP1/2 chips"

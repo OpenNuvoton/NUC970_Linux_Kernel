@@ -12,6 +12,8 @@
 
 #include <linux/platform_device.h>
 #include <linux/signal.h>
+#include <mach/regs-gcr.h>
+#include <mach/regs-gpio.h>
 #include <linux/clk.h>
 
 #include <mach/map.h>
@@ -151,8 +153,6 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
                 goto err2;
         }
 
-printk("0x204 = 0x%x\n", __raw_readl(NUC970_VA_OHCI+0x204));
-
         ohci = hcd_to_ohci(hcd);
         ohci_hcd_init(ohci);
 
@@ -282,14 +282,74 @@ static int ohci_hcd_nuc970_drv_remove(struct platform_device *pdev)
         return 0;
 }
 
+
+#if defined(CONFIG_PM) && !defined(CONFIG_USB_NUC970_EHCI)
+
+static int ohci_nuc970_pm_suspend(struct device *dev)
+{
+	struct usb_hcd *hcd = dev_get_drvdata(dev);
+	bool do_wakeup = device_may_wakeup(dev);
+	int  ret;
+
+	ret = ohci_suspend(hcd, do_wakeup);
+
+	/* Suspend PHY0 and PHY1; this will turn off PHY power. */
+    __raw_writel(0x60, NUC970_VA_EHCI+0xC4);
+    __raw_writel(0x20, NUC970_VA_EHCI+0xC8);
+
+#ifdef CONFIG_USB_NUC970_PM_VBUS_OFF_2
+    /* turn off port power */
+#if defined (CONFIG_NUC970_USBH_PWR_PE_2)
+	__raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
+	__raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
+	__raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
+#elif defined (CONFIG_NUC970_USBH_PWR_PF_2)
+	__raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
+	__raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
+	__raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
+#endif
+#endif
+
+	return ret;
+}
+
+static int ohci_nuc970_pm_resume(struct device *dev)
+{
+	struct usb_hcd *hcd = dev_get_drvdata(dev);
+
+#ifdef CONFIG_USB_NUC970_PM_VBUS_OFF_2
+#if defined (CONFIG_NUC970_USBH_PWR_PE_2)
+	__raw_writel(__raw_readl(REG_MFP_GPE_H) | 0x77000000, REG_MFP_GPE_H);       // PE.14 & PE.15 for USBH_PWR
+#elif defined (CONFIG_NUC970_USBH_PWR_PF_2)
+	__raw_writel(__raw_readl(REG_MFP_GPF_H) | 0x00000700, REG_MFP_GPF_H);       // PF.10 for USBH_PWR
+#endif
+#endif
+
+	/* re-enable PHY0 and PHY1 */
+    __raw_writel(0x160, NUC970_VA_EHCI+0xC4);
+    __raw_writel(0x520, NUC970_VA_EHCI+0xC8);
+
+	ohci_resume(hcd, false);
+
+	return 0;
+}
+#else
+#define ohci_nuc970_pm_suspend	NULL
+#define ohci_nuc970_pm_resume	NULL
+#endif
+
+static const struct dev_pm_ops ohci_nuc970_dev_pm_ops = {
+	.suspend         = ohci_nuc970_pm_suspend,
+	.resume          = ohci_nuc970_pm_resume,
+};
+
 static struct platform_driver ohci_hcd_nuc970_driver = {
         .probe		= ohci_hcd_nuc970_drv_probe,
         .remove		= ohci_hcd_nuc970_drv_remove,
-#ifdef	CONFIG_PM
 
-#endif
         .driver		= {
                 .name	= "nuc970-ohci",
+                .pm     = &ohci_nuc970_dev_pm_ops,
                 .owner	= THIS_MODULE,
         },
 };
