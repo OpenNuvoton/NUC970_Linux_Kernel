@@ -333,15 +333,15 @@ int __init nuc970_init_clocks(void)
 	clk[etimer0_eclk_gate]  = nuc970_clk_gate("etimer0_eclk_gate", "etimer0_eclk_mux", REG_CLK_PCLKEN0, 4);
 	
 	// -ETIMER1
-	clk[etimer1_eclk_mux] = nuc970_clk_mux("etimer1_eclk_mux", REG_CLK_DIV8, 18, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
+	clk[etimer1_eclk_mux] = nuc970_clk_mux("etimer1_eclk_mux", REG_CLK_DIV8, 20, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
 	clk[etimer1_eclk_gate]  = nuc970_clk_gate("etimer1_eclk_gate", "etimer1_eclk_mux", REG_CLK_PCLKEN0, 5);
 	
 	// -ETIMER2
-	clk[etimer2_eclk_mux] = nuc970_clk_mux("etimer2_eclk_mux", REG_CLK_DIV8, 20, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
+	clk[etimer2_eclk_mux] = nuc970_clk_mux("etimer2_eclk_mux", REG_CLK_DIV8, 24, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
 	clk[etimer2_eclk_gate]  = nuc970_clk_gate("etimer2_eclk_gate", "etimer2_eclk_mux", REG_CLK_PCLKEN0, 6);
 	
 	// -ETIMER3
-	clk[etimer3_eclk_mux] = nuc970_clk_mux("etimer3_eclk_mux", REG_CLK_DIV8, 22, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
+	clk[etimer3_eclk_mux] = nuc970_clk_mux("etimer3_eclk_mux", REG_CLK_DIV8, 28, 2, etimer_sel_clks, ARRAY_SIZE(etimer_sel_clks));
 	clk[etimer3_eclk_gate]  = nuc970_clk_gate("etimer3_eclk_gate", "etimer3_eclk_mux", REG_CLK_PCLKEN0, 7);
 	
 	// -WWDT

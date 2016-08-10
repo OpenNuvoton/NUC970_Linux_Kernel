@@ -24,6 +24,10 @@
 #define ETMR_IOC_TOGGLE			_IOW(ETMR_IOC_MAGIC, 1, unsigned int *)
 #define ETMR_IOC_FREE_COUNTING		_IOW(ETMR_IOC_MAGIC, 2, unsigned int *)
 #define ETMR_IOC_TRIGGER_COUNTING	_IOW(ETMR_IOC_MAGIC, 3, unsigned int *)
+#define ETMR_IOC_PERIODIC	        _IOW(ETMR_IOC_MAGIC, 4, unsigned int *)
+#define ETMR_IOC_PERIODIC_FOR_WKUP	_IOW(ETMR_IOC_MAGIC, 5, unsigned int *)
+#define ETMR_IOC_CLKLXT  	        _IOW(ETMR_IOC_MAGIC, 6, unsigned int *)
+#define ETMR_IOC_CLKHXT  	        _IOW(ETMR_IOC_MAGIC, 7, unsigned int *)
 
 // Valid parameters for capture mode ioctls
 #define ETMR_CAP_EDGE_FF	0x00000
