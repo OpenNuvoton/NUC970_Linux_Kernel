@@ -97,6 +97,9 @@ config NUC970_ETIMER
 	  To compile this driver as a module, choose M here: the module
 	  will be called nuc970-etimer.
 
+config NUC970_ETIMER_WKUP
+	tristate "NUC970 Enhance Timer (ETIMER) wake-up support"
+        depends on NUC970_ETIMER
 choice
 	prompt "NUC970 ETIMER channel 0 toggle output pin"
 	default NUC970_ETIMER0_TGL_NONE
