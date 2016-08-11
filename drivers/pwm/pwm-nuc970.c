@@ -273,27 +273,67 @@ static int nuc970_pwm_remove(struct platform_device *pdev)
 	return pwmchip_remove(&nuc970->chip);
 }
 
-#ifdef CONFIG_PM_SLEEP
-static int nuc970_pwm_suspend(struct device *dev)
+#ifdef CONFIG_PM
+static u32 pcr_save, cnr0_save, cnr1_save, cnr2_save, cnr3_save;
+static int nuc970_pwm_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	//struct nuc970_chip *chip = dev_get_drvdata(dev);
 
-	__raw_writel(0, REG_PWM_CNR0);
-	__raw_writel(0, REG_PWM_CNR1);
-	__raw_writel(0, REG_PWM_CNR2);
-	__raw_writel(0, REG_PWM_CNR3);
+	if (pdev->id == 3) {
+		pcr_save = __raw_readl(REG_PWM_PCR);
+
+		cnr3_save = __raw_readl(REG_PWM_CNR3);
+		__raw_writel(0, REG_PWM_CNR3);
+		while(__raw_readl(REG_PWM_PDR3));
+	}
+	else if (pdev->id == 2) {
+		cnr2_save = __raw_readl(REG_PWM_CNR2);
+		__raw_writel(0, REG_PWM_CNR2);
+		while(__raw_readl(REG_PWM_PDR2));
+	}
+	else if (pdev->id == 1) {
+		cnr1_save = __raw_readl(REG_PWM_CNR1);
+		__raw_writel(0, REG_PWM_CNR1);
+		while(__raw_readl(REG_PWM_PDR1));
+	}
+	if (pdev->id == 0) {
+		cnr0_save = __raw_readl(REG_PWM_CNR0);
+		__raw_writel(0, REG_PWM_CNR0);
+		while(__raw_readl(REG_PWM_PDR0));
+
+		__raw_writel( __raw_readl(REG_PWM_PCR) & ~0x11101, REG_PWM_PCR);
+	}
+
 
 	return 0;
 }
 
-static int nuc970_pwm_resume(struct device *dev)
+static int nuc970_pwm_resume(struct platform_device *pdev)
 {
 	//struct nuc970_chip *chip = dev_get_drvdata(dev);
 
+	if (pdev->id == 0) {
+		__raw_writel(cnr0_save, REG_PWM_CNR0);
+	}
+	else if (pdev->id == 1) {
+		__raw_writel(cnr1_save, REG_PWM_CNR1);
+	}
+	else if (pdev->id == 2) {
+		__raw_writel(cnr2_save, REG_PWM_CNR2);
+	}
+	else if (pdev->id == 3) {
+		__raw_writel(cnr3_save, REG_PWM_CNR3);
+
+		__raw_writel(pcr_save, REG_PWM_PCR);
+	}
 
 	return 0;
 }
-static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend, nuc970_pwm_resume);
+
+//static SIMPLE_DEV_PM_OPS(nuc970_pwm_pm_ops, nuc970_pwm_suspend, nuc970_pwm_resume);
+#else
+#define nuc970_pwm_suspend NULL
+#define nuc970_pwm_resume  NULL
 #endif
 
 
@@ -302,12 +342,14 @@ static struct platform_driver nuc970_pwm_driver = {
 	.driver		= {
 		.name	= "nuc970-pwm",
 		.owner	= THIS_MODULE,
-#ifdef CONFIG_PM_SLEEP
-		.pm	= &nuc970_pwm_pm_ops,
-#endif
+//#ifdef CONFIG_PM
+//		.pm	= &nuc970_pwm_pm_ops,
+//#endif
 	},
 	.probe		= nuc970_pwm_probe,
 	.remove		= nuc970_pwm_remove,
+	.suspend        = nuc970_pwm_suspend,
+        .resume         = nuc970_pwm_resume,
 };
 
 

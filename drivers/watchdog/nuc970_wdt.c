@@ -36,7 +36,7 @@
 #define WTRE			(0x01 << 1)	/* wdt reset enable */
 #define WTR			(0x01 << 0)	/* wdt reset */
 /*
- * Assumming 32k crytal is configured as the watchdog clock source,
+ * Assumming 32k crystal is configured as the watchdog clock source,
  * the time out interval can be calculated via following formula:
  * WTIS		real time interval (formula)
  * 0x05		((2^ 14 + 1024) * (32k crystal freq))seconds = 0.53 sec
@@ -71,7 +71,7 @@ static void Unlock_RegWriteProtect(void)
         __raw_writel(0x59, REG_WRPRTR);
         __raw_writel(0x16, REG_WRPRTR);
         __raw_writel(0x88, REG_WRPRTR);
-    //wait for write-protection disabled indicator raised 
+    //wait for write-protection disabled indicator raised
     } while(!(__raw_readl(REG_WRPRTR) & 1));
 }
 
@@ -84,7 +84,7 @@ static void Lock_RegWriteProtect(void)
 static int nuc970wdt_ping(struct watchdog_device *wdd)
 {
 	unsigned int val;
-	
+
 	Unlock_RegWriteProtect();
 	val = __raw_readl(REG_WDT_CR);
 	val |= WTR;
@@ -93,11 +93,16 @@ static int nuc970wdt_ping(struct watchdog_device *wdd)
 	return 0;
 }
 
+
 static int nuc970wdt_start(struct watchdog_device *wdd)
 {
 	unsigned int val = 0;
 
 	val |= (WTRE | WTE | WTR);
+#ifdef NUC970_WDT_WKUP
+	val |= WTIE;
+	val |= WTWKE;
+#endif
 
 	if(wdd->timeout < 2) {
 		val |= 0x5 << 8;
@@ -109,6 +114,7 @@ static int nuc970wdt_start(struct watchdog_device *wdd)
 	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CR);
 	Lock_RegWriteProtect();
+
 	return 0;
 }
 
@@ -161,6 +167,19 @@ static struct watchdog_device nuc970_wdd = {
 	.ops = &nuc970wdt_ops,
 };
 
+static irqreturn_t nuc970_wdt_interrupt(int irq, void *dev_id)
+{
+	Unlock_RegWriteProtect();
+	if (__raw_readl(REG_WDT_CR) & WTIF) {
+		__raw_writel(__raw_readl(REG_WDT_CR) | WTIF, REG_WDT_CR);
+	}
+	if (__raw_readl(REG_WDT_CR) & WTRF) {
+		__raw_writel(__raw_readl(REG_WDT_CR) | WTRF, REG_WDT_CR);
+	}
+	Lock_RegWriteProtect();
+
+	return IRQ_HANDLED;
+};
 
 static int nuc970wdt_probe(struct platform_device *pdev)
 {
@@ -236,6 +255,7 @@ static int nuc970wdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+
 	return 0;
 }
 
@@ -256,12 +276,21 @@ static void nuc970wdt_shutdown(struct platform_device *pdev)
 	nuc970wdt_stop(&nuc970_wdd);
 }
 
-#ifdef CONFIG_PM
+#ifdef NUC970_WDT_WKUP
 static u32 reg_save;
-static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state){
-
+static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
+{
 	reg_save = __raw_readl(REG_WDT_CR);
-	nuc970wdt_stop(&nuc970_wdd);
+
+	Unlock_RegWriteProtect();
+	__raw_writel(__raw_readl(REG_WDT_CR) & ~WTRE, REG_WDT_CR); //Disable WDT reset
+	Lock_RegWriteProtect();
+
+	__raw_writel( (1<<28) | __raw_readl(REG_WKUPSER), REG_WKUPSER); //Enable System WDT wakeup
+	if (request_irq(IRQ_WDT, nuc970_wdt_interrupt, IRQF_NO_SUSPEND, "nuc970wdt", NULL)) {
+		return -EBUSY;
+	}
+	enable_irq_wake(IRQ_WDT);
 
 	return 0;
 }
@@ -270,14 +299,18 @@ static int nuc970wdt_resume(struct platform_device *dev)
 {
 	Unlock_RegWriteProtect();
 	__raw_writel(reg_save | WTR, REG_WDT_CR);
-	Lock_RegWriteProtect();	
+	Lock_RegWriteProtect();
+
+	disable_irq_wake(IRQ_WDT);
+	free_irq(IRQ_WDT, NULL);
+
 	return 0;
 }
 
 #else
 #define nuc970wdt_suspend NULL
 #define nuc970wdt_resume  NULL
-#endif /* CONFIG_PM */
+#endif /* NUC970_WDT_WKUP */
 
 static struct platform_driver nuc970wdt_driver = {
 	.probe		= nuc970wdt_probe,

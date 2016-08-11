@@ -34,7 +34,7 @@
  *  And software has another 1 second window period to reload
  *  WWDT counter by writing RELOAD_WORD to REG_WWDT_RLD register.
  */
-#define WWDT_CONFIG	0x00200D01
+#define WWDT_CONFIG	0x00200F01
 
 struct nuc970_wwdt {
 	struct resource		*res;
@@ -176,10 +176,29 @@ static int nuc970wwdt_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int nuc970wwdt_suspend(struct platform_device *dev, pm_message_t state)
+{
+        return 0;
+}
+
+static int nuc970wwdt_resume(struct platform_device *dev)
+{
+        return 0;
+}
+
+#else
+#define nuc970wwdt_suspend NULL
+#define nuc970wwdt_resume  NULL
+#endif /* CONFIG_PM */
+
+
 
 static struct platform_driver nuc970wwdt_driver = {
 	.probe		= nuc970wwdt_probe,
 	.remove		= nuc970wwdt_remove,
+	.suspend        = nuc970wwdt_suspend,
+        .resume         = nuc970wwdt_resume,
 	.driver		= {
 		.name	= "nuc970-wwdt",
 		.owner	= THIS_MODULE,

@@ -347,6 +347,10 @@ config NUC970_WDT
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_wdt.
 
+config NUC970_WDT_WKUP
+        tristate "NUC970 WDT wake-up support"
+        depends on NUC970_WDT
+
 config NUC970_WWDT
 	tristate "Nuvoton NUC970 Window Watchdog Timer"
 	depends on ARCH_NUC970
