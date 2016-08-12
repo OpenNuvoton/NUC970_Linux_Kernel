@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Nuvoton Technology Corporation.
+ * Copyright (c) 2014-2016 Nuvoton Technology Corporation.
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,9 +23,11 @@
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/ctype.h>
+#include <linux/net_tstamp.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-gcr.h>
 
 #define DRV_MODULE_NAME		"nuc970-emc0"
 #define DRV_MODULE_VERSION	"1.0"
@@ -33,8 +35,8 @@
 /* Ethernet MAC0 Registers */
 #define REG_CAMCMR		(void __iomem *)0xF0002000
 #define REG_CAMEN		(void __iomem *)0xF0002004
-#define REG_CAMM_BASE		(void __iomem *)0xF0002008
-#define REG_CAML_BASE		(void __iomem *)0xF000200c
+#define REG_CAMM_BASE	(void __iomem *)0xF0002008
+#define REG_CAML_BASE	(void __iomem *)0xF000200c
 #define REG_TXDLSA		(void __iomem *)0xF0002088
 #define REG_RXDLSA		(void __iomem *)0xF000208C
 #define REG_MCMDR		(void __iomem *)0xF0002090
@@ -55,6 +57,7 @@
 #define MCMDR_RXON		0x01
 #define MCMDR_ACP		(0x01 << 3)
 #define MCMDR_SPCRC		(0x01 << 5)
+#define MCMDR_MGPWAKE		(0x01 << 6)
 #define MCMDR_TXON		(0x01 << 8)
 #define MCMDR_FDUP		(0x01 << 18)
 //#define MCMDR_ENMDC		(0x01 << 19)
@@ -86,16 +89,21 @@
 
 /* mac interrupt status*/
 #define MISTA_EXDEF		(0x01 << 19)
-#define MISTA_TXBERR	(0x01 << 24)
+#define MISTA_TXBERR		(0x01 << 24)
 #define MISTA_TDU		(0x01 << 23)
 #define MISTA_RDU		(0x01 << 10)
-#define MISTA_RXBERR	(0x01 << 11)
+#define MISTA_RXBERR		(0x01 << 11)
+#define MISTA_WOL		(0x01 << 15)
+#define MISTA_RXGD		(0x01 << 4)
+
+
 
 #define ENSTART			0x01
 #define ENRXINTR		0x01
 #define ENRXGD			(0x01 << 4)
 #define ENRDU			(0x01 << 10)
 #define ENRXBERR		(0x01 << 11)
+#define ENWOL			(0x01 << 15)
 #define ENTXINTR		(0x01 << 16)
 #define ENTXCP			(0x01 << 18)
 #define ENTXABT			(0x01 << 21)
@@ -185,6 +193,7 @@ struct  nuc970_ether {
 	int link;
 	int speed;
 	int duplex;
+	int wol;
 };
 
 
@@ -455,7 +464,7 @@ static void nuc970_enable_mac_interrupt(struct net_device *dev)
 	unsigned int val;
 
 	val = ENTXINTR | ENRXINTR | ENRXGD | ENTXCP | ENRDU;
-	val |= ENTXBERR | ENRXBERR | ENTXABT;
+	val |= ENTXBERR | ENRXBERR | ENTXABT | ENWOL;
 
 	__raw_writel(val,  REG_MIEN);
 }
@@ -798,8 +807,14 @@ static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 		nuc970_reset_mac(dev, 1);
 
 	} else {
-		__raw_writel(__raw_readl(REG_MIEN) & ~ENRXINTR,  REG_MIEN);
-		napi_schedule(&ether->napi);
+		if(status & MISTA_WOL) {
+
+		}
+
+		if(status & MISTA_RXGD) {
+			__raw_writel(__raw_readl(REG_MIEN) & ~ENRXINTR,  REG_MIEN);
+			napi_schedule(&ether->napi);
+		}
 	}
 	return IRQ_HANDLED;
 }
@@ -830,7 +845,7 @@ static int nuc970_ether_open(struct net_device *dev)
 	}
 
 	if (request_irq(ether->rxirq, nuc970_rx_interrupt,
-						0x0, pdev->name, dev)) {
+						IRQF_NO_SUSPEND, pdev->name, dev)) {
 		dev_err(&pdev->dev, "register irq rx failed\n");
 		free_irq(ether->txirq, dev);
 		return -EAGAIN;
@@ -923,6 +938,67 @@ static void nuc970_set_msglevel(struct net_device *dev, u32 level)
 	ether->msg_enable = level;
 }
 
+static int nuc970_get_eee(struct net_device *dev, struct ethtool_eee *edata)
+{
+	return -EOPNOTSUPP;
+}
+
+static int nuc970_set_eee(struct net_device *dev, struct ethtool_eee *edata)
+{
+	return -EOPNOTSUPP;
+}
+
+static int nuc970_get_regs_len(struct net_device *dev)
+{
+	return 76 * sizeof(u32);
+}
+
+static void nuc970_get_regs(struct net_device *dev, struct ethtool_regs *regs, void *p)
+{
+
+	regs->version = 0;
+	memcpy(p, REG_CAMCMR, 76 * sizeof(u32));
+}
+
+#ifdef CONFIG_PM
+static void nuc970_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+{
+	struct nuc970_ether *ether = netdev_priv(dev);
+
+	wol->supported = WAKE_MAGIC;
+	wol->wolopts = ether->wol ? WAKE_MAGIC : 0;
+
+}
+
+static int nuc970_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+{
+	struct nuc970_ether *ether = netdev_priv(dev);
+
+	if (wol->wolopts & ~WAKE_MAGIC)
+		return -EINVAL;
+
+	ether->wol = wol->wolopts & WAKE_MAGIC ? 1 : 0;
+
+	device_set_wakeup_capable(&dev->dev, wol->wolopts & WAKE_MAGIC);
+	device_set_wakeup_enable(&dev->dev, wol->wolopts & WAKE_MAGIC);
+
+	return 0;
+}
+#endif
+
+static int nuc970_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info)
+{
+	info->so_timestamping = SOF_TIMESTAMPING_TX_HARDWARE |
+				SOF_TIMESTAMPING_RX_HARDWARE |
+				SOF_TIMESTAMPING_RAW_HARDWARE;
+	info->phc_index = 0;
+	info->tx_types = (1 << HWTSTAMP_TX_OFF) |
+			 (1 << HWTSTAMP_TX_ON);
+	info->rx_filters = (1 << HWTSTAMP_FILTER_NONE) |
+			   (1 << HWTSTAMP_FILTER_ALL);
+	return 0;
+}
+
 static const struct ethtool_ops nuc970_ether_ethtool_ops = {
 	.get_settings	= nuc970_get_settings,
 	.set_settings	= nuc970_set_settings,
@@ -930,6 +1006,15 @@ static const struct ethtool_ops nuc970_ether_ethtool_ops = {
 	.get_msglevel	= nuc970_get_msglevel,
 	.set_msglevel	= nuc970_set_msglevel,
 	.get_link 	= ethtool_op_get_link,
+	.get_eee	= nuc970_get_eee,
+	.set_eee	= nuc970_set_eee,
+	.get_regs_len	= nuc970_get_regs_len,
+	.get_regs	= nuc970_get_regs,
+#ifdef CONFIG_PM
+	.get_wol 	= nuc970_get_wol,
+	.set_wol 	= nuc970_set_wol,
+#endif
+	.get_ts_info	= nuc970_get_ts_info,
 };
 
 static const struct net_device_ops nuc970_ether_netdev_ops = {
@@ -995,8 +1080,6 @@ static int nuc970_mii_setup(struct net_device *dev)
 		ether->mii_bus->irq[i] = PHY_POLL;
 	//ether->mii_bus->irq[1] = ??   write me after the irq number is known
 
-	platform_set_drvdata(ether->pdev, ether->mii_bus);
-
 	if (mdiobus_register(ether->mii_bus)) {
 		dev_err(&pdev->dev, "mdiobus_register() failed\n");
 		goto out2;
@@ -1022,6 +1105,7 @@ static int nuc970_mii_setup(struct net_device *dev)
 	phydev->supported &= PHY_BASIC_FEATURES;
 	phydev->advertising = phydev->supported;
 	ether->phy_dev = phydev;
+	ether->wol = 0;
 
 	return 0;
 
@@ -1171,9 +1255,71 @@ static int nuc970_ether_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int nuc970_ether_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	struct net_device *dev = platform_get_drvdata(pdev);
+	struct nuc970_ether *ether = netdev_priv(dev);
+
+	netif_device_detach(dev);
+
+	if(netif_running(dev)) {
+		ETH_DISABLE_TX;
+		ETH_DISABLE_RX;
+
+		napi_disable(&ether->napi);
+
+		if(ether->wol) {  // enable wakeup from magic packet
+			__raw_writel(__raw_readl(REG_MCMDR) | MCMDR_MGPWAKE, REG_MCMDR);
+			__raw_writel(__raw_readl(REG_WKUPSER) | (1 << 16), REG_WKUPSER);
+		} else {
+			phy_stop(ether->phy_dev);
+		}
+
+	}
+
+	return 0;
+
+}
+
+static int nuc970_ether_resume(struct platform_device *pdev)
+{
+
+	struct net_device *dev = platform_get_drvdata(pdev);
+	struct nuc970_ether *ether = netdev_priv(dev);
+
+	if (netif_running(dev)) {
+
+		if(ether->wol) {  // enable wakeup from magic packet
+			__raw_writel(__raw_readl(REG_WKUPSER) & ~(1 << 16), REG_WKUPSER);
+			__raw_writel(__raw_readl(REG_MCMDR) & ~MCMDR_MGPWAKE, REG_MCMDR);
+		} else {
+
+			phy_start(ether->phy_dev);
+		}
+
+		napi_enable(&ether->napi);
+
+		ETH_ENABLE_TX;
+		ETH_ENABLE_RX;
+
+	}
+
+	netif_device_attach(dev);
+	return 0;
+
+}
+
+#else
+#define nuc970_ether_suspend NULL
+#define nuc970_ether_resume NULL
+#endif
+
 static struct platform_driver nuc970_ether_driver = {
 	.probe		= nuc970_ether_probe,
 	.remove		= nuc970_ether_remove,
+	.suspend 	= nuc970_ether_suspend,
+	.resume 	= nuc970_ether_resume,
 	.driver		= {
 		.name	= "nuc970-emac0",
 		.owner	= THIS_MODULE,
