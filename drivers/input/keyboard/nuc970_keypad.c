@@ -44,7 +44,7 @@
 #define WAKEUP		(0x00000020)	// Lower Power Wakeup Enable	
 #define ODEN		(0x00000010)	// Open Drain Enable
 #define INTEN		(0x00000008)	// Key Interrupt Enable Control 
-#define RKINTEN 	(0x00000004)	// Release Key Interrupt Enable Cintrol
+#define RKINTEN 	(0x00000004)	// Release Key Interrupt Enable Control
 #define PKINTEN 	(0x00000002)	// Press Key Interrupt Enable Control
 #define ENKP		(0x00000001)	// Keypad Scan Enable
 
@@ -95,8 +95,8 @@ void nuc970_keypad_mfp_set(struct platform_device *pdev)
 	struct pinctrl *p = NULL;
 	int retval = 0; 
 
-        #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-        p = devm_pinctrl_get_select(&pdev->dev, "kpi_3x2-PA");
+    #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
+    p = devm_pinctrl_get_select(&pdev->dev, "kpi_3x2-PA");
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
 	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x2-PA");
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
@@ -182,9 +182,8 @@ static irqreturn_t nuc970_keypad_irq_handler(int irq, void *dev_id)
 	else
 	{
 		if(kstatus & PDWAKE)
-			__raw_writel(PDWAKE, (keypad->mmio_base + KPI_KRE));
+            __raw_writel(PDWAKE, (keypad->mmio_base + KPI_STATUS));
 	}
-
 
 	return IRQ_HANDLED;
 }
@@ -194,11 +193,11 @@ static int nuc970_keypad_open(struct input_dev *dev)
 	struct nuc970_keypad *keypad = input_get_drvdata(dev);
 	const struct nuc970_keypad_platform_data *pdata = keypad->pdata;
 	unsigned int val, config;
-
+   
 	val = INPU | RKINTEN | PKINTEN | INTEN | ENKP;
 
-        #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-        val |= ((3 - 1) << 28) | ((2 - 1) << 24);
+    #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
+    val |= ((3 - 1) << 28) | ((2 - 1) << 24);
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
 	val |= ((4 - 1) << 28) | ((2 - 1) << 24);
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
@@ -322,7 +321,7 @@ static int nuc970_keypad_probe(struct platform_device *pdev)
 	}
 
 	error = request_irq(keypad->irq, nuc970_keypad_irq_handler,
-			    0, pdev->name, keypad);
+			    IRQF_NO_SUSPEND, pdev->name, keypad);
 	if (error) {
 		dev_err(&pdev->dev, "failed to request IRQ\n");
 		goto failed_put_clk;
@@ -377,9 +376,39 @@ static int nuc970_keypad_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
+static int nuc970_keypad_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);
+	   
+    __raw_writel(__raw_readl(REG_WKUPSER)| (1 << 27),REG_WKUPSER);
+    __raw_writel(__raw_readl(keypad->mmio_base + KPI_CONF) | WAKEUP, keypad->mmio_base + KPI_CONF);
+    enable_irq_wake(keypad->irq);
+        
+    return 0;
+}
+
+static int nuc970_keypad_resume(struct platform_device *pdev)
+{
+	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);	
+
+    __raw_writel(__raw_readl(REG_WKUPSER)& ~(1 << 27),REG_WKUPSER);
+    __raw_writel(__raw_readl(keypad->mmio_base + KPI_CONF) & ~(WAKEUP), keypad->mmio_base + KPI_CONF);
+    disable_irq_wake(keypad->irq);
+    
+    return 0;
+}
+#else
+
+#define nuc970_keypad_suspend 	NULL
+#define nuc970_keypad_resume	NULL
+#endif
+
 static struct platform_driver nuc970_keypad_driver = {
 	.probe		= nuc970_keypad_probe,
 	.remove		= nuc970_keypad_remove,
+    .suspend	= nuc970_keypad_suspend,
+	.resume		= nuc970_keypad_resume,
 	.driver		= {
 		.name	= "nuc970-kpi",
 		.owner	= THIS_MODULE,
