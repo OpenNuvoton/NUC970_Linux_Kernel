@@ -640,6 +640,10 @@ config KEYBOARD_NUC970
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_keypad.
 
+config NUC970_KEYPAD_WKUP
+	tristate "NUC970 KEYPAD wake-up support"
+	depends on KEYBOARD_NUC970
+    
 config  PULL_UP_MATRIX_KEYPAD_PIN
         tristate "Pull-up NUC970 Matrix Keypad Pin"
         default y

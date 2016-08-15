@@ -376,7 +376,7 @@ static int nuc970_keypad_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
+#ifdef CONFIG_NUC970_KEYPAD_WKUP
 static int nuc970_keypad_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);
