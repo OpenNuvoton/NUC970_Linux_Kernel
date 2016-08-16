@@ -22,6 +22,7 @@
 #include <linux/clk.h>
 #include <linux/atmel_pdc.h>
 #include <linux/gfp.h>
+#include <linux/freezer.h>
 
 #include <linux/mmc/host.h>
 
@@ -350,7 +351,7 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
     if (nuc970_sd_read(REG_FMICSR) != FMICSR_SD_EN)
         nuc970_sd_write(REG_FMICSR, FMICSR_SD_EN);
 
-    csr = nuc970_sd_read(REG_SDCSR) & 0xff00c080;
+    csr = (nuc970_sd_read(REG_SDCSR) & 0xff00c080) | 0x09010000;
 
 #if defined (CONFIG_NUC970_SD_SD0)
     clock_free_run_status = csr | 0x80; /* clock keep */
@@ -481,7 +482,7 @@ static void nuc970_sd_send_stop(struct nuc970_sd_host *host, struct mmc_command 
     if (nuc970_sd_read(REG_FMICSR) != FMICSR_SD_EN)
         nuc970_sd_write(REG_FMICSR, FMICSR_SD_EN);
 
-    csr = nuc970_sd_read(REG_SDCSR) & 0xff00c080;
+    csr = (nuc970_sd_read(REG_SDCSR) & 0xff00c080) | 0x09010000;
 
     csr = csr | (cmd->opcode << 8) | SDCSR_CO_EN;   // set command code and enable command out
     sd_event |= SD_EVENT_CMD_OUT;
@@ -602,13 +603,6 @@ static void nuc970_sd_completed_command(struct nuc970_sd_host *host, unsigned in
 
         if (data)
         {
-//            data->bytes_xfered = 0;
-//            host->transfer_index = 0;
-//            host->in_use_index = 0;
-//            if (data->flags & MMC_DATA_READ)
-//            {
-//                nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_DI_EN);
-//            }
             wait_event_interruptible(sd_wq_xfer, (sd_state_xfer != 0));
         }
     }
@@ -714,8 +708,9 @@ static int sd_event_thread(void *unused)
 
     for (;;)
     {
-        wait_event_interruptible(sd_event_wq, (sd_event != SD_EVENT_NONE) && (sd_send_cmd));
-        //printk("sd_event_thread - sd_event_wq raised!\n");
+//		try_to_freeze();
+//        wait_event_interruptible(sd_event_wq, (sd_event != SD_EVENT_NONE) && (sd_send_cmd));
+        wait_event_freezable(sd_event_wq, (sd_event != SD_EVENT_NONE) && (sd_send_cmd));
 
         completed = 0;
         event = sd_event;
@@ -1047,6 +1042,15 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     nuc970_sd_write(REG_SDIER, SDIER_CD1_IE | SDIER_CD1SRC);    //Enable SD interrupt & select GPIO detect
 #endif
 
+/****************************************************************/
+#if 0
+	/* GPI15 for CKO -> output 12MHz */
+	__raw_writel(__raw_readl(REG_MFP_GPI_H) | 0xf0000000, REG_MFP_GPI_H);
+	__raw_writel(__raw_readl(REG_CLK_HCLKEN) | 0x8000, REG_CLK_HCLKEN);
+	__raw_writel(__raw_readl(REG_CLK_DIV9) & 0xffff, REG_CLK_DIV9);
+#endif
+/****************************************************************/
+
     mmc_add_host(mmc);
     nuc970_sd_debug("Added NUC970 SD driver\n");
     return 0;
@@ -1100,21 +1104,29 @@ static int nuc970_sd_remove(struct platform_device *pdev)
 static int nuc970_sd_suspend(struct platform_device *pdev, pm_message_t state)
 {
     struct mmc_host *mmc = platform_get_drvdata(pdev);
-    //struct nuc970_sd_host *host = mmc_priv(mmc);
+    struct nuc970_sd_host *host = mmc_priv(mmc);
     int ret = 0;
 
+	// For save, wait DMAC to ready
+	while (	readl(REG_DMACCSR)	& 0x200	);
     if (mmc)
         ret = mmc_suspend_host(mmc);
 
+    nuc900_sd_enable_sdio_irq(mmc, 0);
+    nuc970_sd_disable(host);
+    clk_disable(host->sd_clk);
     return ret;
 }
 
 static int nuc970_sd_resume(struct platform_device *pdev)
 {
     struct mmc_host *mmc = platform_get_drvdata(pdev);
-    //struct nuc970_sd_host *host = mmc_priv(mmc);
+    struct nuc970_sd_host *host = mmc_priv(mmc);
     int ret = 0;
 
+    clk_enable(host->sd_clk);
+	nuc970_sd_enable(host);
+    nuc900_sd_enable_sdio_irq(mmc, 1);
     if (mmc)
         ret = mmc_resume_host(mmc);
 

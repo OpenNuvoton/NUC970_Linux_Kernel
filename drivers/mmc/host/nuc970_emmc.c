@@ -22,6 +22,7 @@
 #include <linux/clk.h>
 #include <linux/atmel_pdc.h>
 #include <linux/gfp.h>
+#include <linux/freezer.h>
 
 #include <linux/mmc/host.h>
 
@@ -631,8 +632,8 @@ static int emmc_event_thread(void *unused)
 
     for (;;)
     {
-        wait_event_interruptible(emmc_event_wq, (emmc_event != EMMC_EVENT_NONE) && (emmc_send_cmd));
-        //printk("emmc_event_thread - emmc_event_wq raised!\n");
+//        wait_event_interruptible(emmc_event_wq, (emmc_event != EMMC_EVENT_NONE) && (emmc_send_cmd));
+        wait_event_freezable(emmc_event_wq, (emmc_event != EMMC_EVENT_NONE) && (emmc_send_cmd));
 
         completed = 0;
         event = emmc_event;
@@ -885,11 +886,15 @@ fail6:
 static int nuc970_emmc_suspend(struct platform_device *pdev, pm_message_t state)
 {
     struct mmc_host *mmc = platform_get_drvdata(pdev);
-    //struct nuc970_emmc_host *host = mmc_priv(mmc);
+    struct nuc970_emmc_host *host = mmc_priv(mmc);
     int ret = 0;
 
+	// For save, wait DMAC to ready
+	while (	readl(REG_NAND_DMACCSR)	& 0x200	);
     if (mmc)
         ret = mmc_suspend_host(mmc);
+    nuc970_emmc_disable(host);
+    clk_disable(host->emmc_clk);
 
     return ret;
 }
@@ -897,9 +902,11 @@ static int nuc970_emmc_suspend(struct platform_device *pdev, pm_message_t state)
 static int nuc970_emmc_resume(struct platform_device *pdev)
 {
     struct mmc_host *mmc = platform_get_drvdata(pdev);
-    //struct nuc970_emmc_host *host = mmc_priv(mmc);
+    struct nuc970_emmc_host *host = mmc_priv(mmc);
     int ret = 0;
 
+    clk_enable(host->emmc_clk);
+	nuc970_emmc_enable(host);
     if (mmc)
         ret = mmc_resume_host(mmc);
 

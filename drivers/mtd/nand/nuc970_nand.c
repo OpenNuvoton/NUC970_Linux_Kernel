@@ -18,6 +18,8 @@
 #include <linux/err.h>
 #include <linux/blkdev.h>
 
+#include <linux/freezer.h>
+
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
 #include <linux/mtd/partitions.h>
@@ -1443,6 +1445,39 @@ static int nuc970_nand_remove(struct platform_device *pdev)
 	return 0;
 }
 
+/* PM Support */
+#ifdef CONFIG_PM
+static int nuc970_nand_suspend(struct platform_device *pdev, pm_message_t pm)
+{
+	struct nuc970_nand_info *nuc970_nand = platform_get_drvdata(pdev);
+
+	// For save, wait DMAC to ready
+	while (	readl(REG_NAND_DMACCSR)	& 0x200	);
+	writel(0x0, REG_NFECR);	/* write protect */
+	nuc970_nand_hwecc_fini(&nuc970_nand->mtd);
+	clk_disable(nuc970_nand->clk);
+
+	return 0;
+}
+
+static int nuc970_nand_resume(struct platform_device *pdev)
+{
+	struct nuc970_nand_info *nuc970_nand = platform_get_drvdata(pdev);
+
+	clk_enable(nuc970_nand->clk);
+	nuc970_nand_hwecc_init(&nuc970_nand->mtd);
+	writel(0x1, REG_NFECR);	/* un-lock write protect */
+	nuc970_nand_dmac_init();
+
+
+	return 0;
+}
+
+#else
+#define nuc970_nand_suspend NULL
+#define nuc970_nand_resume NULL
+#endif
+
 static struct platform_driver nuc970_nand_driver = {
 		.driver	= {
 		.name	= "nuc970-fmi",
@@ -1450,6 +1485,8 @@ static struct platform_driver nuc970_nand_driver = {
 		},
 		.probe		= nuc970_nand_probe,
 		.remove		= nuc970_nand_remove,
+		.suspend	= nuc970_nand_suspend,
+		.resume		= nuc970_nand_resume,
 };
 
 static int __init nuc970_nand_init(void)

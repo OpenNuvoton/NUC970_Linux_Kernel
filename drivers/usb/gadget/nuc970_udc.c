@@ -1729,6 +1729,7 @@ static int nuc970_udc_probe(struct platform_device *pdev)
 	dev_dbg(dev, "%s()\n", __func__);
 
 /*****************************************************************/
+#if 0
 	clk = clk_get(NULL, "gpio");
 		if (IS_ERR(clk)) {
 		pr_devel(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
@@ -1743,7 +1744,9 @@ static int nuc970_udc_probe(struct platform_device *pdev)
 	__raw_writel(0x4000, REG_GPIOE_PDEN);
 	__raw_writel(__raw_readl(REG_GPIOE_DIR) | 0xC000, REG_GPIOE_DIR);
 	__raw_writel(__raw_readl(REG_GPIOE_DATAOUT) | 0x8000, REG_GPIOE_DATAOUT);
+#endif
 
+	__raw_writel((__raw_readl(REG_MFP_GPH_L) & 0xf)|0x7, REG_MFP_GPH_L);
 /*****************************************************************/
 	udc->pdev = pdev;
 
@@ -1817,9 +1820,19 @@ static int nuc970_udc_probe(struct platform_device *pdev)
 		dev_err(dev, "request_irq() failed\n");
 		goto fail2;
 	}
+
 	error = usb_add_gadget_udc(dev, &udc->gadget);
 	if (error)
 		goto fail3;
+
+/****************************************************************/
+#if 0
+	/* GPI15 for CKO -> output 12MHz */
+	__raw_writel(__raw_readl(REG_MFP_GPI_H) | 0xf0000000, REG_MFP_GPI_H);
+	__raw_writel(__raw_readl(REG_CLK_HCLKEN) | 0x8000, REG_CLK_HCLKEN);
+	__raw_writel(__raw_readl(REG_CLK_DIV9) & 0xffff, REG_CLK_DIV9);
+#endif
+/****************************************************************/
 
 	pr_devel("nuc970_udc_probe done.\n");
 	return 0;
@@ -1854,13 +1867,26 @@ static int nuc970_udc_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int nuc970_udc_suspend (struct platform_device *pdev, pm_message_t state)
 {
-	// TODO:
+	__raw_writel(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & ~0x200,
+				 controller.reg + REG_USBD_PHY_CTL);    // phy suspend
 	return 0;
 }
 
 static int nuc970_udc_resume (struct platform_device *pdev)
 {
-	// TODO:
+	unsigned int reg = __raw_readl(controller.reg + REG_USBD_EPA_MPS);
+
+	__raw_writel(__raw_readl(controller.reg + REG_USBD_PHY_CTL) | 0x200, controller.reg + REG_USBD_PHY_CTL);
+	while (1)
+	{
+		__raw_writel(0x20, controller.reg + REG_USBD_EPA_MPS);
+		if (__raw_readl(controller.reg + REG_USBD_EPA_MPS) == 0x20)
+		{
+			__raw_writel(reg, controller.reg + REG_USBD_EPA_MPS);
+			break;
+		}
+	}
+
 	return 0;
 }
 #else
