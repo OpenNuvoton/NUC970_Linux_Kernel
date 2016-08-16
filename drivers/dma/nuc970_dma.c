@@ -110,6 +110,7 @@ struct nuc970_dma_chan {
 	struct tasklet_struct		tasklet;
 	/* protects the fields following */
 	spinlock_t			lock;
+	spinlock_t 		wklock;
 	unsigned long			flags;
 /* Channel is configured for cyclic transfers */
 #define NUC970_DMA_IS_CYCLIC		0
@@ -336,9 +337,10 @@ static void m2m_hw_submit(struct nuc970_dma_chan *edmac)
 		
 	control = __raw_readl(edmac->regs + GDMA_CTL);
 	control |= (1 | SOFTREQ);
+
+	spin_lock(&edmac->wklock);
 	__raw_writel(control,edmac->regs + GDMA_CTL);
-//	while(1)
-	DMA_DEBUG("%s GDMA_CTL  0x%08x=0x%08x, 0x%08x=0x%08x\n", __FUNCTION__,edmac->regs,__raw_readl(edmac->regs),REG_GDMA_INTCS,__raw_readl(REG_GDMA_INTCS));
+	spin_unlock(&edmac->wklock);
 	LEAVE();
 }
 
@@ -485,6 +487,7 @@ static void nuc970_dma_tasklet(unsigned long data)
 	 * anything more than call nuc970_dma_advance_work().
 	 */
 	desc = nuc970_dma_get_active(edmac);
+
 	if (desc) {
 		if (desc->complete) {
 			/* mark descriptor complete for non cyclic case only */
@@ -495,6 +498,7 @@ static void nuc970_dma_tasklet(unsigned long data)
 		callback = desc->txd.callback;
 		callback_param = desc->txd.callback_param;
 	}
+
 	spin_unlock_irq(&edmac->lock);
 
 	/* Pick up the next descriptor from the queue */
@@ -514,6 +518,7 @@ static void nuc970_dma_tasklet(unsigned long data)
 
 	if (callback)
 		callback(callback_param);
+
 	LEAVE();	
 }
 
@@ -526,6 +531,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 	spin_lock(&edmac->lock);
 
 	desc = nuc970_dma_get_active(edmac);
+
 	if (!desc) {
 		dev_warn(chan2dev(edmac),
 			 "got interrupt while active list is empty\n");
@@ -551,6 +557,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 	}
 
 	spin_unlock(&edmac->lock);
+
 	LEAVE();	
 	return ret;
 }
@@ -1023,11 +1030,11 @@ static enum dma_status nuc970_dma_tx_status(struct dma_chan *chan,
 	enum dma_status ret;
 	unsigned long flags;
 	ENTRY();
-	spin_lock_irqsave(&edmac->lock, flags);
-	ret = dma_cookie_status(chan, cookie, state);
-	spin_unlock_irqrestore(&edmac->lock, flags);
 	LEAVE();
-	return ret;
+	if(__raw_readl(edmac->regs + GDMA_CTL)&0x1)
+		return DMA_IN_PROGRESS;
+	else
+		return DMA_SUCCESS;
 }
 
 /**
@@ -1093,6 +1100,7 @@ static int __init nuc970_dma_probe(struct platform_device *pdev)
 		edmac->edma = edma;
 
 		spin_lock_init(&edmac->lock);
+		spin_lock_init(&edmac->wklock);
 		INIT_LIST_HEAD(&edmac->active);
 		INIT_LIST_HEAD(&edmac->queue);
 		INIT_LIST_HEAD(&edmac->free_list);
@@ -1126,6 +1134,8 @@ static int __init nuc970_dma_probe(struct platform_device *pdev)
 	edma->hw_submit = m2m_hw_submit;
 	edma->hw_interrupt = m2m_hw_interrupt;
 
+	platform_set_drvdata(pdev, edma);
+
 	ret = dma_async_device_register(dma_dev);
 	if (unlikely(ret)) {
 		#if 0
@@ -1143,6 +1153,25 @@ static int __init nuc970_dma_probe(struct platform_device *pdev)
 	return ret;
 }
 
+static int nuc970_dma_suspend(struct platform_device *pdev,pm_message_t state){
+	struct nuc970_dma_engine *edma = platform_get_drvdata(pdev);
+	struct nuc970_dma_chan *edmac = &edma->channels[0];
+	ENTRY();
+	spin_lock(&edmac->wklock);
+	while(__raw_readl(edmac->regs + GDMA_CTL)&0x1);
+	LEAVE();
+	return 0;
+}
+
+static int nuc970_dma_resume(struct platform_device *pdev){
+	struct nuc970_dma_engine *edma = platform_get_drvdata(pdev);
+	struct nuc970_dma_chan *edmac = &edma->channels[0];
+	ENTRY();
+	spin_unlock(&edmac->wklock);
+	LEAVE();
+	return 0;
+}
+
 static struct platform_device_id nuc970_dma_driver_ids[] = {	
 	{ "nuc970-dma-m2m", 0 },
 	{ },
@@ -1154,6 +1183,8 @@ static struct platform_driver nuc970_dma_driver = {
 		.owner	= THIS_MODULE,
 	},
 	.probe		= nuc970_dma_probe,
+	.resume		= nuc970_dma_resume,
+	.suspend	= nuc970_dma_suspend,
 	.id_table	= nuc970_dma_driver_ids,
 };
 module_platform_driver(nuc970_dma_driver);

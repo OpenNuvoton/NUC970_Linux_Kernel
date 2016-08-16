@@ -156,7 +156,6 @@ static void nuc970_dma_callback(void *arg)
 		case NCU970_DMA_TRANSFER:
 		{
 			int i;
-			enum dma_status		status;
 			struct nuc970_dma_done	done;// = { .wait = &done_wait };
 			struct nuc970_mem_dma_param *dma_param;
 			struct dma_async_tx_descriptor *tx = NULL;
@@ -183,14 +182,7 @@ static void nuc970_dma_callback(void *arg)
 			tx->callback = nuc970_dma_callback;
 			tx->callback_param = &done;
 			cookie = tx->tx_submit(tx);
-			
-			//if (dma_submit_error(cookie)) {
-			//	return -EINVAL;
-			//}
-			//dma_async_issue_pending(pchannel_p->channel_p);
-			status = dma_async_is_tx_complete(pchannel_p->channel_p, pchannel_p->cookie, NULL, NULL);	
-			printk("status=%d\n",status);
-			
+			while(dma_async_is_tx_complete(pchannel_p->channel_p, pchannel_p->cookie, NULL, NULL)!=0);
   	}
   	break;
 	}
