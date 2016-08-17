@@ -153,6 +153,7 @@ struct nuvoton_vin_device {
 	struct capture_parameter vpe; /*sensor interface for nuvoton */
 	dma_addr_t phy_addr[NUVOTON_MAX_FRAMES];
 	void* vir_addr[NUVOTON_MAX_FRAMES];
+	u32 CtlReg;
 };
 
 /*****************************************************************************/

@@ -1624,12 +1624,22 @@ static int nuvoton_cap_device_resume(struct platform_device *pdev){
 	ENTRY();
 	capture_init(0);
 	nuvoton_vin_probe(nuvoton_cam[0]);
+	if(nuvoton_cam[0]->CtlReg==1)
+		__raw_writel(__raw_readl(REG_CAP_CTL)|0x1,REG_CAP_CTL);
 	LEAVE();
 	return 0;
 }
 
 static int nuvoton_cap_device_suspend(struct platform_device *pdev,pm_message_t state){
 	ENTRY();
+	if(__raw_readl(REG_CAP_CTL)&0x1)
+	{
+		__raw_writel(__raw_readl(REG_CAP_CTL)|(1<<16),REG_CAP_CTL);
+		while(__raw_readl(REG_CAP_CTL)&0x1);
+		nuvoton_cam[0]->CtlReg=1;
+	}else{
+		nuvoton_cam[0]->CtlReg=0;
+	}
 	capture_uninit();
 	LEAVE();
 	return 0;
