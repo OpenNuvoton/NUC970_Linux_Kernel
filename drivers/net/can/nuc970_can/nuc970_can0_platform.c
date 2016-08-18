@@ -30,6 +30,9 @@
 #include <linux/pinctrl/consumer.h>
 
 #include <linux/can/dev.h>
+#include <mach/map.h>
+#include <mach/regs-gcr.h>
+
 
 #include "nuc970_can.h"
 
@@ -202,6 +205,12 @@ static int c_can_suspend(struct platform_device *pdev, pm_message_t state)
 	int ret;
 	struct net_device *ndev = platform_get_drvdata(pdev);
 	struct c_can_priv *priv = netdev_priv(ndev);
+
+    #ifdef CONFIG_ENABLE_CAN0_RX_WAKEUP
+    __raw_writel(0x1,(priv->base+0x168));
+    __raw_writel((0x1<<18) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+    enable_irq_wake(ndev->irq);
+	#endif
 
 	if (netif_running(ndev)) {
 		netif_stop_queue(ndev);

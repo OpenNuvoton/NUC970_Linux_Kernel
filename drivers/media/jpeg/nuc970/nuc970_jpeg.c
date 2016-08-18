@@ -1479,19 +1479,29 @@ static struct v4l2_file_operations jpegcodec_fops = {
 
 /* suspend and resume support for the lcd controller */
 
-static int jpegcodec_suspend(struct platform_device *dev, pm_message_t state)
+static int nuc970_jpegcodec_suspend(struct platform_device *dev, pm_message_t state)
 {
+    jpeg_priv_t *priv = (jpeg_priv_t *)&jpeg_priv;
+
+    if( (priv->state != JPEG_CLOSED) && (priv->state != JPEG_IDLE) && (priv->state != JPEG_ENCODE_PARAM_ERROR) )
+    {
+        if (!IS_FINISHED(priv->state) && priv->state != JPEG_MEM_SHORTAGE && priv->state != JPEG_DECODE_PARAM_ERROR)
+        {
+            wait_event_interruptible(jpeg_wq, IS_FINISHED(priv->state));
+        }
+    }
+	
     return 0;
 }
 
-static int jpegcodec_resume(struct platform_device *dev)
+static int nuc970_jpegcodec_resume(struct platform_device *dev)
 {
     return 0;
 }
 
 #else
-#define jpegcodec_suspend NULL
-#define jpegcodec_resume  NULL
+#define nuc970_jpegcodec_suspend NULL
+#define nuc970_jpegcodec_resume  NULL
 #endif
 
 
@@ -2420,6 +2430,8 @@ static int __exit nuc970_jpegcodec_remove(struct platform_device *pdev)
 static struct platform_driver nuc970_jpegcodec_driver = {
         .probe		= nuc970_jpegcodec_probe,
         .remove		= nuc970_jpegcodec_remove,
+        .suspend    = nuc970_jpegcodec_suspend,
+        .resume     = nuc970_jpegcodec_resume,
 #ifdef	CONFIG_PM
 
 #endif

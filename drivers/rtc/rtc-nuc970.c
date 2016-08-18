@@ -17,6 +17,8 @@
 #include <linux/io.h>
 #include <linux/bcd.h>
 #include <linux/clk.h>
+#include <mach/map.h>
+#include <mach/regs-gcr.h>
 
 
 /* RTC Control Registers */
@@ -277,10 +279,15 @@ static int __init nuc970_rtc_probe(struct platform_device *pdev)
 
 	nuc970_rtc->irq_num = platform_get_irq(pdev, 0);
 	if (devm_request_irq(&pdev->dev, nuc970_rtc->irq_num,
-			nuc970_rtc_interrupt, 0, "nuc970rtc", nuc970_rtc)) {
+			nuc970_rtc_interrupt, IRQF_NO_SUSPEND, "nuc970rtc", nuc970_rtc)) {
 		dev_err(&pdev->dev, "NUC970 RTC request irq failed\n");
 		return -EBUSY;
 	}
+
+	#ifdef CONFIG_ENABLE_RTC_WAKEUP
+	__raw_writel((1<<24) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+        enable_irq_wake(nuc970_rtc->irq_num);
+	#endif
 
 	return 0;
 }
@@ -292,8 +299,20 @@ static int __exit nuc970_rtc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int nuc970_rtc_suspend(struct platform_device *pdev, pm_message_t state)
+{
+    return 0;
+}
+
+static int nuc970_rtc_resume(struct platform_device *dev)
+{
+    return 0;
+}
+
 static struct platform_driver nuc970_rtc_driver = {
 	.remove		= __exit_p(nuc970_rtc_remove),
+	.suspend        = nuc970_rtc_suspend,
+	.resume         = nuc970_rtc_resume,
 	.driver		= {
 		.name	= "nuc970-rtc",
 		.owner	= THIS_MODULE,

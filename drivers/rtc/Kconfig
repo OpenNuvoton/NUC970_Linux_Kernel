@@ -847,6 +847,12 @@ config RTC_DRV_NUC970
 	  If you say yes here you get support for the RTC subsystem of the
 	  NUC970 used in embedded systems.
 
+config ENABLE_RTC_WAKEUP
+	bool "Enable RTC wake-up function"
+	depends on RTC_DRV_NUC970
+	help
+	  This selects NUC970 RTC wake-up function
+
 comment "on-CPU RTC drivers"
 
 config RTC_DRV_DAVINCI
