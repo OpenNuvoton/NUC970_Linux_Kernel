@@ -203,7 +203,7 @@ static int nuc970_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
 	hw->rx = t->rx_buf;
 	hw->len = t->len;
 	hw->count = 0;
- 
+
     if(t->tx_nbits & SPI_NBITS_DUAL) {
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x5 << 20), hw->regs + REG_CNTRL);
     } else if(t->tx_nbits & SPI_NBITS_QUAD) {
@@ -216,8 +216,21 @@ static int nuc970_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x2 << 20), hw->regs + REG_CNTRL);
     }   
     
-    for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
-        __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);        
+    //auto switch to n-uint transfer
+    if(t->len >= 4) {
+        __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x300) | 0x300, hw->regs + REG_CNTRL);
+        for(i=0, offset=0; i<4 ;i++,offset+=4)
+            __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset); 
+        hw->count += 4;
+    } else {
+        __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x300) | ((t->len-1) << 8), hw->regs + REG_CNTRL);
+        for(i=0, offset=0; i<t->len ;i++,offset+=4)
+            __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);
+        hw->count += t->len;
+    }        
+    
+    // for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
+        // __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);        
 	nuc970_spi0_gobusy(hw);
 
 	wait_for_completion(&hw->done);
@@ -234,7 +247,7 @@ static irqreturn_t nuc970_spi0_irq(int irq, void *dev)
 	unsigned int status, i, offset;
 	unsigned int count = hw->count;
     
-    hw->count += hw->pdata->txnum+1;
+    //hw->count += hw->pdata->txnum+1;
 
     if (hw->rx) {
         for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
@@ -623,12 +636,48 @@ static int nuc970_spi0_remove(struct platform_device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int nuc970_spi0_suspend(struct device *dev)
+{
+	struct nuc970_spi *hw = dev_get_drvdata(dev);
+    
+    while(__raw_readl(hw->regs + REG_CNTRL) & 0x1)
+        msleep(1);
+    
+    // disable interrupt
+    __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x20000), hw->regs + REG_CNTRL);    
+    
+	return 0;
+}
+
+static int nuc970_spi0_resume(struct device *dev)
+{
+	struct nuc970_spi *hw = dev_get_drvdata(dev);
+    
+    // enable interrupt
+	__raw_writel((__raw_readl(hw->regs + REG_CNTRL) | 0x20000), hw->regs + REG_CNTRL);
+    
+	return 0;
+}
+
+static const struct dev_pm_ops nuc970_spi0_pmops = {
+	.suspend	= nuc970_spi0_suspend,
+	.resume		= nuc970_spi0_resume,
+};
+
+#define NUC970_SPI0_PMOPS (&nuc970_spi0_pmops)
+
+#else
+#define NUC970_SPI0_PMOPS NULL
+#endif
+
 static struct platform_driver nuc970_spi0_driver = {
 	.probe		= nuc970_spi0_probe,
 	.remove		= nuc970_spi0_remove,
 	.driver		= {
 		.name	= "nuc970-spi0",
 		.owner	= THIS_MODULE,
+        .pm	= NUC970_SPI0_PMOPS,
 	},
 };
 module_platform_driver(nuc970_spi0_driver);

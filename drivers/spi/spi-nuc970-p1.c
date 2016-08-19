@@ -627,12 +627,48 @@ static int nuc970_spi1_remove(struct platform_device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int nuc970_spi1_suspend(struct device *dev)
+{
+	struct nuc970_spi *hw = dev_get_drvdata(dev);
+    
+    while(__raw_readl(hw->regs + REG_CNTRL) & 0x1)
+        msleep(1);
+    
+    // disable interrupt
+    __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x20000), hw->regs + REG_CNTRL);    
+    
+	return 0;
+}
+
+static int nuc970_spi1_resume(struct device *dev)
+{
+	struct nuc970_spi *hw = dev_get_drvdata(dev);
+    
+    // enable interrupt
+	__raw_writel((__raw_readl(hw->regs + REG_CNTRL) | 0x20000), hw->regs + REG_CNTRL);
+    
+	return 0;
+}
+
+static const struct dev_pm_ops nuc970_spi1_pmops = {
+	.suspend	= nuc970_spi1_suspend,
+	.resume		= nuc970_spi1_resume,
+};
+
+#define NUC970_SPI1_PMOPS (&nuc970_spi1_pmops)
+
+#else
+#define NUC970_SPI1_PMOPS NULL
+#endif
+
 static struct platform_driver nuc970_spi1_driver = {
 	.probe		= nuc970_spi1_probe,
 	.remove		= nuc970_spi1_remove,
 	.driver		= {
 		.name	= "nuc970-spi1",
 		.owner	= THIS_MODULE,
+        .pm	= NUC970_SPI1_PMOPS,
 	},
 };
 module_platform_driver(nuc970_spi1_driver);

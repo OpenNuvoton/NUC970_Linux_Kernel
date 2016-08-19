@@ -92,7 +92,9 @@
 #define IRQ_KPI		NUC970_IRQ(61)
 
 #ifndef CONFIG_GPIO_NUC970
-#define NR_IRQS		(IRQ_KPI + 1)
+#define SPARE_IRQS          (64)
+#define NR_IRQS		        (IRQ_KPI + SPARE_IRQS + 1)
+
 #else
 #define EXT0_BASE 100
 #define IRQ_EXT0_H0		NUC970_IRQ(EXT0_BASE+0)
