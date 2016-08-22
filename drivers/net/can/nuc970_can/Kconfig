@@ -10,7 +10,7 @@ config NUC970_CAN0
 	  This selects NUC970 CAN0 driver
 
 config ENABLE_CAN0_RX_WAKEUP
-	bool "Enable RTC wake-up function"
+	bool "Enable CAN0 wake-up function"
 	depends on NUC970_CAN0
 	help
 	  This selects NUC970 CAN0 wake-up function
@@ -35,7 +35,7 @@ config NUC970_CAN1
 	  This selects NUC971 CAN0 driver
 
 config ENABLE_CAN1_RX_WAKEUP
-	bool "Enable RTC wake-up function"
+	bool "Enable CAN1 wake-up function"
 	depends on NUC970_CAN1
 	help
 	  This selects NUC970 CAN1 wake-up function
