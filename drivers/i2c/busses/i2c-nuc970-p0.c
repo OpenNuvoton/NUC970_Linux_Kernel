@@ -208,6 +208,7 @@ static void i2c_nuc970_irq_nextbyte(struct nuc970_i2c *i2c,
 
 	case STATE_STOP:
 		nuc970_i2c0_disable_irq(i2c);
+        i2c->state = STATE_IDLE;
 		break;
 
 	case STATE_START:
@@ -702,12 +703,48 @@ static int nuc970_i2c0_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int nuc970_i2c0_suspend(struct device *dev)
+{
+	struct nuc970_i2c *i2c = dev_get_drvdata(dev);
+    
+    while(i2c->state != STATE_IDLE)
+        msleep(1);
+    
+    //disable i2c
+	writel(0x0, i2c->regs + CSR);
+    
+    //free SCL,SDA
+    writel(0x1, i2c->regs + SWR);
+    writel(0x7, i2c->regs + SWR);
+    
+	return 0;
+}
+
+static int nuc970_i2c0_resume(struct device *dev)
+{
+		
+	return 0;
+}
+
+static const struct dev_pm_ops nuc970_i2c0_pmops = {
+	.suspend	= nuc970_i2c0_suspend,
+	.resume		= nuc970_i2c0_resume,
+};
+
+#define NUC970_I2C0_PMOPS (&nuc970_i2c0_pmops)
+
+#else
+#define NUC970_I2C0_PMOPS NULL
+#endif
+
 static struct platform_driver nuc970_i2c0_driver = {
 	.probe		= nuc970_i2c0_probe,
 	.remove		= nuc970_i2c0_remove,
 	.driver		= {
 		.name	= "nuc970-i2c0",
 		.owner	= THIS_MODULE,
+        .pm	= NUC970_I2C0_PMOPS,
 	},
 };
 module_platform_driver(nuc970_i2c0_driver);

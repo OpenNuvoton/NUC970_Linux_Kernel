@@ -31,7 +31,10 @@ struct nuc970fb_info {
 	int 			drv_type;
 	struct nuc970fb_hw	regs;
 	unsigned long		clk_rate;
-
+#ifdef CONFIG_PM    
+    struct completion   completion;
+    int                 powerdown;
+#endif
 #ifdef CONFIG_CPU_FREQ
 	struct notifier_block	freq_transition;
 #endif

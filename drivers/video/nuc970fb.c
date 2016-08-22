@@ -561,7 +561,12 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 
 	if (lcdirq & LCM_INT_CS_DISP_F_STATUS) {
 		writel(readl(irq_base) | 1<<30, irq_base);
-
+#ifdef CONFIG_PM        
+        if(fbi->powerdown) {
+            complete(&fbi->completion);
+            printk("TT\n");
+        }
+#endif        
 		/* wait VA_EN low */
 		if ((readl(regs + REG_LCM_DCCS) &
 		    LCM_DCCS_SINGLE) == LCM_DCCS_SINGLE)
@@ -722,8 +727,14 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	fbinfo->flags			= FBINFO_FLAG_DEFAULT;
 	fbinfo->pseudo_palette		= &fbi->pseudo_pal;
 
+#ifdef CONFIG_PM      
+    fbi->powerdown           = 0;
+#endif
+#ifdef CONFIG_PM  	
+    init_completion(&fbi->completion);
+#endif    
 	ret = request_irq(irq, nuc970fb_irqhandler, 0,
-			  pdev->name, fbinfo);
+			  pdev->name, fbi);
 	if (ret) {
 		dev_err(&pdev->dev, "cannot register irq handler %d -err %d\n",
 			irq, ret);
@@ -822,6 +833,11 @@ static int nuc970fb_probe(struct platform_device *pdev)
     init_ili9341(fbinfo);
 #endif
 
+#ifdef CONFIG_PM     
+    writel(readl(fbi->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, fbi->io + REG_LCM_DCCS);
+    writel(readl(fbi->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, fbi->io + REG_LCM_INT_CS);
+#endif
+    
 	return 0;
 
 free_cpufreq:
@@ -888,30 +904,39 @@ static int nuc970fb_remove(struct platform_device *pdev)
 /*
  *	suspend and resume support for the lcd controller
  */
-
+#define NUC970_FB_TIMEOUT	(msecs_to_jiffies(5000))
 static int nuc970fb_suspend(struct platform_device *dev, pm_message_t state)
 {
 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
 	struct nuc970fb_info *info = fbinfo->par;
-
+    unsigned long timeout;
+        
+    printk(KERN_INFO "nuc970fb suspend\n");
+    info->powerdown = 1;
+    
+    timeout = wait_for_completion_interruptible_timeout
+			 (&info->completion, NUC970_FB_TIMEOUT);
+            
 	nuc970fb_stop_lcd(fbinfo);
-	msleep(1);
-	clk_disable(info->clk);
+	//msleep(1);
+	//clk_disable(info->clk);
 	return 0;
 }
 
 static int nuc970fb_resume(struct platform_device *dev)
 {
 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
-	struct nuc970fb_info *fbi = fbinfo->par;
+	struct nuc970fb_info *info = fbinfo->par;
 
 	printk(KERN_INFO "nuc970fb resume\n");
-
-	clk_enable(fbi->clk);
-	msleep(1);
-
+    
+    info->powerdown = 0;
+    
 	nuc970fb_init_registers(fbinfo);
 	nuc970fb_activate_var(fbinfo);
+    
+    writel(readl(info->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, info->io + REG_LCM_DCCS);
+    writel(readl(info->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, info->io + REG_LCM_INT_CS);
 
 	return 0;
 }
