@@ -851,7 +851,7 @@ s32 get_sram_base(struct nuc970_udc *dev, u32 max)
 			return sram_data[i][1];
 	}
 
-	if (0x800 - sram_data[cnt-1][1] >= max)
+	if (0x1000 - sram_data[cnt-1][1] >= max)
 		return sram_data[cnt-1][1];
 
 	return -ENOBUFS;
@@ -1685,7 +1685,7 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 		__raw_writel((__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0xe0)|ep->ep_num,
 					 controller.reg + REG_USBD_DMA_CTRL_STS);   //read
 		__raw_writel(0x1000, controller.reg + REG_USBD_EPA_IRQ_ENB + (0x28* (ep->index-1)));
-		__raw_writel(__raw_readl(controller.reg + REG_USBD_IRQ_ENB_L)|(ep->index<<2),
+		__raw_writel(__raw_readl(controller.reg + REG_USBD_IRQ_ENB_L)|(1<<(ep->index+1)),
 					 controller.reg + REG_USBD_IRQ_ENB_L);
 
 		if (loop > 0)
