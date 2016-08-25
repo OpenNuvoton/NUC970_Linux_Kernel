@@ -58,6 +58,7 @@ static struct map_desc nuc970_iodesc[] __initdata = {
         IODESC_ENT(ADC),
         IODESC_ENT(CAN),
         IODESC_ENT(MTP),
+        IODESC_ENT(SRAM),
 };
 
 extern void nuc970_restart(char mode, const char *cmd);
