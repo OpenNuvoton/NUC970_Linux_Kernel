@@ -95,29 +95,29 @@ static int nuc970_clockevent_setnextevent(unsigned long evt,
 		struct clock_event_device *clk)
 {
 	unsigned int tcsr, tdelta;
-    
+
     tcsr = __raw_readl(REG_TMR_TCSR0);
     tdelta = __raw_readl(REG_TMR_TICR0) - __raw_readl(REG_TMR_TDR0);
-    
+
 	__raw_writel(evt, REG_TMR_TICR0);
     if(!(tcsr & COUNTEN) && ((tdelta > 2) || (tdelta == 0)))
         __raw_writel(__raw_readl(REG_TMR_TCSR0) | COUNTEN, REG_TMR_TCSR0);
 
 	return 0;
 }
-
+#ifdef CONFIG_PM
 static int tmr0_msk;
 static void nuc970_clockevent_suspend(struct clock_event_device *clk)
 {
 	unsigned long flags;
-	
+
 	local_irq_save(flags);
 	if(__raw_readl(REG_AIC_IMR) & (1 << 16)) {
 		tmr0_msk = 1;
 		__raw_writel(0x10000, REG_AIC_MDCR);  //timer0
 	} else
 		tmr0_msk = 0;
-	
+
 	local_irq_restore(flags);
 
 	printk("clk event suspend\n");
@@ -134,7 +134,7 @@ static void nuc970_clockevent_resume(struct clock_event_device *clk)
 
 	printk("clk event resume\n");
 }
-
+#endif
 static struct clock_event_device nuc970_clockevent_device = {
 	.name		= "nuc970-timer0",
 	.shift		= 32,
@@ -154,9 +154,9 @@ static irqreturn_t nuc970_timer0_interrupt(int irq, void *dev_id)
 {
 	struct clock_event_device *evt = &nuc970_clockevent_device;
 
-	__raw_writel(0x01, REG_TMR_TISR); /* clear TIF0 */	
+	__raw_writel(0x01, REG_TMR_TISR); /* clear TIF0 */
 	evt->event_handler(evt);
-		
+
 	return IRQ_HANDLED;
 }
 
@@ -172,10 +172,10 @@ static void __init nuc970_clockevents_init(void)
 	struct clk *clk = clk_get(NULL, "timer0");
 
 	BUG_ON(IS_ERR(clk));
-	
+
 	clk_prepare(clk);
 	clk_enable(clk);
-	
+
 	__raw_writel(0x00, REG_TMR_TCSR0);
 
 	rate = clk_get_rate(clk) / (PRESCALE + 1);
@@ -200,7 +200,7 @@ static cycle_t nuc970_get_cycles(struct clocksource *cs)
 {
 	return (__raw_readl(REG_TMR_TDR1)) & TDR_MASK;
 }
-
+#ifdef CONFIG_PM
 static int tmr1_msk;
 static void nuc970_clocksource_suspend(struct clocksource *cs)
 {
@@ -212,7 +212,7 @@ static void nuc970_clocksource_suspend(struct clocksource *cs)
 		__raw_writel(0x20000, REG_AIC_MDCR);  //timer1
 	} else
 		tmr1_msk = 0;
-	
+
 	local_irq_restore(flags);
 
 	printk("clk source suspend\n");
@@ -230,7 +230,7 @@ static void nuc970_clocksource_resume(struct clocksource *cs)
 
 	printk("clk source resume\n");
 }
-
+#endif
 static struct clocksource clocksource_nuc970 = {
 	.name	= "nuc970-timer1",
 	.rating	= 200,
@@ -251,7 +251,7 @@ static void __init nuc970_clocksource_init(void)
 	struct clk *clk = clk_get(NULL, "timer1");
 
 	BUG_ON(IS_ERR(clk));
-	
+
 	clk_prepare(clk);
 	clk_enable(clk);
 
@@ -273,13 +273,13 @@ static void __init nuc970_clocksource_init(void)
 
 void __init nuc970_setup_default_serial_console(void)
 {
-	struct clk *clk = clk_get(NULL, "uart0");	
+	struct clk *clk = clk_get(NULL, "uart0");
 
 	BUG_ON(IS_ERR(clk));
-	
+
 	clk_prepare(clk);
-	clk_enable(clk);	
-	
+	clk_enable(clk);
+
 	/* GPE0, GPE1 */
 	nuc970_mfp_set_port_e(0, 0x9);
 	nuc970_mfp_set_port_e(1, 0x9);
@@ -287,7 +287,7 @@ void __init nuc970_setup_default_serial_console(void)
 
 extern int nuc970_init_clocks(void);
 void __init nuc970_timer_init(void)
-{	
+{
 	nuc970_init_clocks();
 	nuc970_clocksource_init();
 	nuc970_clockevents_init();
