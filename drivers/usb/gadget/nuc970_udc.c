@@ -53,7 +53,7 @@
 #define DRIVER_VERSION  "16 August 2014"
 #define DRIVER_AUTHOR   "shirley <clyu2@nuvoton.com>"
 
-static const char gadget_name [] = "nuc970-udc";
+static const char gadget_name [] = "nuc970-usbdev";
 static const char driver_desc [] = DRIVER_DESC;
 static const char ep0name [] = "ep0";
 
@@ -195,6 +195,8 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 
 	buf = req->req.buf + req->req.actual;
 	prefetch(buf);
+	if (udc->gadget.speed == USB_SPEED_FULL)
+		udelay(500);
 
 	if (ep->ep_num == 0)
 	{ //ctrl pipe don't use DMA
@@ -503,7 +505,7 @@ void paser_irq_cep(int irq, struct nuc970_udc *dev, u32 IrqSt)
 			return;
 
 		case CEP_STS_END:
-			__raw_writel(0x4A, controller.reg + REG_USBD_CEP_IRQ_ENB);
+            __raw_writel(0x2, controller.reg + REG_USBD_CEP_IRQ_ENB);
 			udc_isr_update_dev(dev);
 			dev->ep0state=EP0_IDLE;
 			dev->setup_ret = 0;
@@ -1089,6 +1091,11 @@ static int nuc970_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
 
 	if (ep->index==0)
 	{ //delayed status
+        if ((req->req.length != 0) && (dev->ep0state == EP0_END_XFER))
+        {
+            dev->ep0state = EP0_IN_DATA_PHASE;
+            __raw_writel(0x08, controller.reg + REG_USBD_CEP_IRQ_ENB);
+		}
 		if (dev->setup_ret > 1000|| ((req->req.length==0)&&(dev->ep0state == EP0_OUT_DATA_PHASE)))
 		{
 			__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
@@ -1222,7 +1229,7 @@ static const struct usb_gadget_ops nuc970_ops =
 
 static void nuc970_udc_enable(struct nuc970_udc *dev)
 {
-	dev->gadget.speed = USB_SPEED_HIGH;
+//    dev->gadget.speed = USB_SPEED_HIGH;
 	__raw_writel(__raw_readl(controller.reg + REG_USBD_PHY_CTL) | 0x100, controller.reg + REG_USBD_PHY_CTL);
 }
 
@@ -1508,9 +1515,14 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
 				dev->ep0state = EP0_OUT_DATA_PHASE;
 				__raw_writel(0x40, controller.reg + REG_USBD_CEP_IRQ_ENB);
 			}
-			ret = dev->driver->setup(&dev->gadget, &crq);
-			dev->setup_ret = ret;
-			if (ret < 0)
+
+			if (dev->gadget.speed == USB_SPEED_FULL)
+				udelay(5);
+
+            ret = dev->driver->setup(&dev->gadget, &crq);
+            dev->setup_ret = ret;
+//            if (ret < 0)
+            if ((ret < 0) || (crq.bRequest == 0x05))
 			{
 				__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_STAT);
 				__raw_writel(0x448, controller.reg + REG_USBD_CEP_IRQ_ENB);     // enable in/RxED/status complete interrupt
