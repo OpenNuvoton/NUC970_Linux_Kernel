@@ -214,23 +214,10 @@ static int nuc970_spi0_txrx(struct spi_device *spi, struct spi_transfer *t)
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x4 << 20), hw->regs + REG_CNTRL);
     } else if(t->rx_nbits & SPI_NBITS_QUAD) {
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x2 << 20), hw->regs + REG_CNTRL);
-    }   
-    
-    //auto switch to n-uint transfer
-    if(t->len >= 4) {
-        __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x300) | 0x300, hw->regs + REG_CNTRL);
-        for(i=0, offset=0; i<4 ;i++,offset+=4)
-            __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset); 
-        hw->count += 4;
-    } else {
-        __raw_writel((__raw_readl(hw->regs + REG_CNTRL) & ~0x300) | ((t->len-1) << 8), hw->regs + REG_CNTRL);
-        for(i=0, offset=0; i<t->len ;i++,offset+=4)
-            __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);
-        hw->count += t->len;
-    }        
-    
-    // for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
-        // __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);        
+    }    
+        
+    for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
+        __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);        
 	nuc970_spi0_gobusy(hw);
 
 	wait_for_completion(&hw->done);
@@ -247,7 +234,7 @@ static irqreturn_t nuc970_spi0_irq(int irq, void *dev)
 	unsigned int status, i, offset;
 	unsigned int count = hw->count;
     
-    //hw->count += hw->pdata->txnum+1;
+    hw->count += hw->pdata->txnum+1;
 
     if (hw->rx) {
         for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
