@@ -214,7 +214,15 @@ static int nuc970_spi1_txrx(struct spi_device *spi, struct spi_transfer *t)
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x4 << 20), hw->regs + REG_CNTRL);
     } else if(t->rx_nbits & SPI_NBITS_QUAD) {
         __raw_writel(__raw_readl(hw->regs + REG_CNTRL) | (0x2 << 20), hw->regs + REG_CNTRL);
-    }   
+    }
+    
+    if(hw->len >= 4) {
+        nuc970_spi1_setup_txnum(hw, 3);
+        hw->pdata->txnum = 3;
+    } else {
+        nuc970_spi1_setup_txnum(hw, hw->len-1);
+        hw->pdata->txnum = hw->len-1;
+    }
     
     for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4)
         __raw_writel(hw_tx(hw, i), hw->regs + REG_TX0 + offset);        
@@ -232,7 +240,7 @@ static irqreturn_t nuc970_spi1_irq(int irq, void *dev)
 {
 	struct nuc970_spi *hw = dev;
 	unsigned int status, i, offset;
-	unsigned int count = hw->count;
+	unsigned int count = hw->count, last;
     
     hw->count += hw->pdata->txnum+1;
 
@@ -242,11 +250,20 @@ static irqreturn_t nuc970_spi1_irq(int irq, void *dev)
     }
     
     count = hw->count;
-    if (count < hw->len) {
-        for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4) {
+    last = hw->len - count;
+    
+    /* Use 4 times transfer automatically */
+    if (last > 0) {
+         if ((last > 0) && (last <= 4)) {
+             nuc970_spi1_setup_txnum(hw, last-1);
+             hw->pdata->txnum = last-1;
+         }
+         
+         for(i=0, offset=0; i<hw->pdata->txnum+1 ;i++,offset+=4) {
             __raw_writel(hw_tx(hw, count++), hw->regs + REG_TX0 + offset);
         }
         nuc970_spi1_gobusy(hw);
+         
     } else {
         complete(&hw->done);
     }
