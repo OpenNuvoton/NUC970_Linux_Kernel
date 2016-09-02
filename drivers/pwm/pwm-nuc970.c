@@ -59,19 +59,35 @@ static int nuc970_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	//struct nuc970_chip *nuc970 = to_nuc970_chip(chip);
 	int ch = pwm->hwpwm + chip->base;
-	unsigned long flags;
+	unsigned long flags, cnr, cmr;
 
 	local_irq_save(flags);
 
-	if(ch == 0)
+	if(ch == 0) {
+		cnr = __raw_readl(REG_PWM_CNR0);
+		cmr = __raw_readl(REG_PWM_CMR0);
 		__raw_writel(__raw_readl(REG_PWM_PCR) | (9), REG_PWM_PCR);
-	else if(ch == 1)
+		__raw_writel(cnr, REG_PWM_CNR0);
+		__raw_writel(cmr, REG_PWM_CMR0);
+	} else if(ch == 1) {
+		cnr = __raw_readl(REG_PWM_CNR1);
+		cmr = __raw_readl(REG_PWM_CMR1);
 		__raw_writel(__raw_readl(REG_PWM_PCR) | (9 << 8), REG_PWM_PCR);
-	else if (ch == 2)
+		__raw_writel(cnr, REG_PWM_CNR1);
+		__raw_writel(cmr, REG_PWM_CMR1);
+	} else if (ch == 2) {
+		cnr = __raw_readl(REG_PWM_CNR2);
+		cmr = __raw_readl(REG_PWM_CMR2);
 		__raw_writel(__raw_readl(REG_PWM_PCR) | (9 << 12), REG_PWM_PCR);
-	else	/* ch 3 */
+		__raw_writel(cnr, REG_PWM_CNR2);
+		__raw_writel(cmr, REG_PWM_CMR2);
+	} else {	/* ch 3 */
+		cnr = __raw_readl(REG_PWM_CNR3);
+		cmr = __raw_readl(REG_PWM_CMR3);
 		__raw_writel(__raw_readl(REG_PWM_PCR) | (9 << 16), REG_PWM_PCR);
-
+		__raw_writel(cnr, REG_PWM_CNR3);
+		__raw_writel(cmr, REG_PWM_CMR3);
+	}
 
 	local_irq_restore(flags);
 #ifdef DEBUG_PWM
