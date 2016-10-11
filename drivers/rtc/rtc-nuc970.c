@@ -313,13 +313,14 @@ static struct platform_driver nuc970_rtc_driver = {
 	.remove		= __exit_p(nuc970_rtc_remove),
 	.suspend        = nuc970_rtc_suspend,
 	.resume         = nuc970_rtc_resume,
+	.probe          = nuc970_rtc_probe,
 	.driver		= {
 		.name	= "nuc970-rtc",
 		.owner	= THIS_MODULE,
 	},
 };
 
-module_platform_driver_probe(nuc970_rtc_driver, nuc970_rtc_probe);
+module_platform_driver(nuc970_rtc_driver);
 
 MODULE_AUTHOR("nuvoton");
 MODULE_DESCRIPTION("nuc970 RTC driver");
