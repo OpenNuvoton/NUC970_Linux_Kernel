@@ -259,6 +259,8 @@ static void adjust_link(struct net_device *dev)
 			status_change = true;
 		}
 	} else {
+		// disable tx/rx
+		__raw_writel(__raw_readl( REG_MCMDR) & ~(MCMDR_RXON | MCMDR_TXON), REG_MCMDR);
 		ether->speed = 0;
 		ether->duplex = -1;
 	}
@@ -266,15 +268,15 @@ static void adjust_link(struct net_device *dev)
 	if (phydev->link != ether->link) {
 
 		ether->link = phydev->link;
-
-		status_change = true;
+		if(phydev->link)
+			status_change = true;
 	}
 
 	spin_unlock_irqrestore(&ether->lock, flags);
 
 	if (status_change) {
 
-		val = __raw_readl( REG_MCMDR);
+		val = __raw_readl( REG_MCMDR) | MCMDR_RXON | MCMDR_TXON;
 
 		if (ether->speed == 100) {
 			val |= MCMDR_OPMOD;
@@ -289,6 +291,7 @@ static void adjust_link(struct net_device *dev)
 		}
 
 		__raw_writel(val,  REG_MCMDR);
+		ETH_TRIGGER_TX; // incase some packets queued in descriptor
 	}
 }
 
@@ -310,12 +313,11 @@ static void nuc970_write_cam(struct net_device *dev,
 
 static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct sk_buff *skb = dev_alloc_skb(1518 + 2);
+	struct sk_buff *skb = dev_alloc_skb(1518);
 
 	if (skb == NULL)
 		return NULL;
 
-	skb_reserve(skb, 2);    // reserve 2 bytes to align IP header
 	skb->dev = dev;
 
 	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
@@ -732,7 +734,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 		if (likely(status & RXDS_RXGD)) {
 
-			skb = dev_alloc_skb(1518 + 2);
+			skb = dev_alloc_skb(1518);
 
 			if (!skb) {
 				struct platform_device *pdev = ether->pdev;
@@ -748,7 +750,6 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			ether->stats.rx_packets++;
 			ether->stats.rx_bytes += length;
 
-			skb_reserve(skb, 2);
 			skb->dev = dev;
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
