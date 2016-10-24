@@ -59,7 +59,7 @@
 #include "cpu.h"
 
 /* USB EHCI Host Controller */
-#ifdef CONFIG_USB_EHCI_HCD
+#if defined(CONFIG_USB_EHCI_HCD) || defined(CONFIG_USB_EHCI_HCD_MODULE)
 static struct resource nuc970_ehci_resource[] = {
         [0] = {
                 .start = NUC970_PA_EHCI,
@@ -87,7 +87,7 @@ static struct platform_device nuc970_device_ehci = {
 };
 #endif
 /* USB OHCI Host Controller */
-#ifdef CONFIG_USB_OHCI_HCD
+#if defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
 static struct resource nuc970_ohci_resource[] = {
         [0] = {
                 .start = NUC970_PA_OHCI,
@@ -115,7 +115,7 @@ static struct platform_device nuc970_device_ohci = {
 #endif
 
 /* Cryptographic Accelerator */
-#ifdef CONFIG_CRYPTO_DEV_NUC970
+#if defined(CONFIG_CRYPTO_DEV_NUC970) || defined(CONFIG_CRYPTO_DEV_NUC970_MODULE)
 static struct resource nuc970_crypto_resource[] = {
         [0] = {
                 .start = NUC970_PA_CRYPTO,
@@ -143,7 +143,7 @@ static struct platform_device nuc970_device_crypto = {
 #endif
 
 /* USB Device (Gadget)*/
-#ifdef CONFIG_USB_NUC970
+#if defined(CONFIG_USB_NUC970) || defined(CONFIG_USB_NUC970_MODULE)
 static struct resource nuc970_usbgadget_resource[] = {
         [0] = {
                 .start = NUC970_PA_USBDEV,
@@ -194,7 +194,7 @@ static struct platform_device nuc970_serial_device0 = {
         },
 };
 
-#ifdef CONFIG_NUC970_UART1
+#if defined(CONFIG_NUC970_UART1) || defined(CONFIG_NUC970_UART1_MODULE)
 static struct platform_device nuc970_serial_device1 = {
         .name			= "nuc970-uart",
         .id			= 1,
@@ -204,7 +204,7 @@ static struct platform_device nuc970_serial_device1 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART2
+#if defined(CONFIG_NUC970_UART2) || defined(CONFIG_NUC970_UART2_MODULE)
 static struct platform_device nuc970_serial_device2 = {
         .name			= "nuc970-uart",
         .id			= 2,
@@ -214,7 +214,7 @@ static struct platform_device nuc970_serial_device2 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART3
+#if defined(CONFIG_NUC970_UART3) || defined(CONFIG_NUC970_UART3_MODULE)
 static struct platform_device nuc970_serial_device3 = {
         .name			= "nuc970-uart",
         .id			= 3,
@@ -224,7 +224,7 @@ static struct platform_device nuc970_serial_device3 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART4
+#if defined(CONFIG_NUC970_UART4) || defined(CONFIG_NUC970_UART4_MODULE)
 static struct platform_device nuc970_serial_device4 = {
         .name			= "nuc970-uart",
         .id			= 4,
@@ -234,7 +234,7 @@ static struct platform_device nuc970_serial_device4 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART5
+#if defined(CONFIG_NUC970_UART5) || defined(CONFIG_NUC970_UART5_MODULE)
 static struct platform_device nuc970_serial_device5 = {
         .name			= "nuc970-uart",
         .id			= 5,
@@ -244,7 +244,7 @@ static struct platform_device nuc970_serial_device5 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART6
+#if defined(CONFIG_NUC970_UART6) || defined(CONFIG_NUC970_UART6_MODULE)
 static struct platform_device nuc970_serial_device6 = {
         .name			= "nuc970-uart",
         .id			= 6,
@@ -254,7 +254,7 @@ static struct platform_device nuc970_serial_device6 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART7
+#if defined(CONFIG_NUC970_UART7) || defined(CONFIG_NUC970_UART7_MODULE)
 static struct platform_device nuc970_serial_device7 = {
         .name			= "nuc970-uart",
         .id			= 7,
@@ -264,7 +264,7 @@ static struct platform_device nuc970_serial_device7 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART8
+#if defined(CONFIG_NUC970_UART8) || defined(CONFIG_NUC970_UART8_MODULE)
 static struct platform_device nuc970_serial_device8 = {
         .name			= "nuc970-uart",
         .id			= 8,
@@ -274,7 +274,7 @@ static struct platform_device nuc970_serial_device8 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART9
+#if defined(CONFIG_NUC970_UART9) || defined(CONFIG_NUC970_UART9_MODULE)
 static struct platform_device nuc970_serial_device9 = {
         .name			= "nuc970-uart",
         .id			= 9,
@@ -284,7 +284,7 @@ static struct platform_device nuc970_serial_device9 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_UART10
+#if defined(CONFIG_NUC970_UART10) || defined(CONFIG_NUC970_UART10_MODULE)
 static struct platform_device nuc970_serial_device10 = {
         .name			= "nuc970-uart",
         .id			= 10,
@@ -295,7 +295,7 @@ static struct platform_device nuc970_serial_device10 = {
 #endif
 
 /* LCD controller*/
-#ifdef CONFIG_FB_NUC970
+#if defined(CONFIG_FB_NUC970) || defined(CONFIG_FB_NUC970_MODULE)
 static struct nuc970fb_display nuc970fb_lcd_info[] = {
 #ifdef CONFIG_A025DL02_320X240
 	/* AUO A035QN02V0 320x240 TFT Panel , 18bits*/
@@ -417,7 +417,7 @@ struct platform_device nuc970fb_device_lcd = {
 #endif
 
 /* SDIO Controller */
-#ifdef CONFIG_MMC_NUC970_SD
+#if defined(CONFIG_MMC_NUC970_SD) || defined(CONFIG_MMC_NUC970_SD_MODULE)
 static struct resource nuc970_sdh_resource[] = {
         [0] = {
                 .start = NUC970_PA_SDH,
@@ -445,7 +445,7 @@ struct platform_device nuc970_device_sdh = {
 #endif
 
 /* NAND, eMMC Controller */
-#if defined (CONFIG_MTD_NAND_NUC970) || defined (CONFIG_MMC_NUC970_EMMC)
+#if defined(CONFIG_MTD_NAND_NUC970) || defined(CONFIG_MTD_NAND_NUC970_SD_MODULE) || defined(CONFIG_MMC_NUC970_EMMC) || defined(CONFIG_MMC_NUC970_EMMC_MODULE)
 static struct resource nuc970_fmi_resource[] = {
         [0] = {
                 .start = NUC970_PA_FMI,
@@ -474,7 +474,7 @@ struct platform_device nuc970_device_fmi = {
 
 
 /* Ethernet MAC0 Controller */
-#ifdef CONFIG_NUC970_ETH0
+#if defined(CONFIG_NUC970_ETH0) || defined(CONFIG_NUC970_ETH0_MODULE)
 static struct resource nuc970_emac0_resource[] = {
         [0] = {
                 .start = NUC970_PA_EMAC0,
@@ -506,7 +506,7 @@ struct platform_device nuc970_device_emac0 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_ETH1
+#if defined(CONFIG_NUC970_ETH1) || defined(CONFIG_NUC970_ETH1_MODULE)
 /* Ethernet MAC1 Controller */
 static struct resource nuc970_emac1_resource[] = {
         [0] = {
@@ -540,7 +540,7 @@ struct platform_device nuc970_device_emac1 = {
 #endif
 
 /* JPEG Controller */
-#ifdef CONFIG_NUC970_JPEG_CODEC
+#if defined(CONFIG_NUC970_JPEG_CODEC) || defined(CONFIG_NUC970_JPEG_CODEC_MODULE)
 static struct resource nuc970_jpeg_resource[] = {
         [0] = {
                 .start = NUC970_PA_JPEG,
@@ -568,7 +568,7 @@ struct platform_device nuc970_device_jpeg = {
 #endif
 
 /* VIDEOIN */
-#ifdef CONFIG_VIDEO_NUC970
+#if defined(CONFIG_VIDEO_NUC970) || defined(CONFIG_VIDEO_NUC970_MODULE)
 static struct resource nuc970_cap_resource[] = {
         [0] = {
                 .start = NUC970_PA_CAP,
@@ -592,7 +592,7 @@ struct platform_device nuc970_device_cap = {
 #endif
 
 /* ADC */
-#ifdef CONFIG_NUC970_ADC
+#if defined(CONFIG_NUC970_ADC) || defined(CONFIG_NUC970_ADC_MODULE)
 static struct resource nuc970_adc_resource[] = {
         [0] = {
                 .start = NUC970_PA_ADC,
@@ -615,7 +615,7 @@ struct platform_device nuc970_device_adc = {
 #endif
 
 /* Normal ADC */
-#ifdef CONFIG_NUC970_NADC
+#if defined(CONFIG_NUC970_NADC) || defined(CONFIG_NUC970_NADC_MODULE)
 static struct resource nuc970_nadc_resource[] = {
         [0] = {
                 .start = NUC970_PA_ADC,
@@ -637,7 +637,7 @@ struct platform_device nuc970_device_nadc = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_DMA
+#if defined(CONFIG_NUC970_DMA) || defined(CONFIG_NUC970_DMA_MODULE)
 #define DMA_CHANNEL(_name, _base, _irq) \
 	{ .name = (_name), .base = (_base), .irq = (_irq) }
 
@@ -683,7 +683,7 @@ static struct platform_device nuc970_device_gdma = {
 
 
 /* AUDIO controller*/
-#ifdef CONFIG_SND_SOC_NUC970
+#if defined(CONFIG_SND_SOC_NUC970) || defined(CONFIG_SND_SOC_NUC970_MODULE)
 static u64 nuc970_device_audio_dmamask = -1;
 static struct resource nuc970_i2s_resource[] = {
         [0] = {
@@ -722,7 +722,7 @@ struct platform_device nuc970_device_audio_pcm = {
 #endif
 
 /* I2C */
-#ifdef CONFIG_I2C_BUS_NUC970_P0
+#if defined(CONFIG_I2C_BUS_NUC970_P0) || defined(CONFIG_I2C_BUS_NUC970_P0_MODULE)
 // port 0
 /* I2C clients */
 static struct i2c_board_info __initdata nuc970_i2c_clients0[] =
@@ -759,7 +759,7 @@ struct platform_device nuc970_device_i2c0 = {
     	}
 };
 #endif
-#ifdef CONFIG_I2C_BUS_NUC970_P1
+#if defined(CONFIG_I2C_BUS_NUC970_P1) || defined(CONFIG_I2C_BUS_NUC970_P1_MODULE)
 //port 1
 static struct nuc970_platform_i2c nuc970_i2c1_data = {
 	.bus_num = 1,
@@ -792,7 +792,7 @@ struct platform_device nuc970_device_i2c1 = {
 #endif
 
 /* SPI */
-#ifdef CONFIG_SPI_NUC970_P0
+#if defined(CONFIG_SPI_NUC970_P0) || defined(CONFIG_SPI_NUC970_P0_MODULE)
 /* spi device, spi flash info */
 #ifdef CONFIG_MTD_M25P80
 static struct mtd_partition nuc970_spi0_flash_partitions[] = {
@@ -893,7 +893,7 @@ struct platform_device nuc970_device_spi0 = {
 };
 #endif
 
-#ifdef CONFIG_SPI_NUC970_P1
+#if defined(CONFIG_SPI_NUC970_P1) || defined(CONFIG_SPI_NUC970_P1_MODULE)
 /* spi device, spi flash info */
 #ifdef CONFIG_BOARD_TOMATO
 
@@ -989,7 +989,7 @@ struct platform_device nuc970_device_spi1 = {
 };
 #endif
 
-#ifdef CONFIG_KEYBOARD_NUC970
+#if defined(CONFIG_KEYBOARD_NUC970) || defined(CONFIG_KEYBOARD_NUC970_MODULE)
 static int nuc970_keymap[] = {
 	KEY(0, 0, KEY_A),	KEY(0, 1, KEY_B),
 	KEY(0, 2, KEY_C),	KEY(0, 3, KEY_D),
@@ -1049,7 +1049,7 @@ struct platform_device nuc970_device_kpi = {
 };
 #endif
 
-#ifdef CONFIG_RTC_DRV_NUC970
+#if defined(CONFIG_RTC_DRV_NUC970) || defined(CONFIG_RTC_DRV_NUC970_MODULE)
 static struct resource nuc970_rtc_resource[] = {
         [0] = {
                 .start = NUC970_PA_RTC,
@@ -1071,8 +1071,7 @@ struct platform_device nuc970_device_rtc = {
 };
 #endif
 
-
-#ifdef CONFIG_NUC970_CAN0
+#if defined(CONFIG_NUC970_CAN0) || defined(CONFIG_NUC970_CAN0_MODULE)
 static struct resource nuc970_can0_resource[] = {
         [0] = {
                 .start = NUC970_PA_CAN,
@@ -1094,7 +1093,7 @@ struct platform_device nuc970_device_can0 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_CAN1
+#if defined(CONFIG_NUC970_CAN1) || defined(CONFIG_NUC970_CAN1_MODULE)
 static struct resource nuc970_can1_resource[] = {
         [0] = {
                 .start = NUC970_PA_CAN1,
@@ -1116,7 +1115,7 @@ struct platform_device nuc970_device_can1 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_EBI
+#if defined(CONFIG_NUC970_EBI) || defined(CONFIG_NUC970_EBI_MODULE)
 static struct resource nuc970_ebi_resource[] = {
         [0] = {
                 .start = NUC970_PA_EBI,
@@ -1133,7 +1132,7 @@ struct platform_device nuc970_device_ebi = {
 };
 #endif
 
-#ifdef CONFIG_PWM_NUC970
+#if defined(CONFIG_PWM_NUC970) || defined(CONFIG_PWM_NUC970_MODULE)
 static struct pwm_lookup board_pwm_lookup[] = {
 	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
 };
@@ -1171,7 +1170,7 @@ struct platform_device nuc970_device_pwm3 = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_WDT
+#if defined(CONFIG_NUC970_WDT) || defined(CONFIG_NUC970_WDT_MODULE)
 static struct resource nuc970_wdt_resource[] = {
         [0] = {
                 .start = NUC970_PA_WDT,
@@ -1193,7 +1192,7 @@ struct platform_device nuc970_device_wdt = {
 };
 #endif
 
-#ifdef CONFIG_NUC970_WWDT
+#if defined(CONFIG_NUC970_WWDT) || defined(CONFIG_NUC970_WWDT_MODULE)
 static struct resource nuc970_wwdt_resource[] = {
         [0] = {
                 .start = NUC970_PA_WWDT,
@@ -1215,7 +1214,7 @@ struct platform_device nuc970_device_wwdt = {
 };
 #endif
 
-#ifdef CONFIG_SCUART_NUC970
+#if defined(CONFIG_SCUART_NUC970) || defined(CONFIG_SCUART_NUC970_MODULE)
 /* Initial serial platform data */
 static struct plat_nuc970serial_port nuc970_scuart_data[] = {
         [0] = {
@@ -1236,9 +1235,9 @@ static struct plat_nuc970serial_port nuc970_scuart_data[] = {
 };
 #endif
 
-#if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_NUC970_SC_MODULE) || defined(CONFIG_SCUART_NUC970) || defined(CONFIG_SCUART_NUC970_MODULE)
 
-#ifdef CONFIG_NUC970_SC
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_NUC970_SC_MODULE)
 static struct resource nuc970_sc0_resource[] = {
         [0] = {
                 .start = NUC970_PA_SC,
@@ -1268,11 +1267,11 @@ static struct resource nuc970_sc1_resource[] = {
 struct platform_device nuc970_device_sc0 = {
         .name		  = "nuc970-sc",
         .id		  = 0,
-#ifdef CONFIG_NUC970_SC
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_NUC970_SC_MODULE)
         .num_resources	  = ARRAY_SIZE(nuc970_sc0_resource),
         .resource	  = nuc970_sc0_resource,
 #endif
-#ifdef CONFIG_SCUART_NUC970
+#if defined(CONFIG_SCUART_NUC970) || defined(CONFIG_SCUART_NUC970_MODULE)
         .dev			= {
                 .platform_data	= &nuc970_scuart_data[0],
         },
@@ -1281,11 +1280,11 @@ struct platform_device nuc970_device_sc0 = {
 struct platform_device nuc970_device_sc1 = {
         .name		  = "nuc970-sc",
         .id		  = 1,
-#ifdef CONFIG_NUC970_SC
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_NUC970_SC_MODULE)
         .num_resources	  = ARRAY_SIZE(nuc970_sc1_resource),
         .resource	  = nuc970_sc1_resource,
 #endif
-#ifdef CONFIG_SCUART_NUC970
+#if defined(CONFIG_SCUART_NUC970) || defined(CONFIG_SCUART_NUC970_MODULE)
         .dev			= {
                 .platform_data	= &nuc970_scuart_data[1],
         },
@@ -1295,7 +1294,7 @@ struct platform_device nuc970_device_sc1 = {
 #endif
 
 
-#ifdef CONFIG_NUC970_ETIMER
+#if defined(CONFIG_NUC970_ETIMER) || defined(CONFIG_NUC970_ETIMER_MODULE)
 static struct resource nuc970_etimer_resource[] = {
         [0] = {
                 .start = IRQ_ETIMER0,
@@ -1344,15 +1343,15 @@ struct platform_device nuc970_device_etimer3 = {
         .resource	  = nuc970_etimer_resource,
 };
 #endif
-#ifdef CONFIG_PINCTRL
+#if defined(CONFIG_PINCTRL) || defined(CONFIG_PINCTRL_MODULE)
 struct platform_device nuc970_device_pinctrl = {
         .name		  = "pinctrl-nuc970",
         .id		  = -1,
 };
 #endif
 
-#ifdef CONFIG_GPIO_NUC970
-#ifdef CONFIG_I2C_ALGOBIT
+#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_GPIO_NUC970_MODULE)
+#if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
 static struct i2c_board_info __initdata nuc970_i2c_clients2[] =
 {
 #ifdef CONFIG_SENSOR_OV7725
@@ -1442,7 +1441,7 @@ struct platform_device nuc970_device_eint7 = {
 
 #endif
 
-#ifdef CONFIG_NUC970_GE2D
+#if defined(CONFIG_NUC970_GE2D) || defined(CONFIG_NUC970_GE2D_MODULE)
 static struct resource nuc970_ge2d_resource[] = {
         [0] = {
                 .start = NUC970_PA_GE,
@@ -1464,7 +1463,7 @@ struct platform_device nuc970_device_ge2d = {
 };
 #endif
 
-#if defined(CONFIG_IIO_GPIO_TRIGGER)
+#if defined(CONFIG_IIO_GPIO_TRIGGER) || defined(CONFIG_IIO_GPIO_TRIGGER_MODULE)
 static struct resource iio_gpio_trigger_resources[] = {
 	[0] = {
 		.start  = IRQ_GPIO_START+NUC970_PE2,
@@ -1483,148 +1482,148 @@ static struct platform_device iio_gpio_trigger = {
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device0,
 
-#ifdef CONFIG_NUC970_UART1
+#if defined(CONFIG_NUC970_UART1) || defined(CONFIG_NUC970_UART1_MODULE)
 		&nuc970_serial_device1,
 #endif
 
-#ifdef CONFIG_NUC970_UART2
+#if defined(CONFIG_NUC970_UART2) || defined(CONFIG_NUC970_UART2_MODULE)
 		&nuc970_serial_device2,
 #endif
 
-#ifdef CONFIG_NUC970_UART3
+#if defined(CONFIG_NUC970_UART3) || defined(CONFIG_NUC970_UART3_MODULE)
 		&nuc970_serial_device3,
 #endif
 
-#ifdef CONFIG_NUC970_UART4
+#if defined(CONFIG_NUC970_UART4) || defined(CONFIG_NUC970_UART4_MODULE)
 		&nuc970_serial_device4,
 #endif
 
-#ifdef CONFIG_NUC970_UART5
+#if defined(CONFIG_NUC970_UART5) || defined(CONFIG_NUC970_UART5_MODULE)
 		&nuc970_serial_device5,
 #endif
 
-#ifdef CONFIG_NUC970_UART6
+#if defined(CONFIG_NUC970_UART6) || defined(CONFIG_NUC970_UART6_MODULE)
 		&nuc970_serial_device6,
 #endif
 
-#ifdef CONFIG_NUC970_UART7
+#if defined(CONFIG_NUC970_UART7) || defined(CONFIG_NUC970_UART7_MODULE)
 		&nuc970_serial_device7,
 #endif
 
-#ifdef CONFIG_NUC970_UART8
+#if defined(CONFIG_NUC970_UART8) || defined(CONFIG_NUC970_UART8_MODULE)
 		&nuc970_serial_device8,
 #endif
 
-#ifdef CONFIG_NUC970_UART9
+#if defined(CONFIG_NUC970_UART9) || defined(CONFIG_NUC970_UART9_MODULE)
 		&nuc970_serial_device9,
 #endif
 
-#ifdef CONFIG_NUC970_UART10
+#if defined(CONFIG_NUC970_UART10) || defined(CONFIG_NUC970_UART10_MODULE)
 		&nuc970_serial_device10,
 #endif
 
-#ifdef CONFIG_NUC970_CAN0
+#if defined(CONFIG_NUC970_CAN0) || defined(CONFIG_NUC970_CAN0_MODULE)
 	&nuc970_device_can0,
 #endif
 
-#ifdef CONFIG_NUC970_CAN1
+#if defined(CONFIG_NUC970_CAN1) || defined(CONFIG_NUC970_CAN1_MODULE)
 	&nuc970_device_can1,
 #endif
 
-#ifdef CONFIG_NUC970_EBI
+#if defined(CONFIG_NUC970_EBI) || defined(CONFIG_NUC970_EBI_MODULE)
 	&nuc970_device_ebi,
 #endif
 
-#ifdef CONFIG_USB_OHCI_HCD
+#if defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
         &nuc970_device_ohci,
 #endif
-#ifdef CONFIG_USB_EHCI_HCD
+#if defined(CONFIG_USB_EHCI_HCD) || defined(CONFIG_USB_EHCI_HCD_MODULE)
         &nuc970_device_ehci,
 #endif
-#ifdef CONFIG_CRYPTO_DEV_NUC970
+#if defined(CONFIG_CRYPTO_DEV_NUC970) || defined(CONFIG_CRYPTO_DEV_NUC970_MODULE)
 		&nuc970_device_crypto,
 #endif
-#ifdef CONFIG_FB_NUC970
+#if defined(CONFIG_FB_NUC970) || defined(CONFIG_FB_NUC970_MODULE)
         &nuc970fb_device_lcd,
 #endif
-#ifdef CONFIG_I2C_BUS_NUC970_P0
+#if defined(CONFIG_I2C_BUS_NUC970_P0) || defined(CONFIG_I2C_BUS_NUC970_P0_MODULE)
 	&nuc970_device_i2c0,
 #endif
-#ifdef CONFIG_I2C_BUS_NUC970_P1
+#if defined(CONFIG_I2C_BUS_NUC970_P1) || defined(CONFIG_I2C_BUS_NUC970_P1_MODULE)
         &nuc970_device_i2c1,
 #endif
-#ifdef CONFIG_NUC970_DMA
+#if defined(CONFIG_NUC970_DMA) || defined(CONFIG_NUC970_DMA_MODULE)
 	&nuc970_device_gdma,
 #endif
 
-#ifdef CONFIG_MMC_NUC970_SD
+#if defined(CONFIG_MMC_NUC970_SD) || defined(CONFIG_MMC_NUC970_SD_MODULE)
 	&nuc970_device_sdh,
 #endif
-#if defined (CONFIG_MTD_NAND_NUC970) || defined (CONFIG_MMC_NUC970_EMMC)
+#if defined(CONFIG_MTD_NAND_NUC970) || defined(CONFIG_MTD_NAND_NUC970_MODULE) || defined(CONFIG_MMC_NUC970_EMMC) || defined(CONFIG_MMC_NUC970_EMMC_MODULE)
 	&nuc970_device_fmi,
 #endif
-#ifdef CONFIG_NUC970_JPEG_CODEC
+#if defined(CONFIG_NUC970_JPEG_CODEC) || defined(CONFIG_NUC970_JPEG_CODEC_MODULE)
 	&nuc970_device_jpeg,
 #endif
-#ifdef CONFIG_NUC970_ETH0
+#if defined(CONFIG_NUC970_ETH0) || defined(CONFIG_NUC970_ETH0_MODULE)
 	&nuc970_device_emac0,
 #endif
-#ifdef CONFIG_NUC970_ETH1
+#if defined(CONFIG_NUC970_ETH1) || defined(CONFIG_NUC970_ETH1_MODULE)
 	&nuc970_device_emac1,
 #endif
-#ifdef CONFIG_PWM_NUC970
+#if defined(CONFIG_PWM_NUC970) || defined(CONFIG_PWM_NUC970_MODULE)
 	&nuc970_device_pwm0,
 	&nuc970_device_pwm1,
 	&nuc970_device_pwm2,
 	&nuc970_device_pwm3,
 #endif
-#ifdef CONFIG_NUC970_WDT
+#if defined(CONFIG_NUC970_WDT) || defined(CONFIG_NUC970_WDT_MODULE)
 	&nuc970_device_wdt,
 #endif
-#ifdef CONFIG_NUC970_WWDT
+#if defined(CONFIG_NUC970_WWDT) || defined(CONFIG_NUC970_WWDT_MODULE)
 	&nuc970_device_wwdt,
 #endif
-#ifdef CONFIG_VIDEO_NUC970
+#if defined(CONFIG_VIDEO_NUC970) || defined(CONFIG_VIDEO_NUC970_MODULE)
 	&nuc970_device_cap,
 #endif
-#ifdef CONFIG_SND_SOC_NUC970
+#if defined(CONFIG_SND_SOC_NUC970) || defined(CONFIG_SND_SOC_NUC970_MODULE)
 	&nuc970_device_audio_pcm,
 	&nuc970_device_audio,
 	&nuc970_device_audio_i2s,
 #endif
-#ifdef CONFIG_USB_NUC970
+#if defined(CONFIG_USB_NUC970) || defined(CONFIG_USB_NUC970_MODULE)
 	&nuc970_device_usbgadget,
 #endif
-#ifdef CONFIG_SPI_NUC970_P0
+#if defined(CONFIG_SPI_NUC970_P0) || defined(CONFIG_SPI_NUC970_P0_MODULE)
 	&nuc970_device_spi0,
 #endif
-#ifdef CONFIG_SPI_NUC970_P1
+#if defined(CONFIG_SPI_NUC970_P1) || defined(CONFIG_SPI_NUC970_P1_MODULE)
 	&nuc970_device_spi1,
 #endif
 
-#ifdef CONFIG_NUC970_ADC
+#if defined(CONFIG_NUC970_ADC) || defined(CONFIG_NUC970_ADC_MODULE)
 	&nuc970_device_adc,
 #endif
-#ifdef CONFIG_NUC970_NADC
+#if defined(CONFIG_NUC970_NADC) || defined(CONFIG_NUC970_NADC_MODULE)
 	&nuc970_device_nadc,
 #endif
 
-#ifdef CONFIG_NUC970_ETIMER
+#if defined(CONFIG_NUC970_ETIMER) || defined(CONFIG_NUC970_ETIMER_MODULE)
 	&nuc970_device_etimer0,
 	&nuc970_device_etimer1,
 	&nuc970_device_etimer2,
 	&nuc970_device_etimer3,
 #endif
-#ifdef CONFIG_PINCTRL
+#if defined(CONFIG_PINCTRL) || defined(CONFIG_PINCTRL_MODULE)
 	&nuc970_device_pinctrl,
 #endif
-#ifdef CONFIG_KEYBOARD_NUC970
+#if defined(CONFIG_KEYBOARD_NUC970) || defined(CONFIG_KEYBOARD_NUC970_MODULE)
 	&nuc970_device_kpi,
 #endif
-#ifdef CONFIG_RTC_DRV_NUC970
+#if defined(CONFIG_RTC_DRV_NUC970) || defined(CONFIG_RTC_DRV_NUC970_MODULE)
 	&nuc970_device_rtc,
 #endif
-#ifdef CONFIG_GPIO_NUC970
+#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_GPIO_NUC970_MODULE)
 	&nuc970_device_gpio,
 	&nuc970_device_eint0,
 	&nuc970_device_eint1,
@@ -1635,19 +1634,19 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_eint6,
 	&nuc970_device_eint7,
 #endif
-#ifdef CONFIG_I2C_ALGOBIT
+#if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
 	&i2c_gpio,
 #endif
-#if defined(CONFIG_NUC970_SC) || defined(CONFIG_SCUART_NUC970)
+#if defined(CONFIG_NUC970_SC) || defined(CONFIG_NUC970_SC_MODULE) || defined(CONFIG_SCUART_NUC970) || defined(CONFIG_SCUART_NUC970_MODULE)
 	&nuc970_device_sc0,
 	&nuc970_device_sc1,
 #endif
 
-#ifdef CONFIG_NUC970_GE2D
+#if defined(CONFIG_NUC970_GE2D) || defined(CONFIG_NUC970_GE2D_MODULE)
     &nuc970_device_ge2d,
 #endif
 
-#ifdef CONFIG_IIO_GPIO_TRIGGER
+#if defined(CONFIG_IIO_GPIO_TRIGGER) || defined(CONFIG_IIO_GPIO_TRIGGER_MODULE)
     &iio_gpio_trigger,
 #endif
 };
@@ -1658,27 +1657,27 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	platform_add_devices(device, size);
 	platform_add_devices(nuc970_public_dev, ARRAY_SIZE(nuc970_public_dev));
 
-#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV)
+#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_SPI_SPIDEV_MODULE)
  	/* register spi devices */
-#ifdef CONFIG_SPI_NUC970_P0
+#if defined(CONFIG_SPI_NUC970_P0) || defined(CONFIG_SPI_NUC970_P0_MODULE)
 	spi_register_board_info(nuc970_spi0_board_info, ARRAY_SIZE(nuc970_spi0_board_info));
 #endif
-#ifdef CONFIG_SPI_NUC970_P1
+#if defined(CONFIG_SPI_NUC970_P1) || defined(CONFIG_SPI_NUC970_P1_MODULE)
     spi_register_board_info(nuc970_spi1_board_info, ARRAY_SIZE(nuc970_spi1_board_info));
 #endif
 #endif
 
-#ifdef CONFIG_I2C_BUS_NUC970_P0
+#if defined(CONFIG_I2C_BUS_NUC970_P0) || defined(CONFIG_I2C_BUS_NUC970_P0_MODULE)
 	i2c_register_board_info(0, nuc970_i2c_clients0, sizeof(nuc970_i2c_clients0)/sizeof(struct i2c_board_info));
 #endif
 
-#ifdef CONFIG_GPIO_NUC970
-#ifdef CONFIG_I2C_ALGOBIT
+#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_GPIO_NUC970_MODULE)
+#if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
 	i2c_register_board_info(2, nuc970_i2c_clients2, sizeof(nuc970_i2c_clients2)/sizeof(struct i2c_board_info));
 #endif
 #endif
 
-#ifdef CONFIG_PWM_NUC970
+#if defined(CONFIG_PWM_NUC970) || defined(CONFIG_PWM_NUC970_MODULE)
 	pwm_add_table(board_pwm_lookup, ARRAY_SIZE(board_pwm_lookup));
 #endif
 }
