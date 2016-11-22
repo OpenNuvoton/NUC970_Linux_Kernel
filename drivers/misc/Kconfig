@@ -126,7 +126,7 @@ choice
 		bool "No input"
 	config NUC970_ETIMER0_CAP_PC7
 		bool "Input from PC7"
-	config NUC970_ETIMER0_TGL_PB3
+	config NUC970_ETIMER0_CAP_PB3
 		bool "Input from PB3"
 endchoice
 
@@ -156,7 +156,7 @@ choice
 		bool "No input"
 	config NUC970_ETIMER1_CAP_PC9
 		bool "Input from PC9"
-	config NUC970_ETIMER1_TGL_PB1
+	config NUC970_ETIMER1_CAP_PB1
 		bool "Input from PB1"
 endchoice
 
@@ -186,7 +186,7 @@ choice
 		bool "No input"
 	config NUC970_ETIMER2_CAP_PC11
 		bool "Input from PC11"
-	config NUC970_ETIMER2_TGL_PF12
+	config NUC970_ETIMER2_CAP_PF12
 		bool "Input from PBF12"
 endchoice
 
@@ -216,7 +216,7 @@ choice
 		bool "No input"
 	config NUC970_ETIMER3_CAP_PC13
 		bool "Input from PC13"
-	config NUC970_ETIMER3_TGL_PF14
+	config NUC970_ETIMER3_CAP_PF14
 		bool "Input from PF14"
 endchoice
 
