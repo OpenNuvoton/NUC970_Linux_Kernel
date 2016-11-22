@@ -313,7 +313,7 @@ static void nuc970_write_cam(struct net_device *dev,
 
 static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct sk_buff *skb = dev_alloc_skb(1518);
+	struct sk_buff *skb = dev_alloc_skb(2048);
 
 	if (skb == NULL)
 		return NULL;
@@ -321,7 +321,7 @@ static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	skb->dev = dev;
 
 	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
-							1518, DMA_FROM_DEVICE);
+							2048, DMA_FROM_DEVICE);
 	rx_skb[i] = skb;
 
 	return skb;
@@ -400,7 +400,7 @@ static int nuc970_init_desc(struct net_device *dev)
 
 			for(; i != 0; i--) {
 				dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer),
-							1518, DMA_FROM_DEVICE);
+							2048, DMA_FROM_DEVICE);
 				dev_kfree_skb_any(rx_skb[i]);
 			}
 			return -ENOMEM;
@@ -431,7 +431,7 @@ static void nuc970_free_desc(struct net_device *dev)
 	for (i = 0; i < RX_DESC_SIZE; i++) {
 		skb = rx_skb[i];
 		if(skb != NULL) {
-			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), 1518, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), 2048, DMA_FROM_DEVICE);
 			dev_kfree_skb_any(skb);
 		}
 	}
@@ -734,7 +734,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 
 		if (likely(status & RXDS_RXGD)) {
 
-			skb = dev_alloc_skb(1518);
+			skb = dev_alloc_skb(2048);
 
 			if (!skb) {
 				struct platform_device *pdev = ether->pdev;
@@ -742,7 +742,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 				ether->stats.rx_dropped++;
 				goto rx_out;
 			}
-			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, 1518, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, 2048, DMA_FROM_DEVICE);
 
 			skb_put(s, length);
 			s->protocol = eth_type_trans(s, dev);
@@ -753,7 +753,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			skb->dev = dev;
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
-							1518, DMA_FROM_DEVICE);
+							2048, DMA_FROM_DEVICE);
 
 			rx_skb[ether->cur_rx] = skb;
 			rx_cnt++;
