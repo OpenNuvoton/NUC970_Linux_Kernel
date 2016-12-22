@@ -167,6 +167,7 @@ static struct watchdog_device nuc970_wdd = {
 	.ops = &nuc970wdt_ops,
 };
 
+#ifdef NUC970_WDT_WKUP
 static irqreturn_t nuc970_wdt_interrupt(int irq, void *dev_id)
 {
 	Unlock_RegWriteProtect();
@@ -180,6 +181,7 @@ static irqreturn_t nuc970_wdt_interrupt(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 };
+#endif
 
 static int nuc970wdt_probe(struct platform_device *pdev)
 {
@@ -246,6 +248,8 @@ static int nuc970wdt_probe(struct platform_device *pdev)
 	nuc970_wdd.max_timeout = 9;	// max time out = 9 sec (8.03)
 	watchdog_init_timeout(&nuc970_wdd, heartbeat, &pdev->dev);
 	watchdog_set_nowayout(&nuc970_wdd, nowayout);
+
+	nuc970_wdd.bootstatus = __raw_readl(REG_RSTSTS) & (1 << 5) ? WDIOF_CARDRESET : 0;
 
 	ret = watchdog_register_device(&nuc970_wdd);
 	if (ret) {
