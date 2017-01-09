@@ -62,4 +62,7 @@ config SENSOR_NT99141
 
 config SENSOR_NT99050
 	bool "NT99050"
+
+config SENSOR_TW9912
+        bool "TW9912"
 endchoice

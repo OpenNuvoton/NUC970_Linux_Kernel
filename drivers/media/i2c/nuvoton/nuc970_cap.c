@@ -262,7 +262,6 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 
 	rect.width = pix->width;
 	rect.height = pix->height;
-
 	if (rect.width < 8)
 		rect.width = 8;
 	if (rect.height < 8)
@@ -318,37 +317,49 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 
 			/* Packet Scaling Vertical Factor Register (LSB) */		
 			VDEBUG("pix->height=%d, s->cropcap.bounds.height = %d\n",pix->height,s->cropcap.bounds.height);
-			u32GCD=GCD(pix->height,s->cropcap.bounds.height);
-			if(u32GCD<=0) u32GCD=1;
-			heightN=(pix->height/u32GCD);
-			heightM=(s->cropcap.bounds.height/u32GCD);
+			if(pix->height > s->cropcap.bounds.height)
+			{
+				heightN=1;
+				heightM=1;
+			}else{
+				heightM = s->cropcap.bounds.height;
+				heightN = pix->height;
+			}
 			__raw_writel( (__raw_readl(REG_CAP_PKTSL) & ~(CAP_PKTSL_PKTSVNL | CAP_PKTSL_PKTSVML))|
 					       ((heightN & 0xff)<<24|(heightM & 0xff)<<16),REG_CAP_PKTSL);
 
 			/* Packet Scaling Vertical Factor Register (MSB) */
 			__raw_writel( (__raw_readl(REG_CAP_PKTSM) & ~(CAP_PKTSM_PKTSVNH | CAP_PKTSM_PKTSVMH))|
 					       ((heightN>>8)<<24|(heightM>>8)<<16),REG_CAP_PKTSM);
-
 			/* Packet Scaling Horizontal Factor Register (LSB) */	
 			VDEBUG("pix->width=%d, s->cropcap.bounds.width = %d\n",pix->width,s->cropcap.bounds.width);
-			u32GCD=GCD(pix->width,s->cropcap.bounds.width);	
-			if(u32GCD<=0) u32GCD=1;		
-			widthN=(pix->width/u32GCD);
-			widthM=(s->cropcap.bounds.width/u32GCD);			
+			if(pix->width > s->cropcap.bounds.width)
+			{
+				widthN=1;
+				widthM=1;
+			}else{
+				widthM = s->cropcap.bounds.width;
+				widthN = pix->width;
+			}
 			__raw_writel( (__raw_readl(REG_CAP_PKTSL) & ~(CAP_PKTSL_PKTSHNL | CAP_PKTSL_PKTSHML))|
 							((widthN & 0xff)<<8 | (widthM & 0xff)<<0),REG_CAP_PKTSL);
 			
 			/* Packet Scaling Horizontal Factor Register (MSB) */
 			__raw_writel( (__raw_readl(REG_CAP_PKTSM) & ~(CAP_PKTSM_PKTSHNH | CAP_PKTSM_PKTSHMH))|
 					       ((widthN>>8)<<8 | (widthM>>8)<<0),REG_CAP_PKTSM);
-						
+
 			/* Frame Output Pixel Stride Width Register(Packet/Planar) */
 			#if 0
 			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PKTSTRIDE) | 
 					       (/*PacketStride*/pix->width<<0),REG_CAP_STRIDE);
 			#else
+			if(pix->pixelformat!=V4L2_PIX_FMT_GREY){
 			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PKTSTRIDE) | 
 					       (/*PacketStride*/(pix->bytesperline/2)<<0),REG_CAP_STRIDE);
+			}else{
+			__raw_writel( (__raw_readl(REG_CAP_STRIDE)& ~CAP_STRIDE_PKTSTRIDE) | 
+					       (/*PacketStride*/(pix->bytesperline/1)<<0),REG_CAP_STRIDE);
+			}
 			#endif
 			cam->vpe.format=pix->pixelformat;
 			cam->vpe.PacketWidth=pix->width;
@@ -436,12 +447,13 @@ static int nuvoton_vidioc_try_fmt_vid_cap(struct file *file, void *priv,struct v
 		break;
 
 	}
-	
+
 	if(cam->users==1)	
 	{
 		__raw_writel((__raw_readl(REG_CAP_PAR) & ~(VSP_HI|HSP_HI|PCLKP_HI)) | s->polarity,REG_CAP_PAR); /* set CAP Polarity */
 		__raw_writel((__raw_readl(REG_CAP_INT) | 0x10000) ,REG_CAP_INT); 	   /* Enable CAP Interrupt */
 	}
+
 	LEAVE();               
 	return 0;
 }
@@ -619,6 +631,7 @@ static int nuvoton_vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_
 					VDEBUG("PlanarEnable : cam->frame_current == NULL\n");
 		}
 	}
+	__raw_writel((__raw_readl(REG_CAP_INT) | 0x10000) ,REG_CAP_INT); 	   /* Enable CAP Interrupt */
 	/* Capture engine enable and packer/planar mode enable */	
 	 nuvoton_vdi_enable();
 
@@ -1110,7 +1123,7 @@ int capture_init(struct nuvoton_vin_device* cam)
 			ret = PTR_ERR(clkcap);
 			return ret;
 		}
-	clkaplldiv = clk_get(NULL, "cap_aplldiv");
+	clkaplldiv = clk_get(NULL, "cap_uplldiv");
         if (IS_ERR(clkaplldiv)) {
 			printk(KERN_ERR "nuc970-cap:failed to get cap clock source\n");
 			ret = PTR_ERR(clkaplldiv);
@@ -1405,18 +1418,14 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 			f  = &cam->frame_current;
 		if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue)) {
 			if(cam->stream == STREAM_ON && cam->type==V4L2_BUF_TYPE_VIDEO_OVERLAY) {
-				if(cam->frame_current->buf.index==(cam->nbuffers-1)) {
-					__raw_writel(cam->frame[cam->nbuffers-1].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
-					cam->frame_current=&cam->frame[0];
-				} else {
-					__raw_writel(cam->frame[cam->frame_current->buf.index].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
-					cam->frame_current=&cam->frame[cam->frame_current->buf.index+1];
-				}
-				__raw_writel(cam->frame_current->pbuf,REG_CAP_PKTBA0);
+				__raw_writel(cam->frame[0].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+				__raw_writel(cam->frame[0].pbuf,REG_CAP_PKTBA0);
 				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
-			}
+				__raw_writel((__raw_readl(REG_CAP_INT) & ~0x10000) ,REG_CAP_INT); 	   /* Disable CAP Interrupt */
+			}else{
 				wake_up_interruptible(&cam->wait_frame);
-				continue;
+			}
+			continue;
 		}
 			if (!(*f))
 			{
