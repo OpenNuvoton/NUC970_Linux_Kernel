@@ -166,8 +166,8 @@ static int nuc970_gpio_core_direction_out(struct gpio_chip *gc,
 	value = __raw_readl(port->dir);
 	value |= (1 << port_num);
 	__raw_writel(value, port->dir);
-	nuc970_gpio_core_set(gc, gpio_num, val);
 	spin_unlock(&gpio_lock);
+	nuc970_gpio_core_set(gc, gpio_num, val);
 
 	return 0;
 }
