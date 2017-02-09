@@ -14,6 +14,7 @@
 #include <linux/platform_device.h>
 #include <linux/signal.h>
 #include <linux/gfp.h>
+#include <linux/of.h>
 
 #include <linux/clk.h>
 #include <mach/irqs.h>
@@ -29,9 +30,9 @@ static int port_dump_thread(void *__unused)
 {
 	while (1)
 	{
+		printk("EHCI: 0x%x, 0x%x, 0x%x - 0x%x 0x%x\n", __raw_readl(NUC970_VA_EHCI+0x20), __raw_readl(NUC970_VA_EHCI+0x64), __raw_readl(NUC970_VA_EHCI+0x68), __raw_readl(NUC970_VA_EHCI+0xC4), __raw_readl(NUC970_VA_EHCI+0xC8));
+		// printk("OHCI suspend: 0x%x, 0x%x\n", __raw_readl(NUC970_VA_OHCI+0x50), __raw_readl(NUC970_VA_EHCI+0x54));
 		msleep(5000);
-		printk("EHCI: 0x%x, 0x%x, 0x%x\n", __raw_readl(NUC970_VA_EHCI+0x20), __raw_readl(NUC970_VA_EHCI+0x64), __raw_readl(NUC970_VA_EHCI+0x68));
-		printk("OHCI suspend: 0x%x, 0x%x\n", __raw_readl(NUC970_VA_OHCI+0x50), __raw_readl(NUC970_VA_EHCI+0x54));
 	}
 	return 0;
 }
@@ -45,6 +46,9 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         u32  physical_map_ehci;
         struct pinctrl *p;
         int retval;
+#ifdef CONFIG_OF
+	    u32   val32[2];
+#endif
 
         if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
@@ -57,6 +61,42 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         
         clk_prepare(clk_get(NULL, "usbh_hclk"));	
         clk_enable(clk_get(NULL, "usbh_hclk"));
+
+#ifdef CONFIG_OF
+    
+        p = devm_pinctrl_get_select_default(&pdev->dev);
+        if (IS_ERR(p)) {
+            return PTR_ERR(p);
+        }
+
+		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) != 0) 
+		{
+			printk("%s - can not get map-addr!\n", __func__);
+			return -EINVAL;
+		}
+		// printk("Over-current active level %s...\n", val32[0] ? "high" : "low");
+		if (val32[0])
+		{
+        	/* set over-current active high */
+        	__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+        }
+        else
+        {
+        	/* set over-current active low */
+        	__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+        }
+
+		/*
+	 	 * Right now device-tree probed devices don't get dma_mask set.
+	 	 * Since shared usb code relies on it, set it here for now.
+	 	 * Once we have dma capability bindings this can go away.
+	 	 */
+		if (!pdev->dev.dma_mask)
+		 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+		if (!pdev->dev.coherent_dma_mask)
+			pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+
+#else
 
 		/* multi-function pin select */
 #if defined (CONFIG_NUC970_USBH_PWR_PE)
@@ -97,12 +137,14 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         __raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
 #endif
 
+#endif  // CONFIG_OF
+
         if (pdev->resource[1].flags != IORESOURCE_IRQ) {
                 pr_debug("resource[1] is not IORESOURCE_IRQ");
                 retval = -ENOMEM;
         }
 
-        hcd = usb_create_hcd(driver, &pdev->dev, "nuc970-ehci");
+        hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
         if (!hcd) {
                 retval = -ENOMEM;
                 goto err1;
@@ -142,7 +184,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         if (retval != 0)
             goto err4;
 
-		//kthread_run(port_dump_thread, NULL, "khubd");
+		 // kthread_run(port_dump_thread, NULL, "khubd");
 
         return retval;
 
@@ -216,7 +258,7 @@ static const struct hc_driver ehci_nuc970_hc_driver = {
 
 static int ehci_nuc970_probe(struct platform_device *pdev)
 {
-        //printk("ehci_nuc970_probe()\n");
+        printk("ehci_nuc970_probe() - name: %s\n", pdev->name);
         if (usb_disabled())
                 return -ENODEV;
 
@@ -291,6 +333,14 @@ static const struct dev_pm_ops ehci_nuc970_dev_pm_ops = {
 	.resume          = ehci_nuc970_pm_resume,
 };
 
+
+static const struct of_device_id nuc970_ehci_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-ehci" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_ehci_of_match);
+
+
 static struct platform_driver ehci_hcd_nuc970_driver = {
 
         .probe = ehci_nuc970_probe,
@@ -299,20 +349,7 @@ static struct platform_driver ehci_hcd_nuc970_driver = {
                 .name = "nuc970-ehci",
 		        .pm = &ehci_nuc970_dev_pm_ops,
                 .owner= THIS_MODULE,
+		        .of_match_table = of_match_ptr(nuc970_ehci_of_match),
         },
 };
 
-//static int __init ehci_nuc970_init(void)
-//{
-//
-//	return platform_driver_register(&ehci_hcd_nuc970_driver);
-//}
-
-//static void __exit ehci_nuc970_cleanup(void)
-//{
-//	platform_driver_unregister(&ehci_hcd_nuc970_driver);
-//
-//}
-
-//module_init(ehci_nuc970_init);
-//module_exit(ehci_nuc970_cleanup);

@@ -20,12 +20,14 @@ config SERIAL_NUC970
 config NUC970_UART1
 	bool "NUC970 UART1 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart1 driver
 
 config ENABLE_UART1_CTS_WAKEUP
 	bool "Enable UART1 CTS wake-up function"
 	depends on NUC970_UART1
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart1 CTS wake-up function
 
@@ -33,6 +35,7 @@ choice
 	prompt "NUC970 UART1 pin selection"
 	default NUC970_UART1_PE
 	depends on NUC970_UART1
+	depends on !USE_OF
 	help
 	  Select UART1 multi-function pin.
 
@@ -55,12 +58,14 @@ endchoice
 config NUC970_UART2
 	bool "NUC970 UART2 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart2 driver
 
 config ENABLE_UART2_CTS_WAKEUP
 	bool "Enable UART2 CTS wake-up function"
 	depends on NUC970_UART2
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart2 CTS wake-up function
 
@@ -68,6 +73,7 @@ choice
 	prompt "NUC970 UART2 pin selection"
 	default NUC970_UART2_PF
 	depends on NUC970_UART2
+	depends on !USE_OF
 	help
 	  Select UART2 multi-function pin.
 
@@ -80,18 +86,21 @@ endchoice
 config NUC970_UART3
 	bool "NUC970 UART3 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart3 driver
 
 config NUC970_UART4
 	bool "NUC970 UART4 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart4 driver
 
 config ENABLE_UART4_CTS_WAKEUP
 	bool "Enable UART4 CTS wake-up function"
 	depends on NUC970_UART4
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart4 CTS wake-up function
 
@@ -99,6 +108,7 @@ choice
 	prompt "NUC970 UART4 pin selection"
 	default NUC970_UART4_PC
 	depends on NUC970_UART4
+	depends on !USE_OF
 	help
 	  Select UART4 multi-function pin.
 
@@ -117,18 +127,21 @@ endchoice
 config NUC970_UART5
 	bool "NUC970 UART5 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart5 driver
 
 config NUC970_UART6
 	bool "NUC970 UART6 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart6 driver
 
 config ENABLE_UART6_CTS_WAKEUP
 	bool "Enable UART6 CTS wake-up function"
 	depends on NUC970_UART6
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart6 CTS wake-up function
 
@@ -136,6 +149,7 @@ choice
 	prompt "NUC970 UART6 pin selection"
 	default NUC970_UART6_PB
 	depends on NUC970_UART6
+	depends on !USE_OF
 	help
 	  Select UART6 multi-function pin.
 
@@ -152,6 +166,7 @@ endchoice
 config NUC970_UART7
 	bool "NUC970 UART7 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart7 driver
 
@@ -159,6 +174,7 @@ choice
 	prompt "NUC970 UART7 pin selection"
 	default NUC970_UART7_PG
 	depends on NUC970_UART7
+	depends on !USE_OF
 	help
 	  Select UART7 multi-function pin.
 
@@ -171,12 +187,14 @@ endchoice
 config NUC970_UART8
 	bool "NUC970 UART8 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart8 driver
 
 config ENABLE_UART8_CTS_WAKEUP
 	bool "Enable UART8 CTS wake-up function"
 	depends on NUC970_UART8
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart8 CTS wake-up function
 
@@ -184,6 +202,7 @@ choice
 	prompt "NUC970 UART8 pin selection"
 	default NUC970_UART8_PE
 	depends on NUC970_UART8
+	depends on !USE_OF
 	help
 	  Select UART8 multi-function pin.
 
@@ -204,6 +223,7 @@ endchoice
 config NUC970_UART9
 	bool "NUC970 UART9 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart9 driver
 
@@ -211,6 +231,7 @@ choice
 	prompt "NUC970 UART9 pin selection"
 	default NUC970_UART9_PD0
 	depends on NUC970_UART9
+	depends on !USE_OF
 	help
 	  Select UART9 multi-function pin.
 
@@ -225,12 +246,14 @@ endchoice
 config NUC970_UART10
 	bool "NUC970 UART10 support"
 	depends on SERIAL_NUC970=y
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart10 driver
 
 config ENABLE_UART10_CTS_WAKEUP
 	bool "Enable UART10 CTS wake-up function"
 	depends on NUC970_UART10
+	depends on !USE_OF
 	help
 	  This selects NUC970 uart10 CTS wake-up function
 
@@ -238,6 +261,7 @@ choice
 	prompt "NUC970 UART10 pin selection"
 	default NUC970_UART10_PB0
 	depends on NUC970_UART10
+	depends on !USE_OF
 	help
 	  Select UART9 multi-function pin.
 

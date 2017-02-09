@@ -45,8 +45,11 @@ obj-$(CONFIG_PINCTRL_EXYNOS5440)	+= pinctrl-exynos5440.o
 obj-$(CONFIG_PINCTRL_S3C64XX)	+= pinctrl-s3c64xx.o
 obj-$(CONFIG_PINCTRL_XWAY)	+= pinctrl-xway.o
 obj-$(CONFIG_PINCTRL_LANTIQ)	+= pinctrl-lantiq.o
+ifeq ($(CONFIG_OF),y)
+obj-$(CONFIG_PINCTRL_NUC970)	+= pinctrl-nuc970-dt.o
+else
 obj-$(CONFIG_PINCTRL_NUC970)	+= pinctrl-nuc970.o
-
+endif
 obj-$(CONFIG_PLAT_ORION)        += mvebu/
 obj-$(CONFIG_ARCH_SHMOBILE)	+= sh-pfc/
 obj-$(CONFIG_SUPERH)		+= sh-pfc/

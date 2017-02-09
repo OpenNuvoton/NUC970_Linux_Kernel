@@ -12,6 +12,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/signal.h>
+#include <linux/of.h>
 #include <mach/regs-gcr.h>
 #include <mach/regs-gpio.h>
 #include <linux/clk.h>
@@ -33,8 +34,8 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         struct usb_hcd *hcd;
         struct ohci_hcd *ohci ;
 		struct clk *clkmux, *clkaplldiv, *clkapll, *clkusb;
-#if !defined(CONFIG_USB_NUC970_EHCI)
-        struct pinctrl *p;
+#ifdef CONFIG_OF
+	    u32   val32[2];
 #endif
 		int ret;
 		
@@ -49,6 +50,37 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         /* enable USB Host clock */
         clk_prepare(clk_get(NULL, "usbh_hclk"));	
         clk_enable(clk_get(NULL, "usbh_hclk"));
+
+#ifdef CONFIG_OF
+
+        devm_pinctrl_get_select_default(&pdev->dev);
+
+		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) == 0) 
+		{
+			// printk("Over-current active level %s...\n", val32[0] ? "high" : "low");
+			if (val32[0])
+			{
+        		/* set over-current active high */
+        		__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) &~0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+        	}
+        	else
+        	{
+        		/* set over-current active low */
+        		__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
+        	}
+        }
+
+		/*
+	 	 * Right now device-tree probed devices don't get dma_mask set.
+	 	 * Since shared usb code relies on it, set it here for now.
+	 	 * Once we have dma capability bindings this can go away.
+	 	 */
+		if (!pdev->dev.dma_mask)
+		 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+		if (!pdev->dev.coherent_dma_mask)
+			pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+    
+#else
 		
 #if !defined(CONFIG_USB_NUC970_EHCI)
 
@@ -91,6 +123,8 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 #endif
 
 #endif   // !CONFIG_USB_NUC970_EHCI
+
+#endif   // CONFIG_OF
 
 		clkmux = clk_get(NULL, "usb_eclk_mux");
         if (IS_ERR(clkmux)) {
@@ -343,6 +377,14 @@ static const struct dev_pm_ops ohci_nuc970_dev_pm_ops = {
 	.resume          = ohci_nuc970_pm_resume,
 };
 
+
+static const struct of_device_id nuc970_ohci_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-ohci" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_ohci_of_match);
+
+
 static struct platform_driver ohci_hcd_nuc970_driver = {
         .probe		= ohci_hcd_nuc970_drv_probe,
         .remove		= ohci_hcd_nuc970_drv_remove,
@@ -351,18 +393,7 @@ static struct platform_driver ohci_hcd_nuc970_driver = {
                 .name	= "nuc970-ohci",
                 .pm     = &ohci_nuc970_dev_pm_ops,
                 .owner	= THIS_MODULE,
+		        .of_match_table = of_match_ptr(nuc970_ohci_of_match),
         },
 };
 
-//static int __init ohci_hcd_nuc970_init(void)
-//{
-//
-//	return platform_driver_register(&ohci_hcd_nuc970_driver);
-//}
-
-//static void __exit ohci_hcd_nuc970_cleanup(void)
-//{
-//	platform_driver_unregister(&ohci_hcd_nuc970_driver);
-//}
-//module_init(ohci_hcd_nuc970_init);
-//module_exit(ohci_hcd_nuc970_cleanup);

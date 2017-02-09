@@ -23,16 +23,29 @@ choice
     prompt "Nuvoton NUC970 Series Development Board"
     
 config BOARD_NUC977
+	depends on !USE_OF
     bool "NUC977 Development Board"
 
 config BOARD_NUC972
+	depends on !USE_OF
     bool "NUC972 Development Board"
     
 config BOARD_TOMATO
+	depends on !USE_OF
     bool "NUC976 Tomato Board"
 
 config BOARD_ETH2UART
+	depends on !USE_OF
     bool "NUC972 Ethernet To UART Board"
+
+config MACH_NUC972_EVB_DT
+	bool "Nuvoton NUC972 evaluation board using device tree"
+	depends on USE_OF
+	help
+	  Machine support for Nuvoton NUC972 machine with device tree enabled.
+	  Note: This is under development and not all peripherals can be supported
+	  with this machine file.
+
 endchoice
 
 config NUC970_FIQ

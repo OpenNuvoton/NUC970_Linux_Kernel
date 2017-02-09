@@ -27,6 +27,8 @@
 #include <linux/io.h>
 
 #include <asm/irq.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 #include <asm/mach/irq.h>
 
 #include <mach/hardware.h>
@@ -71,7 +73,8 @@ static struct irq_chip nuc970_irq_chip = {
 	.irq_set_wake	= nuc970_irq_set_wake,
 };
 
-#ifdef CONFIG_GPIO_NUC970
+#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_OF)
+
 static const unsigned int Port[10]={
 				(unsigned int)REG_GPIOA_DIR,
 				(unsigned int)REG_GPIOB_DIR,
@@ -399,7 +402,7 @@ void __init nuc970_init_irq(void)
 		set_irq_flags(irqno, IRQF_VALID);
 	}
 
-	#ifdef CONFIG_GPIO_NUC970
+#if defined(CONFIG_GPIO_NUC970) || !defined(CONFIG_OF)
 	/*
 	 * Install handler for GPIO edge detect interrupts
 	 */
@@ -426,3 +429,78 @@ void __init nuc970_init_irq(void)
 	}
 	#endif
 }
+
+#ifdef CONFIG_OF
+
+static struct irq_domain *nuc970_aic_domain;
+
+static int nuc970_aic_irq_map(struct irq_domain *h, unsigned int virq,
+							irq_hw_number_t hw)
+{
+	//printk("nuc970_aic_irq_map: %d %d\n", virq, (int)hw);
+	
+	if ((IRQ_WDT <= hw) && (hw < NR_IRQS-SPARE_IRQS))
+	{
+		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
+		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+	}
+	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
+	{
+		irq_set_chip_and_handler(virq, &nuc970_irq_gpio, handle_level_irq);
+		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+	}
+	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
+	{
+		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
+		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+	}
+	else 
+		return -EINVAL;
+
+	return 0;
+}
+
+static int nuc970_aic_irq_domain_xlate(struct irq_domain *d, struct device_node *ctrlr,
+				const u32 *intspec, unsigned int intsize,
+				irq_hw_number_t *out_hwirq, unsigned int *out_type)
+{
+	if (WARN_ON(intsize < 2))
+		return -EINVAL;
+	if (WARN_ON(intspec[0] >= NR_IRQS))
+		return -EINVAL;
+
+	*out_hwirq = intspec[0];
+	*out_type = IRQ_TYPE_NONE;
+
+	//printk("nuc970_aic_irq_domain_xlate: %d\n", intspec[0]);
+
+	return 0;
+}
+
+static struct irq_domain_ops nuc970_aic_irq_ops = {
+	.map    = nuc970_aic_irq_map,
+	.xlate	= nuc970_aic_irq_domain_xlate,
+};
+
+int __init nuc970_of_init_irq(struct device_node *node, struct device_node *parent)
+{
+	nuc970_aic_domain = irq_domain_add_linear(node, SPARE_IRQS,
+						&nuc970_aic_irq_ops, NULL);
+	if (!nuc970_aic_domain)
+		panic("Failed to add irq domain!!\n");
+
+	irq_set_default_host(nuc970_aic_domain);
+
+	__raw_writel(0xFFFFFFFC, REG_AIC_MDCR);
+	__raw_writel(0xFFFFFFFF, REG_AIC_MDCRH);
+
+	irq_set_chip_and_handler(IRQ_TMR0, &nuc970_irq_chip, handle_level_irq);
+	set_irq_flags(IRQ_TMR0, IRQF_VALID);
+
+	//irq_set_chip_and_handler(IRQ_UART0, &nuc970_irq_chip, handle_level_irq);
+	//set_irq_flags(IRQ_UART0, IRQF_VALID);
+
+	return 0;	
+}
+
+#endif

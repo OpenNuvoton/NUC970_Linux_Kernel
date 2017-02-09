@@ -18,6 +18,7 @@
 #include <linux/ethtool.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
+#include <linux/of.h>
 #include <linux/gfp.h>
 #include <linux/kthread.h>
 #include <linux/interrupt.h>
@@ -1126,6 +1127,9 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	struct nuc970_ether *ether;
 	struct net_device *dev;
 	int error;
+#ifdef CONFIG_OF
+	struct pinctrl *pinctrl;
+#endif
 
 	dev = alloc_etherdev(sizeof(struct nuc970_ether));
 	if (!dev)
@@ -1139,6 +1143,13 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 		error = -ENXIO;
 		goto err0;
 	}
+
+#ifdef CONFIG_OF
+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		return PTR_ERR(pinctrl);
+	}
+#endif
 
 	ether->txirq = platform_get_irq(pdev, 0);
 	if (ether->txirq < 0) {
@@ -1199,7 +1210,6 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	ether->link = 0;
 	ether->speed = 100;
 	ether->duplex = DUPLEX_FULL;
-	spin_lock_init(&ether->lock);
 
 	netif_napi_add(dev, &ether->napi, nuc970_poll, 16);
 
@@ -1317,6 +1327,12 @@ static int nuc970_ether_resume(struct platform_device *pdev)
 #define nuc970_ether_resume NULL
 #endif
 
+static const struct of_device_id nuc970_emac0_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-emac0" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_emac0_of_match);
+
 static struct platform_driver nuc970_ether_driver = {
 	.probe		= nuc970_ether_probe,
 	.remove		= nuc970_ether_remove,
@@ -1324,6 +1340,7 @@ static struct platform_driver nuc970_ether_driver = {
 	.resume 	= nuc970_ether_resume,
 	.driver		= {
 		.name	= "nuc970-emac0",
+	    .of_match_table = of_match_ptr(nuc970_emac0_of_match),
 		.owner	= THIS_MODULE,
 	},
 };

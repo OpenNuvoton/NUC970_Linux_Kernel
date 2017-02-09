@@ -67,7 +67,7 @@ static struct platform_device *nuc970_dev[] __initdata = {
 
 };
 
-static void __init nuc970_map_io(void)
+void __init nuc970_map_io(void)
 {
 	iotable_init(nuc970_iodesc, ARRAY_SIZE(nuc970_iodesc));
 }

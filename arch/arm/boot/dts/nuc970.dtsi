@@ -1,0 +1,553 @@
+/*
+ * nuc970.dtsi - Device Tree Include file for NUC970 family SoC
+ *
+ *  Copyright (C) 2015 Tanshi Li <chuncky@sohu.com>
+ *
+ * Licensed under GPLv2 only.
+ */
+
+/include/ "skeleton.dtsi"
+
+/ {
+    model = "Nuvoton NUC970 family SoC";
+    compatible = "nuvoton,nuc970";
+	interrupt-parent = <&aic>;
+
+    cpus {
+        #address-cells = <0>;
+        #size-cells = <0>;
+
+        cpu {
+            compatible = "arm,arm926ej-s";
+            device_type = "cpu";
+        };
+    };
+
+    apb {
+        compatible = "simple-bus";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+		aic: interrupt-controller@b8002000 {
+			compatible = "nuvoton,nuc970-aic";
+			reg = <0xb8002000 0x200>;
+			#interrupt-cells = <3>;
+			interrupt-controller;
+		};
+
+        pinctrl: pinctrl@b0000000 {
+            compatible = "nuvoton,nuc970-pinctrl";
+            status = "okay";
+
+			uart0 {
+				pinctrl_uart0_PE: uart0-PE {
+					nuvoton,pins =
+						<4 0 9 0 
+						 4 1 9 0>;
+				};
+			};
+
+			uart1 {
+				pinctrl_uart1_PE: uart1-PE {
+					nuvoton,pins =
+						<4 2 9 0 
+						 4 3 9 0>;
+				};
+				
+				pinctrl_uart1_fc_PE: uart1-fc-PE {
+					nuvoton,pins =
+						<4 2 9 0
+						 4 3 9 0
+						 4 4 9 0
+						 4 5 9 0>;
+				};
+
+				pinctrl_uart1_ff_PE: uart1-ff-PE {
+					nuvoton,pins =
+						<4 2 9 0
+						 4 3 9 0
+						 4 4 9 0
+						 4 5 9 0
+						 4 6 9 0
+						 4 7 9 0
+						 4 8 9 0
+						 4 9 9 0>;
+				};
+
+				pinctrl_uart1_PH: uart1-PH {
+					nuvoton,pins =
+						<7 4 9 0
+						 7 5 9 0>;
+				};
+
+				pinctrl_uart1_fc_PH: uart1-fc-PH {
+					nuvoton,pins =
+						<7 4 9 0
+						 7 5 9 0
+						 7 6 9 0
+						 7 7 9 0>;
+				};
+
+				pinctrl_uart1_PI: uart1-PI {
+					nuvoton,pins =
+						<8 5 9 0
+						 8 6 9 0>;
+				};
+
+				pinctrl_uart1_fc_PI: uart1-fc-PI {
+					nuvoton,pins =
+						<8 5 9 0
+						 8 6 9 0
+						 8 7 9 0
+						 8 8 9 0>;
+				};
+			};
+			
+			uart2 {
+				pinctrl_uart2: uart2 {
+					nuvoton,pins =
+						<5 0xb 9 0 
+						 5 0xc 9 0>;
+				};
+			
+				pinctrl_uart2_fc: uart2-fc {
+					nuvoton,pins =
+						<5 0xb 9 0
+						 5 0xc 9 0
+						 5 0xd 9 0
+						 5 0xe 9 0>;
+				};
+			};
+
+			uart3 {
+				pinctrl_uart3_PE: uart3-PE {
+					nuvoton,pins =
+						<4 0xc 0xa 0 
+						 4 0xd 0xa 0>;
+				};
+			};
+
+			uart4 {
+				pinctrl_uart4_PC: uart4-PC {
+					nuvoton,pins =
+						<2 0xa 9 0
+						 2 0xb 9 0>;
+				};
+				
+				pinctrl_uart4_fc_PC: uart4-fc-PC {
+					nuvoton,pins =
+						<2 0xa 9 0
+						 2 0xb 9 0
+						 2 0xc 9 0
+						 2 0xd 9 0>;
+				};
+
+				pinctrl_uart4_PH: uart4-PH {
+					nuvoton,pins =
+						<7 8 9 0
+						 7 9 9 0>;
+				};
+
+				pinctrl_uart4_fc_PH: uart4-fc-PH {
+					nuvoton,pins =
+						<7 8 9 0
+						 7 9 9 0
+						 7 0xa 9 0
+						 7 0xb 9 0>;
+				};
+
+				pinctrl_uart4_PI: uart4-PI {
+					nuvoton,pins =
+						<8 9 9 0
+						 8 0xa 9 0>;
+				};
+			};
+
+			uart5 {
+				pinctrl_uart5_PB: uart5-PB {
+					nuvoton,pins =
+						<1 0 9 0 
+						 1 1 9 0>;
+				};
+			};
+			
+			uart6 {
+				pinctrl_uart6_PB: uart6-PB {
+					nuvoton,pins =
+						<1 2 9 0
+						 1 3 9 0>;
+				};
+
+				pinctrl_uart6_fc_PB: uart6-fc-PB {
+					nuvoton,pins =
+						<1 2 9 0
+						 1 3 9 0
+						 1 4 9 0
+						 1 5 9 0>;
+				};
+
+				pinctrl_uart6_PG: uart6-PG {
+					nuvoton,pins =
+						<6 0xb 9 0 
+						 6 0xc 9 0>;
+				};
+
+				pinctrl_uart6_fc_PG: uart6-fc-PG {
+					nuvoton,pins =
+						<6 0xb 9 0
+						 6 0xc 9 0
+						 6 0xd 9 0
+						 6 0xe 9 0>;
+				};
+			};
+
+			uart7 {
+				pinctrl_uart7_PG: uart7-PG {
+					nuvoton,pins =
+						<6 4 9 0
+						 6 5 9 0>;
+				};
+
+				pinctrl_uart7_PI: uart7-PI {
+					nuvoton,pins =
+						<8 1 9 0
+						 8 2 9 0>;
+				};
+			};
+
+			uart8 {
+				pinctrl_uart8_PE: uart8-PE {
+					nuvoton,pins =
+						<4 0xa 9 0 
+						 4 0xb 9 0>;
+				};
+
+				pinctrl_uart8_fc_PE: uart8-fc-PE {
+					nuvoton,pins =
+						<4 0xa 9 0
+						 4 0xb 9 0
+						 4 0xc 9 0
+						 4 0xd 9 0>;
+				};
+
+				pinctrl_uart8_PH: uart8-PH {
+					nuvoton,pins =
+						<7 0xc 9 0
+						 7 0xd 9 0>;
+				};
+
+				pinctrl_uart8_fc_PH: uart8-fc-PH {
+					nuvoton,pins =
+						<7 0xc 9 0
+						 7 0xd 9 0
+						 7 0xe 9 0
+						 7 0xf 9 0>;
+				};
+
+				pinctrl_uart8_PI: uart8-PI {
+					nuvoton,pins =
+						<8 0xc 9 0
+						 8 0xd 9 0>;
+				};
+
+				pinctrl_uart8_fc_PI: uart8-fc-PI {
+					nuvoton,pins =
+						<8 0xc 9 0
+						 8 0xd 9 0
+						 8 0xe 9 0
+						 8 0xf 9 0>;
+				};
+			};
+
+			uart9 {
+				pinctrl_uart9_PD0: uart9-PD0 {
+					nuvoton,pins =
+						<3 0xb 9 0
+						 3 0xc 9 0>;
+				};
+
+				pinctrl_uart9_PD1: uart9-PD1 {
+					nuvoton,pins =
+						<3 0xe 9 0
+						 3 0xf 9 0>;
+				};
+
+				pinctrl_uart9_PH: uart9-PH {
+					nuvoton,pins =
+						<7 2 9 0
+						 7 3 9 0>;
+				};
+			};
+
+			uart10 {
+				pinctrl_uart10_PB0: uart10-PB0 {
+					nuvoton,pins =
+						<1 0xa 9 0 
+						 1 0xb 9 0>;
+				};
+
+				pinctrl_uart10_PB1: uart10-PB1 {
+					nuvoton,pins =
+						<1 0xc 9 0
+						 1 0xd 9 0>;
+				};
+
+				pinctrl_uart10_fc_PB1: uart10-fc-PB1 {
+					nuvoton,pins =
+						<1 0xc 9 0
+						 1 0xd 9 0
+						 1 0xe 9 0
+						 1 0xf 9 0>;
+				};
+
+				pinctrl_uart10_PC: uart10-PC {
+					nuvoton,pins =
+						<2 6 9 0
+						 2 7 9 0>;
+				};
+
+				pinctrl_uart10_fc_PC: uart10-fc-PC {
+					nuvoton,pins =
+						<2 6 9 0
+						 2 7 9 0
+						 2 8 9 0
+						 2 9 9 0>;
+				};
+			};
+
+			usbh {
+				pinctrl_usbh_ppwr_pe: usbh-ppwr-pe {
+					nuvoton,pins =
+						<4 0xe 7 0 
+						 4 0xf 7 0
+						 7 1 7 0>;
+				};
+
+				pinctrl_usbh_ppwr_pf: usbh-ppwr-pf {
+					nuvoton,pins =
+						<5 0xa 7 0 
+						 7 1 7 0>;
+				};
+
+				pinctrl_usbh_ppwr_pc: usbh-ppwr-oc{
+					nuvoton,pins =
+						<7 1 7 0>;
+				};
+			};
+
+			emac0 {
+				pinctrl_emac0: emac0 {
+					nuvoton,pins =
+						<5 0 1 0 
+						 5 1 1 0
+						 5 2 1 0
+						 5 3 1 0
+						 5 4 1 0
+						 5 5 1 0
+						 5 6 1 0
+						 5 7 1 0
+						 5 8 1 0
+						 5 9 1 0>;
+				};
+			};
+
+			emac1 {
+				pinctrl_emac1: emac1 {
+					nuvoton,pins =
+						<4 2 1 0 
+						 4 3 1 0
+						 4 4 1 0
+						 4 5 1 0
+						 4 6 1 0
+						 4 7 1 0
+						 4 8 1 0
+						 4 9 1 0
+						 4 0xa 1 0
+						 4 0xb 1 0>;
+				};
+			};
+
+        };  /* end of pinctrl */
+
+        uart0: serial@b8000000 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000000 0x100>;
+            interrupts = <36 4 1>;
+            port-number = <0>;
+            map-addr = <0xf8000000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart0_PE>;
+            status = "okay";
+        };
+
+        uart1: serial@b8000100 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000100 0x100>;
+            interrupts = <37 4 1>;
+            port-number = <1>;
+            map-addr = <0xf8000100>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart1_PE>;
+            status = "disabled";
+        };
+
+        uart2: serial@b8000200 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000200 0x100>;
+            interrupts = <38 4 1>;
+            port-number = <2>;
+            map-addr = <0xf8000200>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart2_fc>;
+            status = "disabled";
+        };
+
+        uart3: serial@b8000300 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000300 0x100>;
+            interrupts = <43 4 1>;
+            port-number = <3>;
+            map-addr = <0xf8000300>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart3_PE>;
+            status = "disabled";
+        };
+            
+        uart4: serial@b8000400 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000400 0x100>;
+            interrupts = <39 4 1>;
+            port-number = <4>;
+            map-addr = <0xf8000400>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart4_fc_PC>;
+            status = "disabled";
+        };          
+            
+        uart5: serial@b8000500 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000500 0x100>;
+            interrupts = <44 4 1>;
+            port-number = <5>;
+            map-addr = <0xf8000500>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart5_PB>;
+            status = "okay";
+        };
+                
+        uart6: serial@b8000600 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000600 0x100>;
+            interrupts = <40 4 1>;
+            port-number = <6>;
+            map-addr = <0xf8000600>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart6_PB>;
+            status = "okay";
+        };  
+                
+        uart7: serial@b8000700 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000700 0x100>;
+            interrupts = <45 4 1>;
+            port-number = <7>;
+            map-addr = <0xf8000700>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart7_PG>;
+            status = "okay";
+        };
+        
+        uart8: serial@b8000800 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000800 0x100>;
+            interrupts = <41 4 1>;
+            port-number = <8>;
+            map-addr = <0xf8000800>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart8_PE>;
+            status = "disabled";
+        };          
+        
+        uart9: serial@b8000900 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000900 0x100>;
+            interrupts = <46 4 1>;
+            port-number = <9>;
+            map-addr = <0xf8000900>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart9_PD0>;
+            status = "disabled";
+        };
+                    
+        uart10: serial@b8000a00 {
+            compatible = "nuvoton,nuc970-uart";
+            reg = <0xb8000a00 0x100>;
+            interrupts = <42 4 1>;
+            port-number = <10>;
+            map-addr = <0xf8000a00>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart10_PB0>;
+            status = "disabled";
+        };          
+
+        gpio: gpio@b8003000 {
+            compatible = "nuvoton,nuc970-gpio";
+            reg = <0xb8003000 0x100>;
+            map-addr = <0xf8003000>;
+            status = "okay";
+        };
+
+    };  /* end of apb */
+
+    ahb {
+        compatible = "simple-bus";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        usbdev@b0006000 {
+            compatible = "nuvoton,nuc970-usbdev", "nuc970-usbdev";
+            reg = <0xb0006000 0x1000>;
+            interrupts = <29 4 1>;
+            interrupt-controller;
+            status = "okay";
+        };
+
+        usbh_ehci@b0005000 {
+            compatible = "nuvoton,nuc970-ehci", "usbh-ehci";
+            reg = <0xb0005000 0x1000>;
+            interrupts = <23 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbh_ppwr_pe>;
+            ov_active = <0>;                 /* over-current active level, 1: active high; 0: active low                  */
+            status = "disabled";
+        };
+
+        usbh_ohci@b0007000{
+            compatible = "nuvoton,nuc970-ohci", "usbh-ohci";
+            reg = <0xb0007000 0x1000>;
+            interrupts = <24 4 1>;
+            status = "disabled";
+        };
+
+        emac0@b0002000 {
+            compatible = "nuvoton,nuc970-emac0";
+            reg = <0xb0002000 0x1000>;
+            interrupts = <19 4 1>, <20 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_emac0>;
+            status = "okay";
+        };
+
+        emac1@b0003000 {
+            compatible = "nuvoton,nuc970-emac1";
+            reg = <0xb0003000 0x1000>;
+            interrupts = <21 4 1>, <22 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_emac1>;
+            status = "disabled";
+        };
+
+    };  /* end of ahb */
+};
