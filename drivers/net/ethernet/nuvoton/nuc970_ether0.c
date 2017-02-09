@@ -1210,6 +1210,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	ether->link = 0;
 	ether->speed = 100;
 	ether->duplex = DUPLEX_FULL;
+	spin_lock_init(&ether->lock);
 
 	netif_napi_add(dev, &ether->napi, nuc970_poll, 16);
 
