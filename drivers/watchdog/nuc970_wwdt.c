@@ -20,6 +20,7 @@
 #include <linux/interrupt.h>
 #include <linux/types.h>
 #include <linux/watchdog.h>
+#include <linux/of.h>
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-wwdt.h>
@@ -192,6 +193,11 @@ static int nuc970wwdt_resume(struct platform_device *dev)
 #define nuc970wwdt_resume  NULL
 #endif /* CONFIG_PM */
 
+static const struct of_device_id nuc970_wwdt_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-wwdt" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_wwdt_of_match);
 
 
 static struct platform_driver nuc970wwdt_driver = {
@@ -201,6 +207,7 @@ static struct platform_driver nuc970wwdt_driver = {
         .resume         = nuc970wwdt_resume,
 	.driver		= {
 		.name	= "nuc970-wwdt",
+		.of_match_table = of_match_ptr(nuc970_wwdt_of_match),
 		.owner	= THIS_MODULE,
 	},
 };

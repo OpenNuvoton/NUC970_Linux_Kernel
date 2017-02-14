@@ -491,6 +491,22 @@
 			status = "disabled";
 		};		  
 
+		wdt: wdt@b8001800 {
+			compatible = "nuvoton,nuc970-wdt";
+			reg = <0xb8001800 0x100>;
+			interrupts = <1 4 1>;
+			map-addr = <0xf8001800>;
+			status = "disabled";
+		};
+
+		wwdt: wdt@b8001900 {
+			compatible = "nuvoton,nuc970-wwdt";
+			reg = <0xb8001900 0x100>;
+			interrupts = <2 4 1>;
+			map-addr = <0xf8001900>;
+			status = "disabled";
+		};
+
 		gpio: gpio@b8003000 {
 			compatible = "nuvoton,nuc970-gpio";
 			reg = <0xb8003000 0x100>;
