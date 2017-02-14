@@ -9,25 +9,25 @@
 /include/ "skeleton.dtsi"
 
 / {
-    model = "Nuvoton NUC970 family SoC";
-    compatible = "nuvoton,nuc970";
+	model = "Nuvoton NUC970 family SoC";
+	compatible = "nuvoton,nuc970";
 	interrupt-parent = <&aic>;
 
-    cpus {
-        #address-cells = <0>;
-        #size-cells = <0>;
+	cpus {
+		#address-cells = <0>;
+		#size-cells = <0>;
 
-        cpu {
-            compatible = "arm,arm926ej-s";
-            device_type = "cpu";
-        };
-    };
+		cpu {
+			compatible = "arm,arm926ej-s";
+			device_type = "cpu";
+		};
+	};
 
-    apb {
-        compatible = "simple-bus";
-        #address-cells = <1>;
-        #size-cells = <1>;
-        ranges;
+	apb {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
 
 		aic: interrupt-controller@b8002000 {
 			compatible = "nuvoton,nuc970-aic";
@@ -36,9 +36,9 @@
 			interrupt-controller;
 		};
 
-        pinctrl: pinctrl@b0000000 {
-            compatible = "nuvoton,nuc970-pinctrl";
-            status = "okay";
+		pinctrl: pinctrl@b0000000 {
+			compatible = "nuvoton,nuc970-pinctrl";
+			status = "okay";
 
 			uart0 {
 				pinctrl_uart0_PE: uart0-PE {
@@ -368,186 +368,186 @@
 				};
 			};
 
-        };  /* end of pinctrl */
+		};  /* end of pinctrl */
 
-        uart0: serial@b8000000 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000000 0x100>;
-            interrupts = <36 4 1>;
-            port-number = <0>;
-            map-addr = <0xf8000000>;
+		uart0: serial@b8000000 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000000 0x100>;
+			interrupts = <36 4 1>;
+			port-number = <0>;
+			map-addr = <0xf8000000>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart0_PE>;
-            status = "okay";
-        };
+			status = "okay";
+		};
 
-        uart1: serial@b8000100 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000100 0x100>;
-            interrupts = <37 4 1>;
-            port-number = <1>;
-            map-addr = <0xf8000100>;
+		uart1: serial@b8000100 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000100 0x100>;
+			interrupts = <37 4 1>;
+			port-number = <1>;
+			map-addr = <0xf8000100>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart1_PE>;
-            status = "disabled";
-        };
+			status = "disabled";
+		};
 
-        uart2: serial@b8000200 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000200 0x100>;
-            interrupts = <38 4 1>;
-            port-number = <2>;
-            map-addr = <0xf8000200>;
+		uart2: serial@b8000200 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000200 0x100>;
+			interrupts = <38 4 1>;
+			port-number = <2>;
+			map-addr = <0xf8000200>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart2_fc>;
-            status = "disabled";
-        };
+			status = "disabled";
+		};
 
-        uart3: serial@b8000300 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000300 0x100>;
-            interrupts = <43 4 1>;
-            port-number = <3>;
-            map-addr = <0xf8000300>;
+		uart3: serial@b8000300 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000300 0x100>;
+			interrupts = <43 4 1>;
+			port-number = <3>;
+			map-addr = <0xf8000300>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart3_PE>;
-            status = "disabled";
-        };
-            
-        uart4: serial@b8000400 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000400 0x100>;
-            interrupts = <39 4 1>;
-            port-number = <4>;
-            map-addr = <0xf8000400>;
+			status = "disabled";
+		};
+			
+		uart4: serial@b8000400 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000400 0x100>;
+			interrupts = <39 4 1>;
+			port-number = <4>;
+			map-addr = <0xf8000400>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart4_fc_PC>;
-            status = "disabled";
-        };          
-            
-        uart5: serial@b8000500 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000500 0x100>;
-            interrupts = <44 4 1>;
-            port-number = <5>;
-            map-addr = <0xf8000500>;
+			status = "disabled";
+		};		  
+			
+		uart5: serial@b8000500 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000500 0x100>;
+			interrupts = <44 4 1>;
+			port-number = <5>;
+			map-addr = <0xf8000500>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart5_PB>;
-            status = "okay";
-        };
-                
-        uart6: serial@b8000600 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000600 0x100>;
-            interrupts = <40 4 1>;
-            port-number = <6>;
-            map-addr = <0xf8000600>;
+			status = "okay";
+		};
+				
+		uart6: serial@b8000600 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000600 0x100>;
+			interrupts = <40 4 1>;
+			port-number = <6>;
+			map-addr = <0xf8000600>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart6_PB>;
-            status = "okay";
-        };  
-                
-        uart7: serial@b8000700 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000700 0x100>;
-            interrupts = <45 4 1>;
-            port-number = <7>;
-            map-addr = <0xf8000700>;
+			status = "okay";
+		};  
+				
+		uart7: serial@b8000700 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000700 0x100>;
+			interrupts = <45 4 1>;
+			port-number = <7>;
+			map-addr = <0xf8000700>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart7_PG>;
-            status = "okay";
-        };
-        
-        uart8: serial@b8000800 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000800 0x100>;
-            interrupts = <41 4 1>;
-            port-number = <8>;
-            map-addr = <0xf8000800>;
+			status = "okay";
+		};
+		
+		uart8: serial@b8000800 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000800 0x100>;
+			interrupts = <41 4 1>;
+			port-number = <8>;
+			map-addr = <0xf8000800>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart8_PE>;
-            status = "disabled";
-        };          
-        
-        uart9: serial@b8000900 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000900 0x100>;
-            interrupts = <46 4 1>;
-            port-number = <9>;
-            map-addr = <0xf8000900>;
+			status = "disabled";
+		};		  
+		
+		uart9: serial@b8000900 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000900 0x100>;
+			interrupts = <46 4 1>;
+			port-number = <9>;
+			map-addr = <0xf8000900>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart9_PD0>;
-            status = "disabled";
-        };
-                    
-        uart10: serial@b8000a00 {
-            compatible = "nuvoton,nuc970-uart";
-            reg = <0xb8000a00 0x100>;
-            interrupts = <42 4 1>;
-            port-number = <10>;
-            map-addr = <0xf8000a00>;
+			status = "disabled";
+		};
+					
+		uart10: serial@b8000a00 {
+			compatible = "nuvoton,nuc970-uart";
+			reg = <0xb8000a00 0x100>;
+			interrupts = <42 4 1>;
+			port-number = <10>;
+			map-addr = <0xf8000a00>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart10_PB0>;
-            status = "disabled";
-        };          
+			status = "disabled";
+		};		  
 
-        gpio: gpio@b8003000 {
-            compatible = "nuvoton,nuc970-gpio";
-            reg = <0xb8003000 0x100>;
-            map-addr = <0xf8003000>;
-            status = "okay";
-        };
+		gpio: gpio@b8003000 {
+			compatible = "nuvoton,nuc970-gpio";
+			reg = <0xb8003000 0x100>;
+			map-addr = <0xf8003000>;
+			status = "okay";
+		};
 
-    };  /* end of apb */
+	};  /* end of apb */
 
-    ahb {
-        compatible = "simple-bus";
-        #address-cells = <1>;
-        #size-cells = <1>;
-        ranges;
+	ahb {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
 
-        usbdev@b0006000 {
-            compatible = "nuvoton,nuc970-usbdev", "nuc970-usbdev";
-            reg = <0xb0006000 0x1000>;
-            interrupts = <29 4 1>;
-            interrupt-controller;
-            status = "okay";
-        };
+		usbdev@b0006000 {
+			compatible = "nuvoton,nuc970-usbdev", "nuc970-usbdev";
+			reg = <0xb0006000 0x1000>;
+			interrupts = <29 4 1>;
+			interrupt-controller;
+			status = "okay";
+		};
 
-        usbh_ehci@b0005000 {
-            compatible = "nuvoton,nuc970-ehci", "usbh-ehci";
-            reg = <0xb0005000 0x1000>;
-            interrupts = <23 4 1>;
+		usbh_ehci@b0005000 {
+			compatible = "nuvoton,nuc970-ehci", "usbh-ehci";
+			reg = <0xb0005000 0x1000>;
+			interrupts = <23 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_usbh_ppwr_pe>;
-            ov_active = <0>;                 /* over-current active level, 1: active high; 0: active low                  */
-            status = "disabled";
-        };
+			ov_active = <0>;				 /* over-current active level, 1: active high; 0: active low				  */
+			status = "disabled";
+		};
 
-        usbh_ohci@b0007000{
-            compatible = "nuvoton,nuc970-ohci", "usbh-ohci";
-            reg = <0xb0007000 0x1000>;
-            interrupts = <24 4 1>;
-            status = "disabled";
-        };
+		usbh_ohci@b0007000{
+			compatible = "nuvoton,nuc970-ohci", "usbh-ohci";
+			reg = <0xb0007000 0x1000>;
+			interrupts = <24 4 1>;
+			status = "disabled";
+		};
 
-        emac0@b0002000 {
-            compatible = "nuvoton,nuc970-emac0";
-            reg = <0xb0002000 0x1000>;
-            interrupts = <19 4 1>, <20 4 1>;
+		emac0@b0002000 {
+			compatible = "nuvoton,nuc970-emac0";
+			reg = <0xb0002000 0x1000>;
+			interrupts = <21 4 1>, <19 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_emac0>;
-            status = "okay";
-        };
+			status = "okay";
+		};
 
-        emac1@b0003000 {
-            compatible = "nuvoton,nuc970-emac1";
-            reg = <0xb0003000 0x1000>;
-            interrupts = <21 4 1>, <22 4 1>;
+		emac1@b0003000 {
+			compatible = "nuvoton,nuc970-emac1";
+			reg = <0xb0003000 0x1000>;
+			interrupts = <22 4 1>, <20 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_emac1>;
-            status = "disabled";
-        };
+			status = "disabled";
+		};
 
-    };  /* end of ahb */
+	};  /* end of ahb */
 };

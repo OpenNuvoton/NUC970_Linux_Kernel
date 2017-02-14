@@ -42,11 +42,8 @@
 		usbh_ohci@b0007000{
 			status = "okay";
 		};
-        emac0@b0002000 {
+		emac0@b0002000 {
 			status = "okay";
-        };
-        emac1@b0003000 {
-			status = "okay";
-        };
+		};
 	};
 };
