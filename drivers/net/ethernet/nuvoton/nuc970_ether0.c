@@ -784,7 +784,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 	}
 
 	if(complete) {
-		__napi_complete(napi);
+		napi_complete(napi); //changed from __napi_complete(napi); by tanshi li for ifconfig eth0 down error
 		__raw_writel(__raw_readl(REG_MIEN) | ENRXINTR,  REG_MIEN);
 	}
 
