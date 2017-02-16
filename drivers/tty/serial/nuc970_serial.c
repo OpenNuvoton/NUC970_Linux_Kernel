@@ -1333,7 +1333,9 @@ static int __init nuc970serial_init(void)
 	ret = uart_register_driver(&nuc970serial_reg);
 	if (ret)
 		return ret;
-
+#ifndef CONFIG_SERIAL_NUC970_CONSOLE
+	nuc970serial_init_ports();
+#endif
 	ret = platform_driver_register(&nuc970serial_driver);
 	if (ret)
 		uart_unregister_driver(&nuc970serial_reg);
