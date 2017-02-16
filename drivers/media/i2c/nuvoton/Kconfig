@@ -46,6 +46,7 @@ config SENSOR_PD_PI2
 
 endchoice
 
+if !OF
 choice
 	prompt "Nuvoton NUC970 Image Sensor Selection"
 	depends on VIDEO_NUC970
@@ -66,3 +67,5 @@ config SENSOR_NT99050
 config SENSOR_TW9912
         bool "TW9912"
 endchoice
+
+endif

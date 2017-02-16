@@ -289,6 +289,8 @@ static struct gpio_chip nuc970_gpio_port = {
 	.ngpio = NUMGPIO,
 };
 
+
+#ifndef CONFIG_OF
 /*
  * @brief       External Interrupt 0 Handler
  * @details     This function will be used by EINT0,
@@ -682,14 +684,222 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 	}
 	return 0;
 }
+#else
+
+static irqreturn_t nuc970_eint0_interrupt(int irq, void *dev_id){
+	printk("@0\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint1_interrupt(int irq, void *dev_id){
+	printk("@1\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint2_interrupt(int irq, void *dev_id){
+	printk("@2\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint3_interrupt(int irq, void *dev_id){
+	printk("@3\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint4_interrupt(int irq, void *dev_id){
+	printk("@4\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint5_interrupt(int irq, void *dev_id){
+	printk("@5\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint6_interrupt(int irq, void *dev_id){
+	printk("@6\n");
+	return IRQ_HANDLED;
+}
+__attribute__ ((unused)) static irqreturn_t nuc970_eint7_interrupt(int irq, void *dev_id){
+	printk("@7\n");
+	return IRQ_HANDLED;
+}
+
+u32 trigger_type[5]={	(IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING),
+												IRQF_TRIGGER_RISING,
+												IRQF_TRIGGER_FALLING,
+												IRQF_TRIGGER_HIGH,
+												IRQF_TRIGGER_LOW};
+
+static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
+	int err;
+	u32	val32[3];
+	u32 irqnum,irqflag;
+	
+	//eint 0 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint0-config", val32, 3) != 0){
+		printk("%s - eint0 can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT0_H0):(IRQ_EXT0_F11);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint0_interrupt,irqflag, "eint0", 0)) != 0) {
+			printk("%s - eint0 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 1 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint1-config", val32, 3) != 0){
+		printk("%s - eint1 can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT1_H1):(IRQ_EXT1_F12);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint1_interrupt,irqflag, "eint1", 0)) != 0) {
+			printk("%s - eint1 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 2 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint2-config", val32, 3) != 0){
+		printk("%s - eint2 can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT2_H2):(IRQ_EXT2_F13);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint2_interrupt,irqflag, "eint2", 0)) != 0) {
+			printk("%s - eint2 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 3 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint3-config", val32, 3) != 0){
+		printk("%s - eint3 can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT3_H3):(IRQ_EXT3_F14);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==3){
+					__raw_writel((1<<30) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint3_interrupt,irqflag, "eint3", 0)) != 0) {
+			printk("%s - eint3 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 4 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint4-config", val32, 3) != 0){
+		printk("%s - eint4 can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	if(val32[0]==1)
+	{	 	
+		irqnum=(val32[1]==0)?(IRQ_EXT4_H4):(IRQ_EXT4_F15);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if(flag==1){
+					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint4_interrupt,irqflag, "eint4", 0)) != 0) {
+			printk("%s - eint4 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 5 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint5-config", val32, 3) != 0){
+		printk("%s - eint5 can not get port-number!\n", __func__);
+		return -EINVAL;
+	} 	
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT5_H5):(IRQ_EXT5_G15);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint5_interrupt,irqflag, "eint5", 0)) != 0) {
+			printk("%s - eint5 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 6 
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint6-config", val32, 3) != 0){
+		printk("%s - eint6 can not get port-number!\n", __func__);
+		return -EINVAL;
+	} 	
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT6_H6):(IRQ_EXT6_I1);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint6_interrupt,irqflag, "eint6", 0)) != 0) {
+			printk("%s - eint6 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	
+	//eint 7 	
+	if (of_property_read_u32_array(pdev->dev.of_node, "eint7-config", val32, 3) != 0){
+		printk("%s - eint7 can not get port-number!\n", __func__);
+		return -EINVAL;
+	} 	
+	if(val32[0]==1)
+	{
+		irqnum=(val32[1]==0)?(IRQ_EXT7_H7):(IRQ_EXT7_I2);
+		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
+		if(flag==1){
+					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(irqnum);
+		}
+		if ((err = request_irq(irqnum,nuc970_eint7_interrupt,irqflag, "eint7", 0)) != 0) {
+			printk("%s - eint7 can not get irq!\n", __func__);
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+#endif
 
 static int nuc970_gpio_probe(struct platform_device *pdev)
 {
 	int err;
-
-	struct clk *clk;
-	if(pdev->id == 1)
+	struct clk *clk;	
+	
+	printk("%s - pdev = %s\n", __func__, pdev->name);
+#ifndef CONFIG_OF
+	if(pdev->id == 0)
+#endif
 	{
+
 		/* Enable GPIO clock */
 		clk = clk_get(NULL, "gpio");
 	        if (IS_ERR(clk)) {
@@ -749,6 +959,15 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 		#endif
 	}
 
+#ifdef CONFIG_OF
+	{
+		struct pinctrl *pinctrl;
+		pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+		if (IS_ERR(pinctrl)) {
+			return PTR_ERR(pinctrl);
+		}
+	}
+#endif
 	#ifdef CONFIG_GPIO_NUC970_EINT_WKUP
 		nuc970_enable_eint(1,pdev);
 	#else
@@ -808,6 +1027,12 @@ LEAVE();
 return 0;
 }
 
+static const struct of_device_id nuc970_gpio_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-gpio" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_serial_of_match);
+
 static struct platform_driver nuc970_gpio_driver = {
 	.probe		= nuc970_gpio_probe,
 	.remove		= nuc970_gpio_remove,
@@ -816,6 +1041,7 @@ static struct platform_driver nuc970_gpio_driver = {
 	.driver		= {
 		.name	= DRIVER_NAME,
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_gpio_of_match),
 	},
 };
 module_platform_driver(nuc970_gpio_driver);

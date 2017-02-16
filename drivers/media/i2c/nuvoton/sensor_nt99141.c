@@ -67,7 +67,7 @@ static struct OV_RegValue Init_RegValue[] =
 static struct i2c_client *save_client;
 static char sensor_inited = 0;
 
-static int sensor_read(u16 reg,u8 *val)
+static int sensor_read_nt99141(u16 reg,u8 *val)
 {
 	int ret;
 	/* We have 16-bit i2c addresses - care for endianess */
@@ -88,7 +88,7 @@ static int sensor_read(u16 reg,u8 *val)
 	return 0;
 }
 
-static int sensor_write(u16 reg, u8 val)
+static int sensor_write_nt99141(u16 reg, u8 val)
 {
 	int ret;
 	unsigned char data[3] = { reg >> 8, reg & 0xff, val };
@@ -156,7 +156,7 @@ static struct nuvoton_vin_sensor nt99141 = {
 	},
 };
 
-int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
+int nuvoton_vin_probe_nt99141(struct nuvoton_vin_device* cam)
 {
 	int i,ret = 0;
 	__u8 SensorID[2];
@@ -173,12 +173,12 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	for(i=0;i<_REG_TABLE_SIZE(Init_RegValue); i++, psRegValue++)
 	{		
 		printk(".");		
-		ret = sensor_write((psRegValue->uRegAddr), (psRegValue->uValue));	
+		ret = sensor_write_nt99141((psRegValue->uRegAddr), (psRegValue->uValue));	
 	} 	
 
 	//----------Read sensor id-------------------------------------	        
-	sensor_read(0x3000,&SensorID[0]);  /* Chip_Version_H 0x14 */			
-	sensor_read(0x3001,&SensorID[1]);  /* Chip_Version_L 0x10 */		
+	sensor_read_nt99141(0x3000,&SensorID[0]);  /* Chip_Version_H 0x14 */			
+	sensor_read_nt99141(0x3001,&SensorID[1]);  /* Chip_Version_L 0x10 */		
 	printk("\nSensor Chip_Version_H = 0x%02x(0x14) Chip_Version_L = 0x%02x(0x10)\n", SensorID[0],SensorID[1]);
 	//-------------------------------------------------------------		
 	printk("\n");

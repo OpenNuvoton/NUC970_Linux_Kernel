@@ -126,7 +126,7 @@ static struct OV_RegValue VGA_RegValue[] =
 static struct i2c_client *save_client;
 static char sensor_inited = 0;
 
-static int sensor_read(u16 reg,u8 *val)
+static int sensor_read_ov5640(u16 reg,u8 *val)
 {
 	int ret;
 	/* We have 16-bit i2c addresses - care for endianess */
@@ -147,7 +147,7 @@ static int sensor_read(u16 reg,u8 *val)
 	return 0;
 }
 
-static int sensor_write(u16 reg, u8 val)
+static int sensor_write_ov5640(u16 reg, u8 val)
 {
 	int ret;
 	unsigned char data[3] = { reg >> 8, reg & 0xff, val };
@@ -215,7 +215,7 @@ static struct nuvoton_vin_sensor ov5640 = {
 	},
 };
 
-int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
+int nuvoton_vin_probe_ov5640(struct nuvoton_vin_device* cam)
 {
 	int i,j,ret = 0;
 	__u8 SensorID[1];
@@ -232,7 +232,7 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	{
 		int32_t ret;
 		printk(".");		
-		ret = sensor_write((psRegValue->uRegAddr), (psRegValue->uValue));
+		ret = sensor_write_ov5640((psRegValue->uRegAddr), (psRegValue->uValue));
 		if(psRegValue->uRegAddr==0x3008  && psRegValue->uValue==0x82)
 		{
 			for(j=0;j<0x20000;j++);
@@ -249,14 +249,14 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	{
 		int32_t ret;
 		printk(".");		
-		ret = sensor_write((psRegValue1->uRegAddr), (psRegValue1->uValue));
+		ret = sensor_write_ov5640((psRegValue1->uRegAddr), (psRegValue1->uValue));
 		if(ret<0)
 		{
 			VDEBUG("Wrong to write register addr = 0x%x, write data = 0x%x , ret = %d\n", (psRegValue1->uRegAddr), (psRegValue1->uValue), ret);		
 		}	
 	} 	
 	//----------Read sensor id-------------------------------------	        
-	sensor_read(0x302A,SensorID);  /* Chip Version 0xB0 */			
+	sensor_read_ov5640(0x302A,SensorID);  /* Chip Version 0xB0 */			
 	printk("Chip Version = 0x%02X(0xB0) \n", SensorID[0]);	
 	//-------------------------------------------------------------		
 	printk("\n");

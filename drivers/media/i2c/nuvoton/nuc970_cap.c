@@ -50,6 +50,12 @@
 #include "nuc970_cap.h"
 
 
+#define SENSOR_OV7725		0
+#define SENSOR_NT99141	1
+#define SENSOR_NT99050	2
+#define SENSOR_OV5640		3
+#define SENSOR_TW9912		4
+u32 sensor_model = 1;
 /*****************************************************************************/
 
 #define NUVOTON_VIN_MODULE_NAME    "V4L2 driver for NUVOTON "                    \
@@ -65,6 +71,9 @@ static short video_nr[] = {[0 ... NUVOTON_MAX_DEVICES-1] = -1};
 static unsigned int frame_timeout = NUVOTON_FRAME_TIMEOUT;
 
 static struct nuvoton_vin_device* nuvoton_cam[NUVOTON_MAX_DEVICES];
+
+u32 sensor_pd = 0;  //0:PI0, 1:PI2
+u32 video_freq = 24000000;
 
 void nuvoton_vdi_enable(void){	
 	int i;
@@ -1077,17 +1086,17 @@ static void nuvoton_vin_release_resources(struct kref *kref)
 int capture_uninit(void){
 	
 	/* GPIOI0 set to low  */
-#ifdef CONFIG_SENSOR_PD_PI0
+if(sensor_pd==0)
+{
 	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
 	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
 	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
-#endif
-
-#ifdef CONFIG_SENSOR_PD_PI2
-        __raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
-        __raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
-        __raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
-#endif
+}
+else{
+	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
+	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+}
 return 0;
 }
 int capture_init(struct nuvoton_vin_device* cam)
@@ -1130,7 +1139,7 @@ int capture_init(struct nuvoton_vin_device* cam)
 			return ret;
 		}		
 		clk_set_parent(clkmux, clkaplldiv);
-		clk_set_rate(clkcap, CONFIG_VIDOE_FREQ);
+		clk_set_rate(clkcap, video_freq);
 	
 	/* GPIOI7 set to high */
 	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0xF0000000) ,REG_MFP_GPI_L);
@@ -1138,17 +1147,16 @@ int capture_init(struct nuvoton_vin_device* cam)
 	__raw_writel((__raw_readl(GPIO_BA+0x204) | 0x0080),(GPIO_BA+0x204)); /* GPIOI7 Output to high */
 	
 	/* GPIOI0 set to low  */
-#ifdef CONFIG_SENSOR_PD_PI0
-	__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
-	__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
-	__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
-#endif
-
-#ifdef CONFIG_SENSOR_PD_PI2
-        __raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
-        __raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
-        __raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
-#endif
+	if(sensor_pd==0)
+	{
+		__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x0000000F) ,REG_MFP_GPI_L);
+		__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0001),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+		__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0001),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+	}else{
+		__raw_writel( (__raw_readl(REG_MFP_GPI_L) & ~0x00000F00) ,REG_MFP_GPI_L);
+		__raw_writel((__raw_readl(GPIO_BA+0x200) | 0x0004),(GPIO_BA+0x200)); /* GPIOI0 Output mode */
+		__raw_writel((__raw_readl(GPIO_BA+0x204) &~ 0x0004),(GPIO_BA+0x204)); /* GPIOI0 Output to low */
+	}
 
 	return 0;
 }
@@ -1475,7 +1483,25 @@ static struct v4l2_file_operations nuvoton_vdi_fops =
 };
 
 /* ----	Initialization v4l2_file_operations  ----*/
-extern int nuvoton_vin_probe(struct nuvoton_vin_device* cam);
+#ifndef CONFIG_OF
+	#if defined(CONFIG_SENSOR_OV7725)
+	extern int nuvoton_vin_probe_ov7725(struct nuvoton_vin_device* cam);
+	#elif defined(CONFIG_SENSOR_OV5640)
+	extern int nuvoton_vin_probe_ov5640(struct nuvoton_vin_device* cam);
+	#elif defined(CONFIG_SENSOR_NT99141)
+	extern int nuvoton_vin_probe_nt99141(struct nuvoton_vin_device* cam);
+	#elif defined(CONFIG_SENSOR_NT99050)
+	extern int nuvoton_vin_probe_nt99050(struct nuvoton_vin_device* cam);
+	#elif defined(CONFIG_SENSOR_TW9912)
+	extern int nuvoton_vin_probe_tw9912(struct nuvoton_vin_device* cam);
+	#endif
+#else
+	extern int nuvoton_vin_probe_ov7725(struct nuvoton_vin_device* cam);
+	extern int nuvoton_vin_probe_ov5640(struct nuvoton_vin_device* cam);
+	extern int nuvoton_vin_probe_nt99141(struct nuvoton_vin_device* cam);
+	extern int nuvoton_vin_probe_nt99050(struct nuvoton_vin_device* cam);
+	extern int nuvoton_vin_probe_tw9912(struct nuvoton_vin_device* cam);
+#endif
 int nuvoton_vdi_device_register(void)
 {
 	struct nuvoton_vin_device* cam;		
@@ -1502,10 +1528,62 @@ int nuvoton_vdi_device_register(void)
   if(dev_nr==0)	
   {
 		//for sensor init
-		if(nuvoton_vin_probe(cam)<0){  //sensor probe;
-			VDEBUG("Initialization failed. I will retry on open().");
-			return -EAGAIN;
-	  }
+#ifndef CONFIG_OF
+	#if defined(CONFIG_SENSOR_OV7725)
+			if(nuvoton_vin_probe_ov7725(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	#elif defined(CONFIG_SENSOR_OV5640)
+			if(nuvoton_vin_probe_ov5640(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	#elif defined(CONFIG_SENSOR_NT99141)
+			if(nuvoton_vin_probe_nt99141(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	#elif defined(CONFIG_SENSOR_NT99050)
+			if(nuvoton_vin_probe_nt99050(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	#elif defined(CONFIG_SENSOR_TW9912)
+			if(nuvoton_vin_probe_tw9912(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	#endif
+#else
+	if(sensor_model==SENSOR_OV7725){
+			if(nuvoton_vin_probe_ov7725(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	}else if(sensor_model==SENSOR_OV5640){
+			if(nuvoton_vin_probe_ov5640(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	}else if(sensor_model==SENSOR_NT99141){
+			if(nuvoton_vin_probe_nt99141(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	}else if(sensor_model==SENSOR_NT99050){
+			if(nuvoton_vin_probe_nt99050(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	}else if(sensor_model==SENSOR_TW9912){
+			if(nuvoton_vin_probe_tw9912(cam)<0){  //sensor probe;
+				VDEBUG("Initialization failed. I will retry on open().");
+				return -EAGAIN;
+		  }
+	}
+#endif
+
   }else{
             memcpy(&cam->sensor, &nuvoton_cam[0]->sensor, sizeof(struct nuvoton_vin_sensor)); 
   }
@@ -1604,6 +1682,49 @@ static int nuvoton_cap_device_probe(struct platform_device *pdev)
 {
 	int i,ret = -ENOMEM;
 	ENTRY();	
+	printk("%s - pdev = %s\n", __func__, pdev->name);
+	
+	#ifndef CONFIG_OF
+	
+	video_freq = CONFIG_VIDOE_FREQ;
+	#ifdef CONFIG_SENSOR_PD_PI0
+		sensor_pd=0;
+	#else
+		sensor_pd=1;
+	#endif
+	
+	#else
+	{
+		const char *pstr;
+		const char *pstr1;
+		struct pinctrl *pinctrl;
+		
+		of_property_read_u32_array(pdev->dev.of_node,"frequency", &video_freq,1);	
+		of_property_read_string(pdev->dev.of_node,"model",&pstr);
+		if(pstr[0]=='o' && pstr[1]=='v' && pstr[2]=='7' && pstr[3]=='7' && pstr[4]=='2' && pstr[5]=='5' ){
+			sensor_model = 0;
+		}else if(pstr[0]=='n' && pstr[1]=='t' && pstr[2]=='9' && pstr[3]=='9' && pstr[4]=='1' && pstr[5]=='4' && pstr[6]=='1' ){
+			sensor_model = 1;
+		}else if(pstr[0]=='n' && pstr[1]=='t' && pstr[2]=='9' && pstr[3]=='9' && pstr[4]=='0' && pstr[5]=='5' && pstr[6]=='0' ){
+			sensor_model = 2;
+		}else if(pstr[0]=='o' && pstr[1]=='v' && pstr[2]=='5' && pstr[3]=='6' && pstr[4]=='4' && pstr[5]=='0' ){
+			sensor_model = 3;
+		}else if(pstr[0]=='t' && pstr[1]=='w' && pstr[2]=='9' && pstr[3]=='9' && pstr[4]=='1' && pstr[5]=='2'){
+			sensor_model = 4;			
+		}
+		
+		of_property_read_string(pdev->dev.of_node,"powerdown-pin",&pstr1);		
+		if(pstr1[2] == '0')
+			sensor_pd=0;
+		else
+			sensor_pd=1;
+	 
+		pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+		if (IS_ERR(pinctrl)) {
+			return PTR_ERR(pinctrl);
+		}
+	}
+	#endif
 	for(i=0;i<NUVOTON_MAX_DEVICES;i++)
 	{
 		ret = nuvoton_vdi_device_register();
@@ -1632,7 +1753,30 @@ static int nuvoton_cap_device_remove(struct platform_device *pdev)
 static int nuvoton_cap_device_resume(struct platform_device *pdev){
 	ENTRY();
 	capture_init(0);
-	nuvoton_vin_probe(nuvoton_cam[0]);
+#ifndef CONFIG_OF
+	#if defined(CONFIG_SENSOR_OV7725)
+		nuvoton_vin_probe_ov7725(nuvoton_cam[0]);
+	#elif defined(CONFIG_SENSOR_OV5640)
+		nuvoton_vin_probe_ov5640(nuvoton_cam[0]);
+	#elif defined(CONFIG_SENSOR_NT99141)
+		nuvoton_vin_probe_nt99141(nuvoton_cam[0]);
+	#elif defined(CONFIG_SENSOR_NT99050)
+		nuvoton_vin_probe_nt99050(nuvoton_cam[0]);
+	#elif defined(CONFIG_SENSOR_TW9912)
+		nuvoton_vin_probe_tw9912(nuvoton_cam[0]);
+	#endif
+#else
+	if(sensor_model==SENSOR_OV7725)
+		nuvoton_vin_probe_ov7725(nuvoton_cam[0]);
+	else if(sensor_model==SENSOR_OV5640)
+		nuvoton_vin_probe_ov5640(nuvoton_cam[0]);
+	else if(sensor_model==SENSOR_NT99141)
+		nuvoton_vin_probe_nt99141(nuvoton_cam[0]);
+	else if(sensor_model==SENSOR_NT99050)
+		nuvoton_vin_probe_nt99050(nuvoton_cam[0]);
+	else if(sensor_model==SENSOR_TW9912)
+		nuvoton_vin_probe_tw9912(nuvoton_cam[0]);
+#endif
 	if(nuvoton_cam[0]->CtlReg==1)
 		__raw_writel(__raw_readl(REG_CAP_CTL)|0x1,REG_CAP_CTL);
 	LEAVE();
@@ -1659,6 +1803,10 @@ static struct platform_device_id nuc970_cap_driver_ids[] = {
 	{ },
 };
 
+static const struct of_device_id nuc970_cap_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-cap" },
+	{},
+};
 static struct platform_driver nuc970_cap_driver = {
 		.probe		= nuvoton_cap_device_probe,
 		.remove 	= nuvoton_cap_device_remove,
@@ -1667,6 +1815,7 @@ static struct platform_driver nuc970_cap_driver = {
 		.driver 	= {
 			.name	= "nuc970-cap",
 			.owner	= THIS_MODULE,
+			.of_match_table = of_match_ptr(nuc970_cap_of_match),
 		},
 		.id_table	= nuc970_cap_driver_ids,
 	};

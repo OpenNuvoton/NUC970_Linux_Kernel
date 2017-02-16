@@ -109,17 +109,17 @@ static struct TW_RegValue Output_RegValue[] =
 /************  I2C  *****************/
 static struct i2c_client *save_client;
 static char sensor_inited = 0;
-	__u8 sensor_read(__u8 uRegAddr)
+	__u8 sensor_read_tw9912(__u8 uRegAddr)
 {
 		u8 val;		
-		//printk("sensor_read i2c_smbus_read_byte uRegAddr=0x%x\n",uRegAddr);
+		//printk("sensor_read_tw9912 i2c_smbus_read_byte uRegAddr=0x%x\n",uRegAddr);
 		i2c_smbus_write_byte(save_client, uRegAddr);
-		//printk("sensor_read i2c_smbus_write_byte\n");
+		//printk("sensor_read_tw9912 i2c_smbus_write_byte\n");
 		val = i2c_smbus_read_byte(save_client);		
 		return val;
 }
 
-static int32_t sensor_write(__u8 uRegAddr, __u8 uData)
+static int32_t sensor_write_tw9912(__u8 uRegAddr, __u8 uData)
 {
 		int ret;
 		ret=i2c_smbus_write_byte_data(save_client, uRegAddr, uData);			
@@ -183,7 +183,7 @@ static struct nuvoton_vin_sensor tw9912 = {
 	},
 };
 
-int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
+int nuvoton_vin_probe_tw9912(struct nuvoton_vin_device* cam)
 {
 	int i,ret = 0;
 	__u8 SensorID[1];
@@ -201,7 +201,7 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	{
 		int32_t ret;
 		printk(".");
-		ret = sensor_write((psRegValue->uRegAddr), (psRegValue->uValue));
+		ret = sensor_write_tw9912((psRegValue->uRegAddr), (psRegValue->uValue));
 		if(ret<0)
 		{
 			VDEBUG("Wrong to write register addr = 0x%x, write data = 0x%x , ret = %d\n", (psRegValue->uRegAddr), (psRegValue->uValue), ret);		
@@ -215,14 +215,14 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	{
 		int32_t ret;
 		printk(".");
-		ret = sensor_write((psRegValue1->uRegAddr), (psRegValue1->uValue));
+		ret = sensor_write_tw9912((psRegValue1->uRegAddr), (psRegValue1->uValue));
 		if(ret<0)
 		{
 			VDEBUG("Wrong to write register addr = 0x%x, write data = 0x%x , ret = %d\n", (psRegValue1->uRegAddr), (psRegValue1->uValue), ret);		
 		}	
 	} 
 	//----------Read sensor id-------------------------------------	        
-	SensorID[0]=sensor_read(0x00);  /* ID 0x60 */
+	SensorID[0]=sensor_read_tw9912(0x00);  /* ID 0x60 */
 	printk("Chip Version = 0x%02X(0x60) \n", SensorID[0]);	
 	//-------------------------------------------------------------		
 	printk("\n");

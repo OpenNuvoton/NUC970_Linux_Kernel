@@ -93,6 +93,9 @@ static int of_i2c_gpio_get_pins(struct device_node *np,
 
 	*sda_pin = of_get_gpio(np, 0);
 	*scl_pin = of_get_gpio(np, 1);
+	
+	if (*sda_pin == -EPROBE_DEFER || *scl_pin == -EPROBE_DEFER)
+		return -EPROBE_DEFER;
 
 	if (!gpio_is_valid(*sda_pin) || !gpio_is_valid(*scl_pin)) {
 		pr_err("%s: invalid GPIO pins, sda=%d/scl=%d\n",
@@ -129,7 +132,7 @@ static int i2c_gpio_probe(struct platform_device *pdev)
 	struct i2c_adapter *adap;
 	unsigned int sda_pin, scl_pin;
 	int ret;
-
+	printk("%s - pdev = %s\n", __func__, pdev->name);
 	/* First get the GPIO pins; if it fails, we'll defer the probe. */
 	if (pdev->dev.of_node) {
 		ret = of_i2c_gpio_get_pins(pdev->dev.of_node,
@@ -279,10 +282,29 @@ static struct platform_driver i2c_gpio_driver = {
 	.remove		= i2c_gpio_remove,
 };
 
+//#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_GPIO_NUC970_MODULE)
+//#if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
+//static struct i2c_board_info __initdata nuc970_i2c_clients2[] =
+//{
+//#ifdef CONFIG_SENSOR_OV7725
+//	{I2C_BOARD_INFO("ov7725",  0x21),},
+//#endif
+//#ifdef CONFIG_SENSOR_OV5640
+//	{I2C_BOARD_INFO("ov5640",  0x3c),},
+//#endif
+//#ifdef CONFIG_SENSOR_NT99141
+//	{I2C_BOARD_INFO("nt99141", 0x2a),},
+//#endif
+//#ifdef CONFIG_SENSOR_NT99050
+//	{I2C_BOARD_INFO("nt99050", 0x21),},
+//#endif
+//};
+
 static int __init i2c_gpio_init(void)
 {
 	int ret;
-
+	//i2c_register_board_info(2, nuc970_i2c_clients2, sizeof(nuc970_i2c_clients2)/sizeof(struct i2c_board_info));
+	
 	ret = platform_driver_register(&i2c_gpio_driver);
 	if (ret)
 		printk(KERN_ERR "i2c-gpio: probe failed: %d\n", ret);
