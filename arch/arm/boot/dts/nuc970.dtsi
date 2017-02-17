@@ -722,6 +722,51 @@
 						>;
 				};
 			};
+
+			etimer0 {
+				pinctrl_etimer0: etimer0 {
+					nuvoton,pins =
+						<2 6 0xd 0 
+						 2 7 0xd 0
+						 //1 2 0xf 0
+						 //1 3 0xf 0
+						>;
+				};
+			};
+
+			etimer1 {
+				pinctrl_etimer1: etimer1 {
+					nuvoton,pins =
+						<2 8 0xd 0 
+						 2 9 0xd 0
+						 //1 0 0xd 0
+						 //1 1 0xd 0
+						>;
+				};
+			};
+
+			etimer2 {
+				pinctrl_etimer2: etimer2 {
+					nuvoton,pins =
+						<2 0xa 0xd 0 
+						 2 0xb 0xd 0
+						 //5 0xb 0xd 0
+						 //5 0xc 0xd 0
+						>;
+				};
+			};
+
+			etimer3 {
+				pinctrl_etimer3: etimer3 {
+					nuvoton,pins =
+						<2 0xc 0xd 0 
+						 2 0xd 0xd 0
+						 //5 0xd 0xd 0
+						 //5 0xe 0xd 0
+						>;
+				};
+			};
+
 		};  /* end of pinctrl */
 
 		uart0: serial@b8000000 {
@@ -979,6 +1024,51 @@
 			bus_freq = <100000>;
 			status = "disabled";
 		};
+
+		etimer0: etimer0@b8001400 {
+			compatible = "nuvoton,nuc970-etimer";
+			reg = <0xb8001400 0x100>;
+			interrupts = <47 4 1>;
+			port-number = <0>;
+			map-addr = <0xf8001400>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_etimer0>;
+			status = "disabled";
+		};
+
+		etimer1: etimer1@b8001500 {
+			compatible = "nuvoton,nuc970-etimer";
+			reg = <0xb8001500 0x100>;
+			interrupts = <48 4 1>;
+			port-number = <1>;
+			map-addr = <0xf8001500>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_etimer1>;
+			status = "disabled";
+		};
+
+		etimer2: etimer2@b8001600 {
+			compatible = "nuvoton,nuc970-etimer";
+			reg = <0xb8001600 0x100>;
+			interrupts = <49 4 1>;
+			port-number = <2>;
+			map-addr = <0xf8001600>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_etimer2>;
+			status = "disabled";
+		};
+
+		etimer3: etimer3@b8001700 {
+			compatible = "nuvoton,nuc970-etimer";
+			reg = <0xb8001700 0x100>;
+			interrupts = <50 4 1>;
+			port-number = <3>;
+			map-addr = <0xf8001700>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_etimer3>;
+			status = "disabled";
+		};
+
 	};  /* end of apb */
 
 	ahb {

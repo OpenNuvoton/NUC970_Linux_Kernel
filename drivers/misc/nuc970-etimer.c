@@ -23,6 +23,7 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/clk.h>
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
@@ -518,6 +519,7 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         if(param > 0xFFFFFF)
             return -EPERM;
 
+#ifndef CONFIG_OF
         // set pin function
         if(t->ch == 0) {
 #if defined (CONFIG_NUC970_ETIMER0_TGL_PB2)
@@ -562,6 +564,7 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             pr_debug("pinctrl_select_state err\n");
             return ret;
         }
+#endif
 
         spin_lock_irqsave(&t->lock, flag);
         // timer clock is 12MHz, set prescaler to 12 - 1.
@@ -579,6 +582,7 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         if(copy_from_user((void *)&param, (const void *)arg, sizeof(unsigned int)))
             return -EFAULT;
 
+#ifndef CONFIG_OF
         // set pin function
         if(t->ch == 0) {
 #if defined (CONFIG_NUC970_ETIMER0_CAP_PB3)
@@ -622,7 +626,8 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             pr_debug("pinctrl_select_state err\n");
             return ret;
         }
-        
+#endif      
+
         spin_lock_irqsave(&t->lock, flag);
         // timer clock is 12MHz, set prescaler to 12 - 1.
         __raw_writel(11, REG_ETMR_PRECNT(ch));
@@ -640,6 +645,8 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         // get capture setting
         if(copy_from_user((void *)&param, (const void *)arg, sizeof(unsigned int)))
             return -EFAULT;
+
+#ifndef CONFIG_OF
         // set pin function
         if(t->ch == 0) {
 #if defined (CONFIG_NUC970_ETIMER0_CAP_PB3)
@@ -683,7 +690,7 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             pr_debug("pinctrl_select_state err\n");
             return ret;
         }
- 
+#endif
         spin_lock_irqsave(&t->lock, flag);
         // timer clock is 12MHz, set prescaler to 12 - 1.
         __raw_writel(11, REG_ETMR_PRECNT(ch));
@@ -750,8 +757,30 @@ static struct miscdevice etimer_dev[] = {
 static int nuc970_etimer_probe(struct platform_device *pdev)
 {
     int ch = pdev->id;
+	
+#ifdef CONFIG_OF
+    struct pinctrl *pinctrl;
+    u32   val32[2];
 
+    //printk("nuc970_etimer_probe    %s - pdev = %s  \n", __func__, pdev->name);
 
+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		return PTR_ERR(pinctrl);
+	}
+
+	if (of_property_read_u32_array(pdev->dev.of_node, "port-number", val32, 1) != 0) 
+	{
+		printk("%s can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	
+    ch = val32[0];
+	
+#endif
+ 
+    //printk("etimer %d  \n\n", ch);
+	
     etmr[ch] = devm_kzalloc(&pdev->dev, sizeof(struct nuc970_etimer), GFP_KERNEL);
     if (etmr[ch] == NULL) {
         dev_err(&pdev->dev, "failed to allocate memory for etimer device\n");
@@ -766,7 +795,13 @@ static int nuc970_etimer_probe(struct platform_device *pdev)
     etmr[ch]->ch = ch;
     spin_lock_init(&etmr[ch]->lock);
 
-    etmr[ch]->irq = platform_get_irq(pdev, ch);
+#ifdef CONFIG_OF
+    etmr[ch]->irq = platform_get_irq(pdev, 0);
+#else
+    etmr[ch]->irq = platform_get_irq(pdev, ch);	
+#endif
+
+    //printk("etimer%d(pdev->id=%d), platform_get_irq - %d\n", ch, pdev->id, etmr[ch]->irq);
 
     init_waitqueue_head(&etmr[ch]->wq);
 
@@ -779,8 +814,8 @@ static int nuc970_etimer_probe(struct platform_device *pdev)
 
 static int nuc970_etimer_remove(struct platform_device *pdev)
 {
-    //struct nuc970_etimer *etmr = platform_get_drvdata(pdev);
-    int ch = pdev->id;
+    struct nuc970_etimer *t = platform_get_drvdata(pdev);
+    int ch = t->ch;
 
     misc_deregister(&etimer_dev[ch]);
 
@@ -794,8 +829,8 @@ static int nuc970_etimer_suspend(struct platform_device *pdev, pm_message_t stat
 {
     struct nuc970_etimer *t = platform_get_drvdata(pdev);
 
-    // printk("******* nuc970_etimer_suspend pdev->id = %d, gu8_ch= %d, t->ch =%d \n", pdev->id, gu8_ch,  t->ch);
-    if(pdev->id == gu8_ch)
+    //printk("******* nuc970_etimer_suspend pdev->id = %d, gu8_ch= %d, t->ch =%d \n", pdev->id, gu8_ch,  t->ch);
+    if(t->ch == gu8_ch)
     {
         __raw_writel(__raw_readl(REG_WKUPSER)| (0x100000<<(gu8_ch)),REG_WKUPSER);
         
@@ -812,9 +847,8 @@ static int nuc970_etimer_resume(struct platform_device *pdev)
 {
     struct nuc970_etimer *t = platform_get_drvdata(pdev);
 
-    // printk("======== nuc970_etimer_resume pdev->id = %d, gu8_ch= %d, t->ch =%d \n", pdev->id, gu8_ch,  t->ch);
-
-    if(pdev->id == gu8_ch) 
+    //printk("======== nuc970_etimer_resume pdev->id = %d, gu8_ch= %d, t->ch =%d \n", pdev->id, gu8_ch,  t->ch);
+    if(t->ch == gu8_ch)
     {
         __raw_writel(__raw_readl(REG_WKUPSER)& ~(0x100000<<(gu8_ch)),REG_WKUPSER);
 
@@ -831,10 +865,17 @@ static int nuc970_etimer_resume(struct platform_device *pdev)
 #define nuc970_etimer_resume	NULL
 #endif
 
+static const struct of_device_id nuc970_etimer_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-etimer" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_etimer_of_match);
+
 static struct platform_driver nuc970_etimer_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "nuc970-etimer",
+		.of_match_table = of_match_ptr(nuc970_etimer_of_match),
 	},
 	.probe		= nuc970_etimer_probe,
 	.remove		= nuc970_etimer_remove,
