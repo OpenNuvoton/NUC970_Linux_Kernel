@@ -13,6 +13,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/dma-mapping.h>
+#include <linux/of.h>
 
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -47,15 +48,15 @@ static int nuc970_dma_hw_params(struct snd_pcm_substream *substream,
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long flags;
 	int ret = 0;
-    
-    spin_lock_irqsave(&nuc970_audio->irqlock, flags);
-    
-    if(runtime->dma_addr == 0) {
-        ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
-        if (ret < 0)
-            return ret;
-        nuc970_audio->substream[substream->stream] = substream;        	
-    }
+	
+	spin_lock_irqsave(&nuc970_audio->irqlock, flags);
+	
+	if(runtime->dma_addr == 0) {
+		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
+		if (ret < 0)
+			return ret;
+		nuc970_audio->substream[substream->stream] = substream;        	
+	}
 
 	nuc970_audio->dma_addr[substream->stream] = runtime->dma_addr | 0x80000000;
 	nuc970_audio->buffersize[substream->stream] =
@@ -87,17 +88,17 @@ static void nuc970_update_dma_register(struct snd_pcm_substream *substream,
 
 static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 {
-    struct nuc970_audio *nuc970_audio = dev_id;
+	struct nuc970_audio *nuc970_audio = dev_id;
 	unsigned long val;
-    unsigned long flags;
-    int stream;
-    
-    spin_lock_irqsave(&nuc970_audio->irqlock, flags);
+	unsigned long flags;
+	int stream;
+	
+	spin_lock_irqsave(&nuc970_audio->irqlock, flags);
 
 	val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 
 	if (val & R_DMA_IRQ) {
-        stream = SNDRV_PCM_STREAM_CAPTURE;
+		stream = SNDRV_PCM_STREAM_CAPTURE;
 		AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val | R_DMA_IRQ);
 
 		val = AUDIO_READ(nuc970_audio->mmio + ACTL_RSR);
@@ -108,7 +109,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 		}
 
 	} else if (val & P_DMA_IRQ) {
-        stream = SNDRV_PCM_STREAM_PLAYBACK;   
+		stream = SNDRV_PCM_STREAM_PLAYBACK;   
 		AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val | P_DMA_IRQ);
 
 		val = AUDIO_READ(nuc970_audio->mmio + ACTL_PSR);
@@ -134,10 +135,10 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 static int nuc970_dma_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-    struct nuc970_audio *nuc970_audio = runtime->private_data;
-        
-    snd_pcm_lib_free_pages(substream);
-    nuc970_audio->substream[substream->stream] = NULL;
+	struct nuc970_audio *nuc970_audio = runtime->private_data;
+		
+	snd_pcm_lib_free_pages(substream);
+	nuc970_audio->substream[substream->stream] = NULL;
 	return 0;
 }
 
@@ -208,11 +209,11 @@ static snd_pcm_uframes_t nuc970_dma_pointer(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	dma_addr_t src, dst;
 	unsigned long res;
-    struct nuc970_audio *nuc970_audio = runtime->private_data;
-    snd_pcm_uframes_t frames;
-    
-    spin_lock(&nuc970_audio->lock);
-    
+	struct nuc970_audio *nuc970_audio = runtime->private_data;
+	snd_pcm_uframes_t frames;
+	
+	spin_lock(&nuc970_audio->lock);
+	
 	nuc970_dma_getposition(substream, &src, &dst);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
@@ -221,10 +222,10 @@ static snd_pcm_uframes_t nuc970_dma_pointer(struct snd_pcm_substream *substream)
 		res = src - runtime->dma_addr;
 
 	 frames = bytes_to_frames(substream->runtime, res);
-     
-     spin_unlock(&nuc970_audio->lock);
-     
-     return frames;        
+	 
+	 spin_unlock(&nuc970_audio->lock);
+	 
+	 return frames;        
 }
 
 static int nuc970_dma_open(struct snd_pcm_substream *substream)
@@ -248,10 +249,10 @@ int nuc970_dma_create(struct nuc970_audio *nuc970_audio)
 {
 	int ret = request_irq(nuc970_audio->irq_num, nuc970_dma_interrupt, 0, "nuc970-dma", nuc970_audio);
 
-    if(ret)          
-    	return -EBUSY;
-    
-    return ret;
+	if(ret)          
+		return -EBUSY;
+	
+	return ret;
 }
 EXPORT_SYMBOL_GPL(nuc970_dma_create);
 
@@ -324,10 +325,21 @@ static int nuc970_soc_platform_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#if defined(CONFIG_OF)
+static const struct of_device_id nuc970_audio_pcm_of_match[] = {
+	{   .compatible = "nuvoton,nuc970-audio-pcm"    },
+	{   },
+};
+MODULE_DEVICE_TABLE(of, nuc970_audio_pcm_of_match);
+#endif
+
 static struct platform_driver nuc970_pcm_driver = {
 	.driver = {
 			.name = "nuc970-audio-pcm",
 			.owner = THIS_MODULE,
+#if defined(CONFIG_OF)
+			.of_match_table = of_match_ptr(nuc970_audio_pcm_of_match),
+#endif
 	},
 
 	.probe = nuc970_soc_platform_probe,

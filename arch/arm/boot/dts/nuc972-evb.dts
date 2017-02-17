@@ -44,6 +44,75 @@
 			status = "okay";
 		};
 
+		i2c0: i2c0@b8006000 {            
+			status = "okay";
+			
+			nau8822: nau8822@1a {
+				compatible = "nuvoton,nau8822";
+				reg = <0x1a> ;
+			};
+		};
+		
+		i2c1: i2c1@b8006100 {
+			status = "okay";
+		};
+		
+		spi0: spi0@b8006200 {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			num_cs  = <2>;
+			lsb     = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <0>;
+			
+			flash: m25p80@0 {
+					compatible = "w25q128";                     
+					#address-cells = <1>;
+					#size-cells = <1>;
+					reg = <0>;
+					spi-max-frequency = <12000000>;
+					
+					partition@0 {
+						label = "kernel";
+						reg = <0x00000000 0x0800000>;
+					};
+					partition@1 {
+						label = "rootfs";
+						reg = <0x0800000 0x0800000>;
+					};                   
+			};
+		};
+		
+		spi1: spi1@b8006300 {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		   
+			num_cs  = <2>;
+			lsb     = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <1>;
+						
+			spidev@0x01 {
+				compatible = "spidev";               
+				spi-max-frequency = <30000000>;
+				reg = <0>;
+			};
+		};
+	};
+
 	ahb {
 		usbh_ehci@b0005000 {
 			status = "okay";
@@ -61,6 +130,51 @@
 			status = "okay";
 		};
 		ebi@b0001000 {
+			status = "okay";
+		};
+		emac1@b0003000 {
+			status = "okay";
+		};
+		
+		lcd@b0008000 {
+			status = "okay";
+			type = <0x200>;
+			bpp = <32>;
+			width = <800>;
+			height = <480>;
+			xres = <800>;
+			yres = <480>;
+			pixclock = <20000000>;
+			left_margin = <88>;
+			right_margin = <40>;
+			hsync_len = <48>;
+			upper_margin = <32>;
+			lower_margin = <13>;
+			vsync_len = <3>;
+			dccs = <0x0e00020a>;
+			fbctrl = <0x03200320>;
+			devctl = <0x070000c0>; 
+			scale = <0x04000400>;
+			gpio_blen = <0xC3>;
+			gpio_lcs = <0xC2>;
+			
+		};
+		
+		i2s: i2s@b0009000 {
+			status = "okay";
+		};
+		
+		i2s_pcm: i2s_pcm {
+			status = "okay";
+		};   
+		
+		sound {
+			compatible = "nuvoton,nuc970-audio";
+			i2s-controller = <&i2s>;
+			i2s-platform = <&i2s_pcm>;
+		};
+		
+		ge2d@b000b000 {
 			status = "okay";
 		};
 	};

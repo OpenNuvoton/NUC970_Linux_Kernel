@@ -367,6 +367,273 @@
 						 4 0xb 1 0>;
 				};
 			};
+			
+			spi0 {
+				pinctrl_spi0: spi0 {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0 >;
+				};
+				
+				pinctrl_spi0_quad: spi0-quad {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0
+						 1 0xa 0xb 0 
+						 1 0xb 0xb 0 >;
+				};
+				
+				pinctrl_spi0_ss1_PB: spi0-ss1-PB {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0
+						 1 0 0xb 0 >;
+				};
+				
+				pinctrl_spi0_ss1_PH: spi0-ss1-PH {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0
+						 7 0xc 0xb 0 >;
+				};
+				
+				pinctrl_spi0_quad_ss1_PB: spi0-quad-ss1-PB {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0
+						 1 0xa 0xb 0 
+						 1 0xb 0xb 0 
+						 1 0 0xb 0 >;
+				};
+				
+				pinctrl_spi0_quad_ss1_PH: spi0-quad-ss1-PH {
+					nuvoton,pins =
+						<1 6 0xb 0 
+						 1 7 0xb 0
+						 1 8 0xb 0
+						 1 9 0xb 0
+						 1 0xa 0xb 0 
+						 1 0xb 0xb 0 
+						 7 0xc 0xb 0 >;
+				};
+			};
+			
+			spi1 {
+				pinctrl_spi1: spi1 {
+					nuvoton,pins =
+						<1 0xc 0xb 0 
+						 1 0xd 0xb 0
+						 1 0xe 0xb 0
+						 1 0xf 0xb 0 >;
+				};
+				
+				pinctrl_spi1_ss1_PB: spi1-ss1-PB {
+					nuvoton,pins =
+						<1 0xc 0xb 0 
+						 1 0xd 0xb 0
+						 1 0xe 0xb 0
+						 1 0xf 0xb 0 
+						 1 1 0xb 0 >;
+				};
+				
+				pinctrl_spi1_quad_PB: spi1-quad-PB {
+					nuvoton,pins =
+						<1 0xc 0xb 0 
+						 1 0xd 0xb 0
+						 1 0xe 0xb 0
+						 1 0xf 0xb 0 
+						 6 4 0xb 0 
+						 6 5 0xb 0 >;
+				};
+				
+				pinctrl_spi1_quad_ss1_PB: spi1-quad-ss1-PB {
+					nuvoton,pins =
+						<1 0xc 0xb 0 
+						 1 0xd 0xb 0
+						 1 0xe 0xb 0
+						 1 0xf 0xb 0 
+						 6 4 0xb 0 
+						 6 5 0xb 0 
+						 1 1 0xb 0 >;
+				};
+				
+				pinctrl_spi1_PI: spi1-PI {
+					nuvoton,pins =
+						<8 5 0xb 0 
+						 8 6 0xb 0
+						 8 7 0xb 0
+						 8 8 0xb 0 >;
+				};
+				
+				pinctrl_spi1_ss1_PI: spi1-ss1-PI {
+					nuvoton,pins =
+						<8 5 0xb 0 
+						 8 6 0xb 0
+						 8 7 0xb 0
+						 8 8 0xb 0 
+						 7 0xd 0xb 0 >;
+				};
+				
+				pinctrl_spi1_quad_PI: spi1-quad-PI {
+					nuvoton,pins =
+						<8 5 0xb 0 
+						 8 6 0xb 0
+						 8 7 0xb 0
+						 8 8 0xb 0 
+						 6 4 0xb 0
+						 6 5 0xb 0 >;
+				};
+				
+				pinctrl_spi1_quad_ss1_PI: spi1-quad-ss1-PI {
+					nuvoton,pins =
+						<8 5 0xb 0 
+						 8 6 0xb 0
+						 8 7 0xb 0
+						 8 8 0xb 0 
+						 6 4 0xb 0
+						 6 5 0xb 0 
+						 7 0xd 0xb 0 >;
+				};
+			};
+			
+			i2c0 {
+				pinctrl_i2c0: i2c0 {
+					nuvoton,pins =
+						<6 0 8 0 
+						 6 1 8 0 >;
+				};
+			};
+			
+			i2c1 {
+				pinctrl_i2c1_PB: i2c1-PB {
+					nuvoton,pins =
+						<1 0 8 0 
+						 1 1 8 0 >;
+				};
+				
+				pinctrl_i2c1_PG: i2c1-PG {
+					nuvoton,pins =
+						<6 2 8 0 
+						 6 3 8 0 >;
+				};
+				
+				pinctrl_i2c1_PH: i2c1-PH {
+					nuvoton,pins =
+						<7 2 8 0 
+						 7 3 8 0 >;
+				};
+				
+				pinctrl_i2c1_PI: i2c1-PI {
+					nuvoton,pins =
+						<8 3 8 0 
+						 8 4 8 0 >;
+				};
+			};
+			
+			i2s {
+				pinctrl_i2s: i2s {
+					nuvoton,pins =
+						<6 0xa 8 0 
+						 6 0xb 8 0 
+						 6 0xc 8 0 
+						 6 0xd 8 0 
+						 6 0xe 8 0 >;
+				};
+			};
+			
+			lcd {
+				pinctrl_lcd_16bit: lcd-16bit {
+					nuvoton,pins =
+						<0 0 2 0
+						 0 1 2 0
+						 0 2 2 0
+						 0 3 2 0
+						 0 4 2 0
+						 0 5 2 0
+						 0 6 2 0
+						 0 7 2 0
+						 0 8 2 0
+						 0 9 2 0
+						 0 0xa 2 0
+						 0 0xb 2 0
+						 0 0xc 2 0
+						 0 0xd 2 0
+						 0 0xe 2 0
+						 0 0xf 2 0
+						 6 6 2 0
+						 6 7 2 0
+						 6 8 2 0
+						 6 9 2 0 >;
+				};
+				
+				pinctrl_lcd_18bit: lcd-18bit {
+					nuvoton,pins =
+						<0 0 2 0
+						 0 1 2 0
+						 0 2 2 0
+						 0 3 2 0
+						 0 4 2 0
+						 0 5 2 0
+						 0 6 2 0
+						 0 7 2 0
+						 0 8 2 0
+						 0 9 2 0
+						 0 0xa 2 0
+						 0 0xb 2 0
+						 0 0xc 2 0
+						 0 0xd 2 0
+						 0 0xe 2 0
+						 0 0xf 2 0
+						 6 6 2 0
+						 6 7 2 0
+						 6 8 2 0
+						 6 9 2 0
+						 3 8 2 0
+						 3 9 2 0 >;
+				};
+				
+				pinctrl_lcd_24bit: lcd-24bit {
+					nuvoton,pins =
+						<0 0 2 0
+						 0 1 2 0
+						 0 2 2 0
+						 0 3 2 0
+						 0 4 2 0
+						 0 5 2 0
+						 0 6 2 0
+						 0 7 2 0
+						 0 8 2 0
+						 0 9 2 0
+						 0 0xa 2 0
+						 0 0xb 2 0
+						 0 0xc 2 0
+						 0 0xd 2 0
+						 0 0xe 2 0
+						 0 0xf 2 0
+						 6 6 2 0
+						 6 7 2 0
+						 6 8 2 0
+						 6 9 2 0
+						 3 8 2 0
+						 3 9 2 0 
+						 3 0xa 2 0 
+						 3 0xb 2 0 
+						 3 0xc 2 0 
+						 3 0xd 2 0 
+						 3 0xe 2 0 
+						 3 0xf 2 0 >;
+				};
+			};
 
 			gpio {
 				pinctrl_gpio: gpio-eint {
@@ -454,7 +721,7 @@
 						 //3 0xc 0xe 0 /*CS4 */
 						>;
 				};
-
+			};
 		};  /* end of pinctrl */
 
 		uart0: serial@b8000000 {
@@ -510,7 +777,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart4_fc_PC>;
 			status = "disabled";
-		};		  
+		};          
 			
 		uart5: serial@b8000500 {
 			compatible = "nuvoton,nuc970-uart";
@@ -554,7 +821,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart8_PE>;
 			status = "disabled";
-		};		  
+		};          
 		
 		uart9: serial@b8000900 {
 			compatible = "nuvoton,nuc970-uart";
@@ -566,7 +833,7 @@
 			pinctrl-0 = <&pinctrl_uart9_PD0>;
 			status = "disabled";
 		};
-					
+
 		uart10: serial@b8000a00 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000a00 0x100>;
@@ -597,7 +864,7 @@
 		i2c_gpio@0 {
 			compatible = "i2c-gpio";
 			gpios = <&gpio 0x21 0 /* sda */
-				gpio 0x20 0 /* scl */
+				&gpio 0x20 0 /* scl */
 				>;
 			i2c-gpio,delay-us = <2>;	/* ~100 kHz */
 			#address-cells = <1>;
@@ -623,7 +890,7 @@
 				compatible = "tw9912";
 				reg = <0x44>;
 			};
-			};
+		};
 			
 		gpio: gpio@b8003000 {
 			compatible = "nuvoton,nuc970-gpio";
@@ -653,19 +920,65 @@
 			status = "okay";
 		};
         
-        	adc: adc@b800a000 {
-            		compatible = "nuvoton,nuc970-adc";
-            	reg = <0xb800a000 0x100>;
-            	interrupts = <18 4 1>;
-            	map-addr = <0xf800a000>;
-            	samplecounter = <200>;
-            	z_th = <10>; /* z-axis threshold */
-            	penup_delay_time = <3000>;  /* 20ms * penup_delay_time = 60sec */
-            	keypad-status = "disabled";
-            	touch-status = "disabled";
-            	status = "disabled";
-        	};
+		adc: adc@b800a000 {
+				compatible = "nuvoton,nuc970-adc";
+			reg = <0xb800a000 0x100>;
+			interrupts = <18 4 1>;
+			map-addr = <0xf800a000>;
+			samplecounter = <200>;
+			z_th = <10>; /* z-axis threshold */
+			penup_delay_time = <3000>;  /* 20ms * penup_delay_time = 60sec */
+			keypad-status = "disabled";
+			touch-status = "disabled";
+			status = "disabled";
+		};
 
+		spi0: spi0@b8006200 {
+			compatible = "nuvoton,nuc970-spi0";
+			reg = <0xb8006200 0x100>;
+			interrupts = <51 4 1>;
+			map-addr = <0xf8006200>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi0>;
+			status = "disabled";            
+		};
+		
+		spi1: spi1@b8006300 {
+			compatible = "nuvoton,nuc970-spi1";
+			reg = <0xb8006300 0x100>;
+			interrupts = <52 4 1>;
+			map-addr = <0xf8006300>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi1>;
+			status = "disabled";
+		};
+		
+		i2c0: i2c0@b8006000 {
+			compatible = "nuvoton,nuc970-i2c0";
+			reg = <0xb8006000 0x100>;
+			interrupts = <53 4 1>;
+			map-addr = <0xf8006000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c0>;
+			bus_num = <0>;
+			bus_freq = <100000>;
+			status = "okay";
+			
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+		
+		i2c1: i2c1@b8006100 {
+			compatible = "nuvoton,nuc970-i2c1";
+			reg = <0xb8006100 0x100>;
+			interrupts = <54 4 1>;
+			map-addr = <0xf8006100>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c1_PG>;
+			bus_num = <1>;
+			bus_freq = <100000>;
+			status = "disabled";
+		};
 	};  /* end of apb */
 
 	ahb {
@@ -744,6 +1057,37 @@
 			status = "disabled";
 		};
 
-
+		i2s: i2s@b0009000 {
+			compatible = "nuvoton,nuc970-audio-i2s";
+			reg = <0xb0009000 0x100>;
+			interrupts = <12 4 1>;
+			map-addr = <0xf0009000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2s>;
+			status = "disabled";
+		};
+		
+		i2s_pcm {
+			compatible = "nuvoton,nuc970-audio-pcm";                       
+			status = "disabled";
+		};
+		
+		lcd@b0008000 {
+			compatible = "nuvoton,nuc970-lcd";
+			reg = <0xb0008000 0x100>;
+			interrupts = <13 4 1>;
+			map-addr = <0xf0008000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_lcd_16bit>;
+			status = "disabled";
+		};
+		
+		ge2d@b000b000 {
+			compatible = "nuvoton,nuc970-ge2d";
+			reg = <0xb000b000 0x100>;
+			interrupts = <34 4 1>;
+			map-addr = <0xf000b000>;           
+			status = "disabled";
+		};
 	};  /* end of ahb */
 };

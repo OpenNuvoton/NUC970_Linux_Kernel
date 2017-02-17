@@ -1137,10 +1137,20 @@ static const struct i2c_device_id nau8822_i2c_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, nau8822_i2c_id);
 
+#if defined(CONFIG_OF)
+static const struct of_device_id nau8822_of_match[] = {
+    { .compatible = "nuvoton,nau8822", },
+	{ }
+};
+#endif
+
 static struct i2c_driver nau8822_i2c_driver = {
 	.driver = {
 		.name = "nau8822",
 		.owner = THIS_MODULE,
+#if defined(CONFIG_OF)
+        .of_match_table = of_match_ptr(nau8822_of_match),
+#endif
 	},
 	.probe =    nau8822_i2c_probe,
 	.remove =   nau8822_i2c_remove,
