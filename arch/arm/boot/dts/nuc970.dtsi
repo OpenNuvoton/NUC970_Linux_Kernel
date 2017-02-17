@@ -368,6 +368,93 @@
 				};
 			};
 
+			gpio {
+				pinctrl_gpio: gpio-eint {
+					nuvoton,pins =
+						<
+						 7 0x0 0xF 0   /* eint0_H0 */
+						 //5 0xB 0xF 0   /* eint0_F11 */
+						 
+						 7 0x1 0xF 0   /* eint1_H1 */
+						 //5 0xc 0xF 0   /* eint1_F12 */
+						 
+						 7 0x2 0xF 0   /* eint2_H2 */
+						 //5 0xD 0xF 0   /* eint2_F13 */
+						 
+						 7 0x3 0xF 0   /* eint3_H3 */
+						 //5 0xE 0xF 0   /* eint3_F14 */
+						 
+						 //7 0x4 0xF 0   /* eint4_H4 */
+						 //5 0xF 0xF 0   /* eint4_F15 */
+						 
+						 //7 0x5 0xF 0   /* eint5_H5 */
+						 //6 0x5 0xF 0   /* eint5_G5 */
+						 
+						 //7 0x6 0xF 0   /* eint6_H6 */
+						 //8 0x1 0xF 0   /* eint6_I1 */
+						 
+						 //7 0x7 0xF 0   /* eint7_H7 */
+						 //8 0x2 0xF 0   /* eint7_I2 */
+						 >;	
+				};
+			};
+				
+			cap {
+				pinctrl_cap: cap {
+					nuvoton,pins =
+						<8 0x3 0x3 0
+						 8 0x4 0x3 0
+						 8 0x5 0x3 0
+						 8 0x6 0x3 0
+						 8 0x8 0x3 0
+						 8 0x9 0x3 0
+						 8 0xa 0x3 0
+						 8 0xb 0x3 0
+						 8 0xc 0x3 0
+						 8 0xd 0x3 0
+						 8 0xe 0x3 0
+						 8 0xf 0x3 0
+						>;
+				};
+			};
+			
+			ebi {
+				pinctrl_ebi: ebi {                                      
+					nuvoton,pins =
+					< 
+						/* nWAIT, nOE, nWE */
+						 3 0xd 0xe 0 
+						 3 0xe 0xe 0
+						 3 0xf 0xe 0
+						/* address0~10 */
+						 7 0x4 0xe 0
+						 7 0x5 0xe 0
+						 7 0x6 0xe 0
+						 7 0x7 0xe 0
+						 7 0x8 0xe 0
+						 7 0x9 0xe 0
+						 7 0xa 0xe 0
+						 7 0xb 0xe 0
+						 7 0xc 0xe 0
+						 7 0xd 0xe 0
+						/* data0~7 */
+						 8 0x0 0xe 0
+						 8 0x1 0xe 0
+						 8 0x2 0xe 0
+						 8 0x3 0xe 0
+						 8 0x4 0xe 0
+						 8 0x5 0xe 0
+						 8 0x6 0xe 0
+						 8 0x7 0xe 0
+
+						 3 0x8 0xe 0 /*CS0 */
+						 //3 0x9 0xe 0 /*CS1 */
+						 //3 0xa 0xe 0 /*CS2 */
+						 //3 0xb 0xe 0 /*CS3 */
+						 //3 0xc 0xe 0 /*CS4 */
+						>;
+				};
+
 		};  /* end of pinctrl */
 
 		uart0: serial@b8000000 {
@@ -507,12 +594,77 @@
 			status = "disabled";
 		};
 
+		i2c_gpio@0 {
+			compatible = "i2c-gpio";
+			gpios = <&gpio 0x21 0 /* sda */
+				gpio 0x20 0 /* scl */
+				>;
+			i2c-gpio,delay-us = <2>;	/* ~100 kHz */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+			nt99141@2a {
+				compatible = "nt99141";
+				reg = <0x2a>;
+			};
+			nt99050@21 {
+				compatible = "nt99050";
+				reg = <0x21>;
+			};
+			ov7725@21 {
+				compatible = "ov7725";
+				reg = <0x21>;
+			};
+			ov5640@3c {
+				compatible = "ov5640";
+				reg = <0x3c>;
+			};
+			tw9912@44 {
+				compatible = "tw9912";
+				reg = <0x44>;
+			};
+			};
+			
 		gpio: gpio@b8003000 {
 			compatible = "nuvoton,nuc970-gpio";
 			reg = <0xb8003000 0x100>;
+			interrupts = <57 4 1>;
+			port-number = <0>;
 			map-addr = <0xf8003000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_gpio>;
+			gpio-cells = <2>;
+			gpio-controller;
+			interrupt-controller;
+			interrupt-cells = <2>;
+            
+			/* eintX-config : */
+			/* 1st: 0(Disable)/1(Enable) */
+			/* 2nd: 0(PH0)/1(PF11) */
+			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
+			eint0-config = <1 0 0>; 
+			eint1-config = <1 0 0>;
+			eint2-config = <1 0 0>;
+			eint3-config = <1 0 0>;
+			eint4-config = <1 0 0>;
+			eint5-config = <1 0 0>;
+			eint6-config = <1 0 0>;
+			eint7-config = <1 0 0>;
 			status = "okay";
 		};
+        
+        	adc: adc@b800a000 {
+            		compatible = "nuvoton,nuc970-adc";
+            	reg = <0xb800a000 0x100>;
+            	interrupts = <18 4 1>;
+            	map-addr = <0xf800a000>;
+            	samplecounter = <200>;
+            	z_th = <10>; /* z-axis threshold */
+            	penup_delay_time = <3000>;  /* 20ms * penup_delay_time = 60sec */
+            	keypad-status = "disabled";
+            	touch-status = "disabled";
+            	status = "disabled";
+        	};
 
 	};  /* end of apb */
 
@@ -564,6 +716,34 @@
 			pinctrl-0 = <&pinctrl_emac1>;
 			status = "disabled";
 		};
+
+		cap@b000e000 {
+			compatible = "nuvoton,nuc970-cap";
+			reg = <0xb000e000 0x1000>;
+			interrupts = <14 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_cap>;
+			status = "disabled";
+			frequency = <24000000>;
+			model = "nt99050";  /*Support ov7725, nt99141, nt99050, ov5640 and tw9912 */
+			powerdown-pin = "PI0"; /* NUC972-EVB use PI0, NUC977-EVB use PI2 */
+		};
+        
+		dma@b0004000 {
+			compatible = "nuvoton,nuc970-dma";
+			reg = <0xb0004000 0x100>;
+			interrupts = <25 4 1>, <26 4 1>;
+			status = "disabled";
+		};
+
+		ebi@b0001000 {
+			compatible = "nuvoton,nuc970-ebi";
+			reg = <0xb0001000 0x100>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_ebi>;
+			status = "disabled";
+		};
+
 
 	};  /* end of ahb */
 };

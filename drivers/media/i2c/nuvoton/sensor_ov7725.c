@@ -34,17 +34,17 @@ static struct OV_RegValue RegValue[] =
 /************  I2C  *****************/
 static struct i2c_client *save_client;
 static char sensor_inited = 0;
-__u8 sensor_read(__u8 uRegAddr)
+__u8 sensor_read_ov7725(__u8 uRegAddr)
 {
 		u8 val;		
-		//printk("sensor_read i2c_smbus_read_byte uRegAddr=0x%x\n",uRegAddr);
+		//printk("sensor_read_ov7725 i2c_smbus_read_byte uRegAddr=0x%x\n",uRegAddr);
 		i2c_smbus_write_byte(save_client, uRegAddr);
-		//printk("sensor_read i2c_smbus_write_byte\n");
+		//printk("sensor_read_ov7725 i2c_smbus_write_byte\n");
 		val = i2c_smbus_read_byte(save_client);		
 		return val;
 }
 
-static int32_t sensor_write(__u8 uRegAddr, __u8 uData)
+static int32_t sensor_write_ov7725(__u8 uRegAddr, __u8 uData)
 {
 		int ret;
 		ret=i2c_smbus_write_byte_data(save_client, uRegAddr, uData);			
@@ -104,7 +104,7 @@ static struct nuvoton_vin_sensor ov7725 = {
 	},
 };
 
-int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
+int nuvoton_vin_probe_ov7725(struct nuvoton_vin_device* cam)
 {
 	int i,ret = 0;
 	__u8 SensorID[4];
@@ -121,17 +121,17 @@ int nuvoton_vin_probe(struct nuvoton_vin_device* cam)
 	{
 		int32_t ret;
 		printk(".");		
-		ret = sensor_write((psRegValue->uRegAddr), (psRegValue->uValue));
+		ret = sensor_write_ov7725((psRegValue->uRegAddr), (psRegValue->uValue));
 		if(ret<0)
 		{
 			VDEBUG("Wrong to write register addr = 0x%x, write data = 0x%x , ret = %d\n", (psRegValue->uRegAddr), (psRegValue->uValue), ret);					
 		}	
 	} 	
 	//----------Read sensor id-------------------------------------	        
-	SensorID[0]=sensor_read(0x0A);  /* PID 0x77 */		
-	SensorID[1]=sensor_read(0x0B);  /* VER 0x21 */
-	SensorID[2]=sensor_read(0x1C);  /* Manufacturer ID Byte - High  0x7F */	
-	SensorID[3]=sensor_read(0x1D);  /* Manufacturer ID Byte - Low   0xA2 */
+	SensorID[0]=sensor_read_ov7725(0x0A);  /* PID 0x77 */		
+	SensorID[1]=sensor_read_ov7725(0x0B);  /* VER 0x21 */
+	SensorID[2]=sensor_read_ov7725(0x1C);  /* Manufacturer ID Byte - High  0x7F */	
+	SensorID[3]=sensor_read_ov7725(0x1D);  /* Manufacturer ID Byte - Low   0xA2 */
 	printk("Sensor PID = 0x%02x(0x77) VER = 0x%02x(0x21) MIDH = 0x%02x(0x7F) MIDL = 0x%02x(0xA2)\n", SensorID[0],SensorID[1],SensorID[2],SensorID[3]);	
 	//-------------------------------------------------------------		
 	printk("\n");

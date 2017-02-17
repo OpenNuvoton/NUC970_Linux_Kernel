@@ -19,17 +19,22 @@
 #include <linux/interrupt.h>
 #include <linux/dmaengine.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
 #include <linux/slab.h>
-
+#include <linux/of.h>
 #include <linux/platform_data/dma-nuc970.h>
 #include <asm/irq.h>
 #include <mach/map.h>
 #include <mach/regs-gdma.h>
 #include <mach/regs-clock.h>
+#include <linux/platform_device.h>
+
 
 
 #include "dmaengine.h"
+
+#ifdef CONFIG_OF
+extern struct nuc970_dma_platform_data nuc970_dma_m2m_data;
+#endif
 
 #if 0
 #define ENTRY()					printk("[%-20s] : Enter...\n", __FUNCTION__)
@@ -1027,8 +1032,6 @@ static enum dma_status nuc970_dma_tx_status(struct dma_chan *chan,
 					    struct dma_tx_state *state)
 {
 	struct nuc970_dma_chan *edmac = to_nuc970_dma_chan(chan);
-	enum dma_status ret;
-	unsigned long flags;
 	ENTRY();
 	LEAVE();
 	if(__raw_readl(edmac->regs + GDMA_CTL)&0x1)
@@ -1055,16 +1058,21 @@ static void nuc970_dma_issue_pending(struct dma_chan *chan)
 
 static int __init nuc970_dma_probe(struct platform_device *pdev)
 {
-	struct nuc970_dma_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct nuc970_dma_platform_data *pdata;
 	struct nuc970_dma_engine *edma;
 	struct dma_device *dma_dev;
 	size_t edma_size;
 	struct clk *clk;
 	int ret, i;
 	ENTRY();
-	//DMA_DEBUG("%s pdev->dev=%s\n", __func__,pdev->dev);
+	#ifdef CONFIG_OF	
+	platform_device_add_data(pdev, &nuc970_dma_m2m_data,sizeof(nuc970_dma_m2m_data));
+	#endif
+	printk("%s - pdev = %s\n", __func__, pdev->name);
+	pdata = dev_get_platdata(&pdev->dev);	
 	edma_size = pdata->num_channels * sizeof(struct nuc970_dma_chan);
 	edma = kzalloc(sizeof(*edma) + edma_size, GFP_KERNEL);
+
 	if (!edma)
 	{
 		DMA_DEBUG("NUC970 GDMA -ENOMEM\n");
@@ -1177,10 +1185,16 @@ static struct platform_device_id nuc970_dma_driver_ids[] = {
 	{ },
 };
 
+static const struct of_device_id nuc970_dma_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-dma" },
+	{},
+};
+
 static struct platform_driver nuc970_dma_driver = {
 	.driver		= {
 		.name	= "nuc970-dma",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_dma_of_match),
 	},
 	.probe		= nuc970_dma_probe,
 	.resume		= nuc970_dma_resume,

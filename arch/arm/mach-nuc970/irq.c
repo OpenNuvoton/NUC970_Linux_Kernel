@@ -443,17 +443,45 @@ static int nuc970_aic_irq_map(struct irq_domain *h, unsigned int virq,
 	{
 		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
 		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+		
+		if(hw==IRQ_GPIO){
+			int irqno;
+			/*
+			 * Install handler for GPIO edge detect interrupts
+			 */
+				irq_set_chip(IRQ_GPIO, &nuc970_irq_chip);
+				irq_set_chained_handler(IRQ_GPIO, nuc970_irq_demux_intgroup);
+		
+				for (irqno = IRQ_GPIO_START; irqno < IRQ_GPIO_END; irqno++) {
+					irq_set_chip_and_handler(irqno, &nuc970_irq_gpio, handle_level_irq);
+					set_irq_flags(irqno, IRQF_VALID);
+				}
+		
+			/*
+			 * Install handler for GPIO external interrupts
+			 */
+			for (irqno = IRQ_EXT0; irqno <= IRQ_EXT7; irqno++) {
+				//printk("registering irq %d (extended nuc970 irq)\n", irqno);
+				irq_set_chip(irqno, &nuc970_irq_chip);
+				irq_set_chained_handler(irqno, nuc970_irq_demux_intgroup2);
+			}
+		
+			for (irqno = IRQ_EXT0_H0; irqno <= IRQ_EXT7_I2; irqno++) {
+					irq_set_chip_and_handler(irqno, &nuc970_irq_ext, handle_level_irq);
+					set_irq_flags(irqno, IRQF_VALID);
+			}
+		}
 	}
-	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
-	{
-		irq_set_chip_and_handler(virq, &nuc970_irq_gpio, handle_level_irq);
-		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-	}
-	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
-	{
-		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
-		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
-	}
+//	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
+//	{
+//		irq_set_chip_and_handler(virq, &nuc970_irq_gpio, handle_level_irq);
+//		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+//	}
+//	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
+//	{
+//		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
+//		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
+//	}
 	else 
 		return -EINVAL;
 

@@ -65,6 +65,12 @@
 #define ADEBUG(fmt, arg...)
 #endif
 
+
+volatile uint8_t IsEnableKP = 0;
+volatile uint8_t IsEnableKP_wakeup = 0;
+volatile uint8_t IsEnableTS = 0;
+volatile uint8_t IsEnableTS_wakeup = 0;
+
 enum touch_state {
     TS_IDLE,						/* We are waiting next key report */
     TS_CONVERSION,			/* We are waiting for ADC to report XY coord */
@@ -82,7 +88,6 @@ enum keypad_state {
 #define KP_USED (1<<1)
 #define TS_USED (1<<2)
 #define BT_USED (1<<3)
-#ifdef CONFIG_KEYBOARD_NUC970ADC
 
 struct key_threshold {
     u32	thl;
@@ -110,12 +115,12 @@ static struct key_threshold nuc970_key_th[] = {
     {0xd00,0xd49},
     {0xd50,0xe00},
 };
-#endif
 
 #define CLK_PCLKEN1_ADCEN (1<<24)
-#define Z_TH 10
-#define ADC_PENUP_NUM 3000  //20ms * ADC_PENUP_NUM = 60sec
-#define ADC_SAMPLE_CNT CONFIG_SAMPLE_NUC970ADC
+u32 adc_sample_cnt = CONFIG_SAMPLE_NUC970ADC;
+u32 z_th = 10;
+u32 penup_delay_time = 3000;
+
 struct nuc970_adc {
     struct input_dev *input_ts;
     struct input_dev *input_kp;
@@ -172,8 +177,8 @@ static void nuc970_touch2detect(void)
     LEAVE();
 }
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
-static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc)
+
+__attribute__ ((unused)) static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc)
 {
     u32 val,i;
     struct key_threshold *nuc970_th = (struct key_threshold *)nuc970_key_th;
@@ -207,7 +212,7 @@ static int nuc970_kp_conversion(struct nuc970_adc *nuc970_adc)
     LEAVE();
     return false;
 }
-static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc)
+__attribute__ ((unused)) static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc)
 {
     ENTRY();
     if(nuc970_adc->isr & ADC_ISR_KPEF)
@@ -238,15 +243,15 @@ static int nuc970_kp_detect_up_down(struct nuc970_adc *nuc970_adc)
     LEAVE();
     return false;
 }
-#endif
 
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
-static void ts_wait_conversion(unsigned long param)
+
+
+__attribute__ ((unused)) static void ts_wait_conversion(unsigned long param)
 {
     enable_menu();
 }
 
-static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
+__attribute__ ((unused)) static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 {
     u32 x,y,z,z2,pressure;
     ENTRY();
@@ -262,16 +267,16 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
             pressure=(x*(z2-(z+1)))/(z+1);
             //ADEBUG("G=>x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
             #if 0
-            if(z<=Z_TH && (0xfff-z2)<=Z_TH) /* threshold value */
+            if(z<=z_th && (0xfff-z2)<=z_th) /* threshold value */
             #else
-            if((__raw_readl(REG_ADC_ZSORT0)&0xfff)<=Z_TH ||
-               (__raw_readl(REG_ADC_ZSORT1)&0xfff)<=Z_TH ||
-               (__raw_readl(REG_ADC_ZSORT2)&0xfff)<=Z_TH ||
-               (__raw_readl(REG_ADC_ZSORT3)&0xfff)<=Z_TH ) /* threshold value */
+            if((__raw_readl(REG_ADC_ZSORT0)&0xfff)<=z_th ||
+               (__raw_readl(REG_ADC_ZSORT1)&0xfff)<=z_th ||
+               (__raw_readl(REG_ADC_ZSORT2)&0xfff)<=z_th ||
+               (__raw_readl(REG_ADC_ZSORT3)&0xfff)<=z_th ) /* threshold value */
             #endif
             {
               input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 0);
-              if(nuc970_adc->ts_num++>ADC_PENUP_NUM)
+              if(nuc970_adc->ts_num++>penup_delay_time)
               {
                  nuc970_adc->ts_state = TS_IDLE;
                  del_timer(&nuc970_adc->timer);
@@ -293,8 +298,8 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
                   }
                 }
                 input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);
-                input_report_abs(nuc970_adc->input_ts, ABS_X,y);
-                input_report_abs(nuc970_adc->input_ts, ABS_Y,x);
+                input_report_abs(nuc970_adc->input_ts, ABS_X,x);
+                input_report_abs(nuc970_adc->input_ts, ABS_Y,y);
                 input_report_abs(nuc970_adc->input_ts, ABS_PRESSURE,pressure);
                 ADEBUG("x=0x%03x,y=0x%03x,z1=0x%03x,z2=0x%03x,mear=%d\n",x,y,z,z2,pressure);
                 ADEBUG("zs0=0x%08x\n",__raw_readl(REG_ADC_ZSORT0));
@@ -314,7 +319,7 @@ static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
     LEAVE();
     return false;
 }
-static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc)
+__attribute__ ((unused)) static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc)
 {
     ENTRY();
     if((nuc970_adc->isr & ADC_ISR_PEDEF)&&(nuc970_adc->ier & ADC_IER_PEDEIEN ))
@@ -330,25 +335,22 @@ static int nuc970_ts_detect_down(struct nuc970_adc *nuc970_adc)
     LEAVE();
     return false;
 }
-#endif
+
 static void nuc970adc_irq_tasklet(struct nuc970_adc *nuc970_adc)
 {
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+	if(IsEnableTS==1)
     if(nuc970_ts_detect_down(nuc970_adc)) return;
-#endif
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
+	if(IsEnableKP==1)
     if(nuc970_kp_detect_up_down(nuc970_adc)) return;
-#endif
 
     if(nuc970_adc->isr & ADC_ISR_MF)
     {
-#ifdef CONFIG_KEYBOARD_NUC970ADC
+			if(IsEnableKP==1)
         nuc970_kp_conversion(nuc970_adc);
-#endif
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+
+			if(IsEnableTS==1)
         nuc970_ts_conversion(nuc970_adc);
-#endif
     }
 }
 static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
@@ -359,31 +361,31 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
     nuc970_adc->conf=__raw_readl(REG_ADC_CONF);
     ENTRY();
     //ADEBUG("isr=0x%08x,ier=0x%08x\n",nuc970_adc->isr,nuc970_adc->ier);
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+	if(IsEnableTS==1)
     if((nuc970_adc->isr & ADC_ISR_PEDEF)&&(nuc970_adc->ier & ADC_IER_PEDEIEN ))
     {
         __raw_writel(ADC_ISR_PEDEF, REG_ADC_ISR);
         goto leave;
     }
-#endif
 
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC_WKUP
+
+
+	if(IsEnableTS_wakeup==1)
     if((__raw_readl(REG_ADC_WKISR) & ADC_WKISR_WPEDEF)&&(nuc970_adc->ier & ADC_IER_WKTIEN ))
     {
         __raw_writel(ADC_WKISR_WPEDEF, REG_ADC_WKISR);
         goto leave;
     }
-#endif
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC_WKUP
+	if(IsEnableKP_wakeup==1)
     if((__raw_readl(REG_ADC_WKISR) & ADC_WKISR_WKPEF)&&(nuc970_adc->ier & ADC_IER_WKPIEN ))
     {
         __raw_writel(ADC_WKISR_WKPEF, REG_ADC_WKISR);
         goto leave;
     }
-#endif
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
+	if(IsEnableKP==1)
+	{
     if(nuc970_adc->isr & ADC_ISR_KPEF)
     {
         __raw_writel(ADC_ISR_KPEF,REG_ADC_ISR);
@@ -394,12 +396,12 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
         __raw_writel(ADC_ISR_KPUEF,REG_ADC_ISR);
         goto leave;
     }
-#endif
+  }
 
     if(nuc970_adc->isr & ADC_ISR_MF)
     {
         __raw_writel(ADC_ISR_MF,REG_ADC_ISR);
-#ifdef CONFIG_KEYBOARD_NUC970ADC
+			if(IsEnableKP==1)
         if((nuc970_adc->isr & ADC_ISR_KPCF) && (nuc970_adc->conf & ADC_CONF_KPCEN))
             if((nuc970_adc->kp_state == KP_DOWN) || (nuc970_adc->kp_state == KP_CONVERSION))
             {
@@ -407,15 +409,13 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
                 goto leave;
             }
 
-#endif
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+			if(IsEnableTS==1)
         if(  (nuc970_adc->isr & ADC_ISR_TF) && (nuc970_adc->conf & ADC_CONF_TEN) && (nuc970_adc->isr & ADC_ISR_ZF) && (nuc970_adc->conf & ADC_CONF_ZEN) )
             if((nuc970_adc->ts_state == TS_DOWN) || (nuc970_adc->ts_state == TS_CONVERSION))
             {
                 __raw_writel(ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);
                 goto leave;
             }
-#endif
     }
     return IRQ_HANDLED;
 leave :
@@ -423,14 +423,13 @@ leave :
     return IRQ_HANDLED;
 }
 
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
-static int nuc970ts_open(struct input_dev *dev)
+__attribute__ ((unused)) static int nuc970ts_open(struct input_dev *dev)
 {
     struct nuc970_adc *nuc970_adc = input_get_drvdata(dev);
     ENTRY();
 
     /* Set touch parameters */
-    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN | (1<<22)| (7<<3) | (3<<6) | (ADC_SAMPLE_CNT<<24) ), REG_ADC_CONF); /* CONF */
+    writel(__raw_readl(REG_ADC_CONF)  | (ADC_CONF_HSPEED|ADC_CONF_TEN | ADC_CONF_ZEN | (1<<22)| (7<<3) | (3<<6) | (adc_sample_cnt<<24) ), REG_ADC_CONF); /* CONF */
 
     /* Clear interrupt before enable pendown */
     nuc970_touch2detect();
@@ -440,7 +439,7 @@ static int nuc970ts_open(struct input_dev *dev)
     return 0;
 }
 
-static void nuc970ts_close(struct input_dev *dev)
+__attribute__ ((unused)) static void nuc970ts_close(struct input_dev *dev)
 {
     struct nuc970_adc *nuc970_adc = input_get_drvdata(dev);
     ENTRY();
@@ -464,10 +463,8 @@ static void nuc970ts_close(struct input_dev *dev)
     nuc970_adc->used_state &= ~TS_USED;
     LEAVE();
 }
-#endif
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
-static int nuc970kp_open(struct input_dev *dev)
+__attribute__ ((unused)) static int nuc970kp_open(struct input_dev *dev)
 {
     struct nuc970_adc *nuc970_adc = input_get_drvdata(dev);
     ENTRY();
@@ -480,7 +477,7 @@ static int nuc970kp_open(struct input_dev *dev)
     LEAVE();
     return 0;
 }
-static void nuc970kp_close(struct input_dev *dev)
+__attribute__ ((unused)) static void nuc970kp_close(struct input_dev *dev)
 {
     struct nuc970_adc *nuc970_adc = input_get_drvdata(dev);
     ENTRY();
@@ -490,8 +487,6 @@ static void nuc970kp_close(struct input_dev *dev)
     nuc970_adc->used_state &= ~KP_USED;
     LEAVE();
 }
-#endif
-
 
 #ifdef CONFIG_BATTREY_NUC970ADC
 #define MAX_VOLTAGE 5000
@@ -616,10 +611,47 @@ static int nuc970adc_probe(struct platform_device *pdev)
     struct nuc970_adc *nuc970_adc;
     struct input_dev *input_ts_dev=NULL;
     struct input_dev *input_kp_dev=NULL;
-#ifdef CONFIG_KEYBOARD_NUC970ADC
-    int i;
-#endif
-    int err=0;
+		int err;
+		
+		#ifndef CONFIG_OF
+			#ifdef CONFIG_KEYBOARD_NUC970ADC
+					IsEnableKP = 1;
+			#endif
+			
+			#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+					IsEnableTS = 1;
+			#endif
+			#ifdef CONFIG_KEYBOARD_NUC970ADC_WKUP
+					IsEnableKP_wakeup = 1;
+			#endif
+			
+			#ifdef CONFIG_TOUCHSCREEN_NUC970ADC_WKUP
+					IsEnableTS_wakeup = 1;
+			#endif
+		#else	
+		{
+			const char *pstr;
+			of_property_read_string(pdev->dev.of_node,"keypad-status",&pstr);
+			if(pstr[0]=='d')
+				IsEnableKP = 0;
+			else
+				IsEnableKP = 1;
+				
+			of_property_read_string(pdev->dev.of_node,"touch-status",&pstr);
+			if(pstr[0]=='d')
+				IsEnableTS = 0;
+			else
+				IsEnableTS = 1;
+				
+			of_property_read_u32_array(pdev->dev.of_node,"samplecounter", &adc_sample_cnt,1);
+			if(adc_sample_cnt>255) adc_sample_cnt=255;
+			of_property_read_u32_array(pdev->dev.of_node,"z_th", &z_th,1);
+			of_property_read_u32_array(pdev->dev.of_node,"penup_delay_time", &penup_delay_time,1);
+		}
+		#endif
+		
+    err =0;
+		printk("%s - pdev = %s\n", __func__, pdev->name);
     ENTRY();
     nuc970_adc = kzalloc(sizeof(struct nuc970_adc), GFP_KERNEL);
     if (!nuc970_adc) {
@@ -639,7 +671,8 @@ static int nuc970adc_probe(struct platform_device *pdev)
     nuc970_adc->kp_state = KP_IDLE;
     nuc970_adc->ts_state = TS_IDLE;
 
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
+	if(IsEnableTS==1)
+	{
     input_ts_dev = input_allocate_device();
     if (!input_ts_dev) {
         err = -ENOMEM;
@@ -665,9 +698,10 @@ static int nuc970adc_probe(struct platform_device *pdev)
     setup_timer(&nuc970_adc->timer, ts_wait_conversion,(unsigned long)nuc970_adc);
     if(input_register_device(nuc970_adc->input_ts))
         goto fail5;
-#endif
+	}
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
+	if(IsEnableKP==1)
+	{
     input_kp_dev = input_allocate_device();
     if (!input_kp_dev) {
         err = -ENOMEM;
@@ -690,9 +724,12 @@ static int nuc970adc_probe(struct platform_device *pdev)
     input_set_drvdata(input_kp_dev, nuc970_adc);
     if(input_register_device(nuc970_adc->input_kp))
         goto fail5;
+    {
+    int i;
     for (i = 0; i < ARRAY_SIZE(nuc970_keycode); i++)
         set_bit(nuc970_keycode[i], input_kp_dev->keybit);
-#endif
+		}
+	}
 
     __raw_writel(__raw_readl(REG_APBIPRST1) | (1<<24), REG_APBIPRST1);
     udelay(100);
@@ -703,7 +740,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
     if (request_irq(nuc970_adc->irq_num, nuc970_adc_interrupt,IRQF_NO_SUSPEND, "nuc970adc", nuc970_adc)) {
         err = -EBUSY;
         goto fail4;
-    }
+	}
 
 #ifdef CONFIG_BATTREY_NUC970ADC
     nuc970_adc->used_state |= BT_USED;
@@ -748,13 +785,12 @@ static int nuc970adc_remove(struct platform_device *pdev)
     clk_put(nuc970_adc->clk);
     clk_put(nuc970_adc->eclk);
 
-#ifdef CONFIG_TOUCHSCREEN_NUC970ADC
-    input_unregister_device(nuc970_adc->input_ts);
-#endif
+    if(IsEnableTS==1)
+    	input_unregister_device(nuc970_adc->input_ts);
 
-#ifdef CONFIG_KEYBOARD_NUC970ADC
-    input_unregister_device(nuc970_adc->input_kp);
-#endif
+    if(IsEnableKP==1)
+    	input_unregister_device(nuc970_adc->input_kp);
+
     kfree(nuc970_adc);
 
     platform_set_drvdata(pdev, NULL);
@@ -763,46 +799,52 @@ static int nuc970adc_remove(struct platform_device *pdev)
 }
 
 static int nuc970adc_resume(struct platform_device *pdev){
-	#if defined(CONFIG_TOUCHSCREEN_NUC970ADC_WKUP)|defined(CONFIG_KEYBOARD_NUC970ADC_WKUP)
-	struct nuc970_adc *nuc970_adc = platform_get_drvdata(pdev);
-	#endif
+	
+	struct nuc970_adc *nuc970_adc = platform_get_drvdata(pdev);	
 	ENTRY();
 
-	#ifdef CONFIG_TOUCHSCREEN_NUC970ADC_WKUP
+	if(IsEnableTS_wakeup == 1)
+	{
 	if(nuc970_adc->used_state & TS_USED)
 	{
 		__raw_writel(__raw_readl(REG_ADC_CTL) & ~ADC_CTL_WKTEN,REG_ADC_CTL); /* Disable touch wake up */
 		__raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_WKTIEN)), REG_ADC_IER); /*Disable Interrupt */
 		nuc970_touch2detect();
 	}
-	#endif
+	}
 
-	#ifdef CONFIG_KEYBOARD_NUC970ADC_WKUP
+	if(IsEnableKP_wakeup == 1)
+	{
 	if(nuc970_adc->used_state & KP_USED)
 	{
 		__raw_writel(__raw_readl(REG_ADC_CTL) & ~ADC_CTL_WKPEN,REG_ADC_CTL); /* Disable touch wake up */
 		__raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_WKPIEN)), REG_ADC_IER); /*Disable Interrupt */
 	}
-	#endif
+	}
 
-
-	#if defined(CONFIG_TOUCHSCREEN_NUC970ADC_WKUP)|defined(CONFIG_KEYBOARD_NUC970ADC_WKUP)
+	if(IsEnableTS_wakeup == 1 || IsEnableKP_wakeup == 1)
+	{
 	__raw_writel(__raw_readl(REG_WKUPSER) & ~(1<<26), REG_WKUPSER);
 	disable_irq_wake(IRQ_ADC);
-	#endif
+	}
+
 	LEAVE();
 return 0;
 }
 
 static int nuc970adc_suspend(struct platform_device *pdev,pm_message_t state){
-	#if defined(CONFIG_TOUCHSCREEN_NUC970ADC_WKUP)|defined(CONFIG_KEYBOARD_NUC970ADC_WKUP)
+
 	struct nuc970_adc *nuc970_adc = platform_get_drvdata(pdev);
 
+	if(IsEnableTS_wakeup == 1 || IsEnableKP_wakeup == 1)
+	{
 	__raw_writel((1 << 26)|__raw_readl(REG_WKUPSER), REG_WKUPSER);
 	enable_irq_wake(IRQ_ADC);
-	#endif
+	}
+
 	ENTRY();
-	#ifdef CONFIG_TOUCHSCREEN_NUC970ADC_WKUP
+	if(IsEnableTS_wakeup == 1)
+	{
 	if(nuc970_adc->used_state & TS_USED)
 	{
 		if( nuc970_adc->ts_state!=TS_IDLE)
@@ -819,9 +861,11 @@ static int nuc970adc_suspend(struct platform_device *pdev,pm_message_t state){
     __raw_writel(ADC_WKISR_WPEDEF,REG_ADC_WKISR);  /* Clear ts wakeup up flag */
     __raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_PEDEIEN|ADC_IER_WKTIEN), REG_ADC_IER); /*Enable Interrupt */
 	}
-	#endif
+	}
 
-	#ifdef CONFIG_KEYBOARD_NUC970ADC_WKUP
+
+	if(IsEnableKP_wakeup == 1)
+	{
 	if(nuc970_adc->used_state & KP_USED)
 	{
 		if( nuc970_adc->kp_state!=KP_IDLE)
@@ -832,7 +876,7 @@ static int nuc970adc_suspend(struct platform_device *pdev,pm_message_t state){
 		__raw_writel(ADC_WKISR_WKPEF,REG_ADC_WKISR);  /* Clear kp wakeup up flag */
 		__raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_WKPIEN), REG_ADC_IER); /*Enable Interrupt */
 	}
-	#endif
+	}
 LEAVE();
 return 0;
 }
@@ -842,14 +886,20 @@ static struct platform_device_id nuc970_adc_driver_ids[] = {
     { },
 };
 
+static const struct of_device_id nuc970_adc_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-adc" },
+	{},
+};
+
 static struct platform_driver nuc970adc_driver = {
     .probe		= nuc970adc_probe,
     .remove		= nuc970adc_remove,
     .resume		= nuc970adc_resume,
     .suspend		= nuc970adc_suspend,
     .driver		= {
-        .name	= "nuc900-adc",
+        .name	= "nuc970-adc",
         .owner	= THIS_MODULE,
+        .of_match_table = of_match_ptr(nuc970_adc_of_match),
     },
     .id_table	= nuc970_adc_driver_ids,
 };

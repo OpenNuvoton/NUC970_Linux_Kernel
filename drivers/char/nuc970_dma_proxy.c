@@ -20,7 +20,11 @@
 #include <linux/fs.h>
 #include <linux/workqueue.h>
 #include <asm/uaccess.h>
+#include <mach/map.h>
+#include <mach/regs-clock.h>
 #include "nuc970_dma_proxy.h"
+
+#define CLK_HCLKEN_GDMA (1<<12)
 
 #if 0
 #define ENTRY()					printk("[%-20s] : Enter...\n", __FUNCTION__)
@@ -190,6 +194,7 @@ static void nuc970_dma_callback(void *arg)
 	LEAVE();
 	return 0;
 }
+
 static struct file_operations dm_fops = {
 	.owner    = THIS_MODULE,
 	.open     = nuc970_dma_open,
@@ -333,16 +338,17 @@ static int create_channel(struct dma_proxy_channel *pchannel_p, u32 direction)
  */
 static int __init nuc970_dma_init(void)
 {
-	int rc;
+	int rc =0;
 	ENTRY();
 	printk(KERN_INFO "nuc970_dma_proxy module initialized\n");
 
-	rc = create_channel(&channels, DMA_MEM_TO_MEM);
-
-	if (rc) {
-		return rc;
+	if((__raw_readl(REG_CLK_HCLKEN)& CLK_HCLKEN_GDMA)==CLK_HCLKEN_GDMA)
+	{
+		rc = create_channel(&channels, DMA_MEM_TO_MEM);
+		if (rc) {
+			return rc;
+		}
 	}
-
 	LEAVE();
 	return 0;
 }

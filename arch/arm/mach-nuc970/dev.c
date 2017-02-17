@@ -659,16 +659,16 @@ static struct resource nuc970_gdma_resource[] = {
         }
 };
 
-
-static struct nuc970_dma_chan_data nuc970_dma_m2m_channels[] = {
+struct nuc970_dma_chan_data nuc970_dma_m2m_channels[] = {
 	DMA_CHANNEL("m2m0", NUC970_VA_GDMA + 0x000, IRQ_GDMA0),
 	DMA_CHANNEL("m2m1", NUC970_VA_GDMA + 0x020, IRQ_GDMA1),
 };
 
-static struct nuc970_dma_platform_data nuc970_dma_m2m_data = {
+struct nuc970_dma_platform_data nuc970_dma_m2m_data = {
 	.channels		= nuc970_dma_m2m_channels,
 	.num_channels		= ARRAY_SIZE(nuc970_dma_m2m_channels),
 };
+
 
 static struct platform_device nuc970_device_gdma = {
 	.name			= "nuc970-dma-m2m",
@@ -1399,6 +1399,7 @@ struct platform_device nuc970_device_gpio = {
 	.resource = nuc970_gpio_resource,
 };
 
+#ifndef CONFIG_OF
 struct platform_device nuc970_device_eint0 = {
         .name		  = "nuc970-gpio",
         .id		  = 1,
@@ -1438,7 +1439,7 @@ struct platform_device nuc970_device_eint7 = {
         .name		  = "nuc970-gpio",
         .id		  = 8,
 };
-
+#endif
 #endif
 
 #if defined(CONFIG_NUC970_GE2D) || defined(CONFIG_NUC970_GE2D_MODULE)
@@ -1625,6 +1626,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_GPIO_NUC970_MODULE)
 	&nuc970_device_gpio,
+	#ifndef CONFIG_OF
 	&nuc970_device_eint0,
 	&nuc970_device_eint1,
 	&nuc970_device_eint2,
@@ -1633,6 +1635,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 	&nuc970_device_eint5,
 	&nuc970_device_eint6,
 	&nuc970_device_eint7,
+	#endif
 #endif
 #if defined(CONFIG_I2C_ALGOBIT) || defined(CONFIG_I2C_ALGOBIT_MODULE)
 	&i2c_gpio,

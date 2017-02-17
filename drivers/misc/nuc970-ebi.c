@@ -49,6 +49,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/mm.h>
 #include <linux/mman.h>
+#include <linux/of.h>
 
 
 #define SRAM_GRANULARITY	32
@@ -68,8 +69,12 @@ static long ebi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){re
 static int ebi_open(struct inode *inode, struct file *filp){
 	
 	struct ebi_dev *nuc970_ebi = ebi;
-	struct pinctrl_state *s;
+	
+	#ifndef CONFIG_OF
+	struct pinctrl_state *s=NULL;
 	int ret;
+	#endif
+	
 	ENTRY();
 	filp->private_data = ebi;
 	ebi->hclk = clk_get(NULL, "ebi_hclk");	
@@ -81,7 +86,8 @@ static int ebi_open(struct inode *inode, struct file *filp){
 	clk_enable(ebi->hclk);
 	
 	nuc970_ebi->base_addr=0x20000000;
-	nuc970_ebi->bank=0;	
+	
+	#ifndef CONFIG_OF
 	switch(nuc970_ebi->bank)
 	{
 		case 0:
@@ -105,14 +111,16 @@ static int ebi_open(struct inode *inode, struct file *filp){
 			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-4");  //ebi  8bit cs4
 		break;
 	};
-	if (IS_ERR(s)) {
-		printk("pinctrl_lookup_state err\n");
-		return -EPERM;
-	}
+       if (IS_ERR(s)) {
+                printk("pinctrl_lookup_state err\n");
+                return -EPERM;
+        }
+
 	if((ret = pinctrl_select_state(ebi->pinctrl, s)) < 0) {
 		printk("pinctrl_select_state err\n");
 		return ret;
 	}
+	#endif
 	nuc970_set_ebi_mode(nuc970_ebi->bank,NUC970_EBI_80TYPE_nWE_WRITE);
 	nuc970_set_ebi_attrib(nuc970_ebi->bank,nuc970_ebi->base_addr,0,NUC970_EBI_16BIT);
 	nuc970_set_ebi_timing(nuc970_ebi->bank,8/*tACC*/,1/*tCOH*/,0/*tACS*/,7/*tCOS*/);
@@ -196,6 +204,7 @@ static int nuc970_ebi_probe(struct platform_device *pdev)
 {
 	struct ebi_dev *nuc970_ebi;
 	ENTRY();
+	printk("%s - pdev = %s\n", __func__, pdev->name);
 	nuc970_ebi = devm_kzalloc(&pdev->dev, sizeof(*nuc970_ebi), GFP_KERNEL);
 	if (!nuc970_ebi)
 		return -ENOMEM;
@@ -209,6 +218,16 @@ static int nuc970_ebi_probe(struct platform_device *pdev)
 	misc_register(&ebi_dev[0]);
 	nuc970_ebi->pinctrl = devm_pinctrl_get(&pdev->dev);
 	nuc970_ebi->minor = MINOR(ebi_dev[0].minor);
+	
+	#ifdef CONFIG_OF
+	{
+		struct pinctrl *pinctrl;
+		pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+		if (IS_ERR(pinctrl)) {
+			return PTR_ERR(pinctrl);
+		}
+	}
+	#endif
 	
 	DEBUG("nuc970_ebi->minor=%d\n",nuc970_ebi->minor);
 	ebi=nuc970_ebi;
@@ -227,10 +246,16 @@ static int nuc970_ebi_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id nuc970_ebi_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-ebi" },
+	{},
+};
+
 static struct platform_driver nuc970_ebi_driver = {
 	.driver = {
 		.name = "nuc970-ebi",
 		.owner  = THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_ebi_of_match),
 	},
 	.probe = nuc970_ebi_probe,
 	.remove = nuc970_ebi_remove,

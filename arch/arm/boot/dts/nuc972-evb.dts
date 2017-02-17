@@ -33,7 +33,16 @@
 		uart4: serial@b8000400 {
 			status = "okay";
 		};
-	};
+
+		adc: adc@b800a000 {
+			keypad-status = "okay";
+			touch-status = "okay";
+			status = "okay";
+		};
+		
+		i2c_gpio@0 {
+			status = "okay";
+		};
 
 	ahb {
 		usbh_ehci@b0005000 {
@@ -43,6 +52,15 @@
 			status = "okay";
 		};
 		emac0@b0002000 {
+			status = "okay";
+		};
+		cap@b000e000 {
+			status = "okay";
+		};
+		dma@b0004000 {
+			status = "okay";
+		};
+		ebi@b0001000 {
 			status = "okay";
 		};
 	};
