@@ -34,6 +34,26 @@
 			status = "okay";
 		};
 
+		can0: can@b800b000 {
+			status = "disabled";
+		};
+
+		can1: can@b800b400 {
+			status = "disabled";
+		};
+
+		kpi: kpi@b8008000 {
+			status = "disabled";
+		};
+
+		rtc: rtc@b8004000 {
+			status = "disabled";
+		};
+
+		jpeg: jpeg@b000a000 {
+			status = "disabled";
+		};
+
 		adc: adc@b800a000 {
 			keypad-status = "okay";
 			touch-status = "okay";

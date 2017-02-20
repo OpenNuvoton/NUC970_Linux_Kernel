@@ -316,6 +316,121 @@
 				};
 			};
 
+			can0 {
+				pinctrl_can0_PB: can0-PB {
+					nuvoton,pins =
+						<2 0xa 0xc 0
+						 2 0xb 0xc 0>;
+				};
+
+				pinctrl_can0_PH: can0-PH {
+					nuvoton,pins =
+						<7 2 0xc 0
+						 7 3 0xc 0>;
+				};
+
+				pinctrl_can0_PI: can0-PI {
+					nuvoton,pins =
+						<8 3 0xc 0
+						 8 4 0xc 0>;
+				};
+			};
+
+			can1 {
+				pinctrl_can1_PH: can1-PH {
+					nuvoton,pins =
+						<7 0xe 0xc 0
+						 7 0xf 0xc 0>;
+				};
+			};
+
+			kpi {
+				pinctrl_kpi_PA_3x2: kpi-PA-3x2 {
+					nuvoton,pins =
+						<0 4 4 0
+						 0 5 4 0
+						 0 6 4 0
+						 0 8 4 0
+						 0 9 4 0>;
+				};
+
+				pinctrl_kpi_PA_4x2: kpi-PA-4x2 {
+					nuvoton,pins =
+						<0 4 4 0
+						 0 5 4 0
+						 0 6 4 0
+						 0 7 4 0
+						 0 8 4 0
+						 0 9 4 0>;
+				};
+
+				pinctrl_kpi_PA_4x4: kpi-PA-4x4 {
+					nuvoton,pins =
+						<0 4 4 0
+						 0 5 4 0
+						 0 6 4 0
+						 0 7 4 0
+						 0 8 4 0
+						 0 9 4 0
+						 0 0xa 4 0
+						 0 0xb 4 0>;
+				};
+
+				pinctrl_kpi_PA_4x8: kpi-PA-4x8 {
+					nuvoton,pins =
+						<0 4 4 0
+						 0 5 4 0
+						 0 6 4 0
+						 0 7 4 0
+						 0 8 4 0
+						 0 9 4 0
+						 0 0xa 4 0
+						 0 0xb 4 0
+						 0 0xc 4 0
+						 0 0xd 4 0
+						 0 0xe 4 0
+						 0 0xf 4 0>;
+				};
+
+				pinctrl_kpi_PH_4x2: kpi-PH-4x2 {
+					nuvoton,pins =
+						<7 4 4 0
+						 7 5 4 0
+						 7 6 4 0
+						 7 7 4 0
+						 7 8 4 0
+						 7 9 4 0>;
+				};
+
+				pinctrl_kpi_PH_4x4: kpi-PH-4x4 {
+					nuvoton,pins =
+						<7 4 4 0
+						 7 5 4 0
+						 7 6 4 0
+						 7 7 4 0
+						 7 8 4 0
+						 7 9 4 0
+						 7 0xa 4 0
+						 7 0xb 4 0>;
+				};
+
+				pinctrl_kpi_PH_4x8: kpi-PH-4x8 {
+					nuvoton,pins =
+						<7 4 4 0
+						 7 5 4 0
+						 7 6 4 0
+						 7 7 4 0
+						 7 8 4 0
+						 7 9 4 0
+						 7 0xa 4 0
+						 7 0xb 4 0
+						 7 0xc 4 0
+						 7 0xd 4 0
+						 7 0xe 4 0
+						 7 0xf 4 0>;
+				};
+			};
+
 			usbh {
 				pinctrl_usbh_ppwr_pe: usbh-ppwr-pe {
 					nuvoton,pins =
@@ -889,6 +1004,54 @@
 			pinctrl-0 = <&pinctrl_uart10_PB0>;
 			status = "disabled";
 		};		  
+
+		can0: can@b800b000 {
+			compatible = "nuvoton,nuc970-can0";
+			reg = <0xb800b000 0x400>;
+			interrupts = <58 4 1>;
+			map-addr = <0xf800b000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_can0_PH>;
+			status = "disabled";
+		};
+
+		can1: can@b800b400 {
+			compatible = "nuvoton,nuc970-can1";
+			reg = <0xb800b400 0x400>;
+			interrupts = <59 4 1>;
+			map-addr = <0xf800b000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_can1_PH>;
+			status = "disabled";
+		};
+
+		kpi: kpi@b8008000 {
+			compatible = "nuvoton,nuc970-kpi";
+			reg = <0xb8008000 0x1000>;
+			interrupts = <61 4 1>;
+			map-addr = <0xf8008000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_kpi_PH_4x4>;
+			row = <4>; // <row number>
+			col = <4>; // <col number>
+			status = "disabled";
+		};
+
+		rtc: rtc@b8004000 {
+			compatible = "nuvoton,nuc970-rtc";
+			reg = <0xb8004000 0x100>;
+			interrupts = <15 4 1>;
+			map-addr = <0xf8004000>;
+			status = "disabled";
+		};
+
+		jpeg: jpeg@b000a000 {
+			compatible = "nuvoton,nuc970-jpeg";
+			reg = <0xb000a000 0x200>;
+			interrupts = <33 4 1>;
+			map-addr = <0xf000a000>;
+			status = "disabled";
+		};
 
 		wdt: wdt@b8001800 {
 			compatible = "nuvoton,nuc970-wdt";

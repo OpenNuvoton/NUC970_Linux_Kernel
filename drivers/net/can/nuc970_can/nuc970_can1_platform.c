@@ -27,6 +27,7 @@
 #include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/of_irq.h>
 #include <linux/pinctrl/consumer.h>
 
 #include <linux/can/dev.h>
@@ -65,19 +66,19 @@ static void c_can_hw_raminit(const struct c_can_priv *priv, bool enable)
 #endif
 
 static struct platform_device_id nuc970_can1_driver_ids[] = {
-	{ "nuc970-can1", 0 },
+	[NUC970_CAN1] = {
+		.name = "nuc970-can1",
+		.driver_data = NUC970_CAN1,
+	},
 	{ },
 };
-
-#if 0
 MODULE_DEVICE_TABLE(platform, nuc970_can1_driver_ids);
 
 static const struct of_device_id nuc970_can1_of_table[] = {
-	{ .compatible = "nuc970-can1", .data = &nuc970_can1_driver_ids[0] },
+	{ .compatible = "nuvoton,nuc970-can1", .data = &nuc970_can1_driver_ids[NUC970_CAN1] },
 	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, nuc970_can1_of_table);
-#endif
 
 static int c_can_plat_probe(struct platform_device *pdev)
 {
@@ -85,18 +86,38 @@ static int c_can_plat_probe(struct platform_device *pdev)
 	void __iomem *addr;
 	struct net_device *dev;
 	struct c_can_priv *priv;
-	//const struct of_device_id *match;
+	const struct of_device_id *match;
 	const struct platform_device_id *id;
 	struct resource *mem;
 	int irq;
 	struct clk *clk;
 
-	id = platform_get_device_id(pdev);
+    #ifdef CONFIG_OF
+	int retval = 0;
+    struct pinctrl *pinctrl;
+    #endif
+ 
+	if (pdev->dev.of_node) {
+		match = of_match_device(nuc970_can1_of_table, &pdev->dev);
+		if (!match) { 
+			dev_err(&pdev->dev, "Failed to find matching dt id\n");
+			ret = -EINVAL;
+			goto exit;
+		}
+		id = match->data; 
+	} else {
+	id = platform_get_device_id(pdev); 
+	}
 
-	//pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-	//if (IS_ERR(pinctrl))
-	//	dev_warn(&pdev->dev,
-	//		"failed to configure pins from driver\n");
+#ifdef CONFIG_OF
+    pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+
+	if (IS_ERR(pinctrl))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		retval = PTR_ERR(pinctrl);
+	}
+#endif
 
 	/* get the appropriate clk */
 	clk = clk_get(NULL, "can1");
@@ -168,7 +189,7 @@ exit_release_mem:
 	release_mem_region(mem->start, resource_size(mem));
 exit_free_clk:
 	clk_put(clk);
-//exit:
+exit:
 	dev_err(&pdev->dev, "probe failed\n");
 
 	return ret;
@@ -254,6 +275,7 @@ static struct platform_driver nuc970_can1_driver = {
 		.driver 	= {
 			.name	= "nuc970-can1",
 			.owner	= THIS_MODULE,
+			.of_match_table = of_match_ptr(nuc970_can1_of_table),
 		},
 	.probe = c_can_plat_probe,
 	.remove = c_can_plat_remove,

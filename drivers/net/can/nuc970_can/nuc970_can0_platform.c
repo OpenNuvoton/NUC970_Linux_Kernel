@@ -27,6 +27,7 @@
 #include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/of_irq.h>
 #include <linux/pinctrl/consumer.h>
 
 #include <linux/can/dev.h>
@@ -52,13 +53,16 @@ static void c_can_plat_write_reg_aligned_to_32bit(struct c_can_priv *priv,
 }
 
 static struct platform_device_id nuc970_can0_driver_ids[] = {
-	{ "nuc970-can0", 0 },
+	[NUC970_CAN0] = {
+		.name = "nuc970-can0",
+		.driver_data = NUC970_CAN0,
+	},
 	{ },
 };
 MODULE_DEVICE_TABLE(platform, nuc970_can0_driver_ids);
 
 static const struct of_device_id nuc970_can0_of_table[] = {
-	{ .compatible = "nuc970-can0", .data = &nuc970_can0_driver_ids[0] },
+	{ .compatible = "nuvoton,nuc970-can0", .data = &nuc970_can0_driver_ids[NUC970_CAN0] },
 	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, nuc970_can0_of_table);
@@ -80,23 +84,27 @@ static int c_can_plat_probe(struct platform_device *pdev)
 
 	if (pdev->dev.of_node) {
 		match = of_match_device(nuc970_can0_of_table, &pdev->dev);
-		if (!match) {
+		if (!match) { 
 			dev_err(&pdev->dev, "Failed to find matching dt id\n");
 			ret = -EINVAL;
 			goto exit;
 		}
-		id = match->data;
+		id = match->data; 
 	} else {
-		id = platform_get_device_id(pdev);
+		id = platform_get_device_id(pdev); 
 	}
 
+#ifdef CONFIG_OF
+    pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 	#if defined (CONFIG_NUC970_CAN0_PB)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can0-PB");
 	#elif defined (CONFIG_NUC970_CAN0_PH)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can0-PH");
 	#elif defined (CONFIG_NUC970_CAN0_PI)
-		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can0-PH");
+		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can0-PI");
 	#endif
+#endif
 	
 	if (IS_ERR(pinctrl))
 	{
@@ -258,6 +266,7 @@ static struct platform_driver nuc970_can0_driver = {
 		.driver 	= {
 			.name	= "nuc970-can0",
 			.owner	= THIS_MODULE,
+			.of_match_table = of_match_ptr(nuc970_can0_of_table),
 		},
 	.probe = c_can_plat_probe,
 	.remove = c_can_plat_remove,

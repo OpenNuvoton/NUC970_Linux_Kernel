@@ -26,6 +26,9 @@
 
 #include <linux/clk.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_irq.h>
 
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -2336,8 +2339,6 @@ static int nuc970_jpegcodec_probe(struct platform_device *pdev)
     jpeg_priv_t *priv = (jpeg_priv_t *)&jpeg_priv;
     int result;
     int ret = 0;    
-    
-    printk("nuc970_jpegcodec_probe...\n");
 
    	//  printk("videoin_param=%d, jpeg_param=%d, jpeginfo=%d\n", 
     //      sizeof(videoin_param_t), sizeof(jpeg_param_t), sizeof(jpeg_info_t));
@@ -2385,11 +2386,12 @@ static int nuc970_jpegcodec_probe(struct platform_device *pdev)
 
     video_set_drvdata(&priv->jdev, priv);
     
-    printk("video_set_drvdata => 0x%x\n", (int)priv);
+    //printk("video_set_drvdata => 0x%x\n", (int)priv);
     
     INIT_WORK(&priv->tqueue, jpegcodec_bh);
     
     //ret = request_irq(IRQ_JPEG, jpegirq_handler, SA_INTERRUPT, "nuc970-jpeg", priv);
+
     ret = request_irq(IRQ_JPEG, (irq_handler_t)jpegirq_handler, IRQF_DISABLED | IRQF_IRQPOLL, "nuc970-jpeg", priv);
 
     if (ret) {
@@ -2427,6 +2429,17 @@ static int __exit nuc970_jpegcodec_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id nuc970_jpeg_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-jpeg"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_jpeg_of_match);
+#else
+#define nuc970_jpeg_of_match NULL
+#endif
+
+
 static struct platform_driver nuc970_jpegcodec_driver = {
         .probe		= nuc970_jpegcodec_probe,
         .remove		= nuc970_jpegcodec_remove,
@@ -2438,6 +2451,7 @@ static struct platform_driver nuc970_jpegcodec_driver = {
         .driver		= {
                 .name	= "nuc970-jpeg",
                 .owner	= THIS_MODULE,
+                .of_match_table = of_match_ptr(nuc970_jpeg_of_match),
         },
 };
 

@@ -16,6 +16,9 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_irq.h>
 #include <linux/err.h>
 #include <linux/io.h>
 #include <linux/slab.h>
@@ -80,6 +83,43 @@
 #define NUC970_NUM_COLS		8
 #define NUC970_ROW_SHIFT	3
 
+#ifdef CONFIG_OF
+
+static int nuc970_keymap[] = {
+	KEY(0, 0, KEY_A),	KEY(0, 1, KEY_B),
+	KEY(0, 2, KEY_C),	KEY(0, 3, KEY_D),
+	KEY(0, 4, KEY_E),	KEY(0, 5, KEY_F),
+	KEY(0, 6, KEY_G),	KEY(0, 7, KEY_H),
+
+	KEY(1, 0, KEY_I),	KEY(1, 1, KEY_J),
+	KEY(1, 2, KEY_K),	KEY(1, 3, KEY_L),
+	KEY(1, 4, KEY_M),	KEY(1, 5, KEY_N),
+	KEY(1, 6, KEY_O),	KEY(1, 7, KEY_P),
+
+	KEY(2, 0, KEY_Q),	KEY(2, 1, KEY_R),
+	KEY(2, 2, KEY_S),	KEY(2, 3, KEY_T),
+	KEY(2, 4, KEY_U),	KEY(2, 5, KEY_V),
+	KEY(2, 6, KEY_W),	KEY(2, 7, KEY_X),
+
+	KEY(3, 0, KEY_Y),	KEY(3, 1, KEY_Z),
+	KEY(3, 2, KEY_1),	KEY(3, 3, KEY_2),
+	KEY(3, 4, KEY_3),	KEY(3, 5, KEY_4),
+	KEY(3, 6, KEY_5),	KEY(3, 7, KEY_6),
+};
+
+static struct matrix_keymap_data nuc970_map_data = {
+	.keymap			= nuc970_keymap,
+	.keymap_size	= ARRAY_SIZE(nuc970_keymap),
+};
+
+static struct nuc970_keypad_platform_data nuc970_keypad_info = {
+		.keymap_data	= &nuc970_map_data,
+        .prescale		= 0x80,
+        .debounce		= 0x8,
+};
+#endif
+
+
 struct nuc970_keypad {
 	const struct nuc970_keypad_platform_data *pdata;
 	struct clk *clk;
@@ -89,12 +129,29 @@ struct nuc970_keypad {
 	unsigned short keymap[NUC970_NUM_ROWS * NUC970_NUM_COLS];
 };
 
+#ifdef CONFIG_OF
+u32 kpi_row = 0;
+u32 kpi_col = 0;
+u32 kpi_port = 0;
+
+static const struct of_device_id nuc970_kpi_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-kpi", .data = &nuc970_keypad_info},
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_kpi_of_match);
+#else
+#define nuc970_kpi_of_match NULL
+#endif
+
 
 void nuc970_keypad_mfp_set(struct platform_device *pdev)
 {
 	struct pinctrl *p = NULL;
 	int retval = 0; 
 
+#ifdef CONFIG_OF
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
     #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
     p = devm_pinctrl_get_select(&pdev->dev, "kpi_3x2-PA");
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
@@ -110,6 +167,7 @@ void nuc970_keypad_mfp_set(struct platform_device *pdev)
 	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
 	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x8-PH");
 	#endif
+#endif
 
 	if (IS_ERR(p))
 	{
@@ -175,6 +233,8 @@ static irqreturn_t nuc970_keypad_irq_handler(int irq, void *dev_id)
 
 	kstatus = __raw_readl(keypad->mmio_base + KPI_STATUS);
 
+    printk("\n KPI irq status: 0x%x \n", kstatus);
+
 	if (kstatus & (PKEY_INT|RKEY_INT))
 	{
 		nuc970_keypad_scan_matrix(keypad, kstatus);
@@ -191,11 +251,14 @@ static irqreturn_t nuc970_keypad_irq_handler(int irq, void *dev_id)
 static int nuc970_keypad_open(struct input_dev *dev)
 {
 	struct nuc970_keypad *keypad = input_get_drvdata(dev);
-	const struct nuc970_keypad_platform_data *pdata = keypad->pdata;
+	//const struct nuc970_keypad_platform_data *pdata = keypad->pdata;
 	unsigned int val, config;
    
 	val = INPU | RKINTEN | PKINTEN | INTEN | ENKP;
 
+#ifdef CONFIG_OF
+    val |= ((kpi_row - 1) << 28) | ((kpi_col - 1) << 24);
+#else
     #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
     val |= ((3 - 1) << 28) | ((2 - 1) << 24);
 	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
@@ -211,6 +274,7 @@ static int nuc970_keypad_open(struct input_dev *dev)
 	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
 	val |= ((4 - 1) << 28) | ((8 - 1) << 24);
 	#endif
+#endif
 
 	//config = (pdata->prescale << KPI_PRESCALE) | (pdata->debounce << DEBOUNCE_BIT) | DB_EN;
 	config = (0xff << KPI_PRESCALE) | (0xd << DEBOUNCE_BIT) | DB_EN;
@@ -234,23 +298,37 @@ static void nuc970_keypad_close(struct input_dev *dev)
 
 static int nuc970_keypad_probe(struct platform_device *pdev)
 {
-	const struct nuc970_keypad_platform_data *pdata =
-						pdev->dev.platform_data;
+	//const struct nuc970_keypad_platform_data *pdata =
+	//					pdev->dev.platform_data;
+	const struct nuc970_keypad_platform_data *pdata;
 	const struct matrix_keymap_data *keymap_data;
 	struct nuc970_keypad *keypad;
+	const struct of_device_id *match;
 	struct input_dev *input_dev;
 	struct resource *res;
 	int irq;
-	int error;
+	int error = 0;
 
-	if (!pdata) {
+    if (pdev->dev.of_node) {
+		match = of_match_device(nuc970_kpi_of_match, &pdev->dev);
+		if (!match) {
+			dev_err(&pdev->dev, "Failed to find matching dt id\n");
+			goto exit;
+		}
+		pdata = match->data;
+	} else {
+		pdata = pdev->dev.platform_data;
+		
+		if (!pdata) {
 		dev_err(&pdev->dev, "no platform data defined\n");
 		return -EINVAL;
+		}
 	}
 
 	keymap_data = pdata->keymap_data;
 
 	irq = platform_get_irq(pdev, 0);
+	
 	if (irq < 0) {
 		dev_err(&pdev->dev, "failed to get keypad irq\n");
 		return -ENXIO;
@@ -305,6 +383,27 @@ static int nuc970_keypad_probe(struct platform_device *pdev)
 	/* set multi-function pin for nuc970 kpi. */
 	nuc970_keypad_mfp_set(pdev);
 
+    #ifdef CONFIG_OF
+    of_property_read_u32_array(pdev->dev.of_node, "row", &kpi_row, 1);
+	of_property_read_u32_array(pdev->dev.of_node, "col", &kpi_col, 1); 
+
+    if(kpi_row > NUC970_NUM_ROWS){
+	    dev_err(&pdev->dev, "failed to set kpi row number \n");
+	    goto failed_put_clk;
+	}
+
+	if(kpi_col > NUC970_NUM_COLS){
+		dev_err(&pdev->dev, "failed to set kpi col number \n");
+	    goto failed_put_clk;
+	}
+
+	if((kpi_port != 0) && (kpi_port != 1))
+	{
+        dev_err(&pdev->dev, "failed to set kpi port \n");
+	    goto failed_put_clk;
+	}
+	#endif
+
 	input_dev->name = pdev->name;
 	input_dev->id.bustype = BUS_HOST;
 	input_dev->open = nuc970_keypad_open;
@@ -352,6 +451,9 @@ failed_free_res:
 failed_free:
 	input_free_device(input_dev);
 	kfree(keypad);
+exit:
+	dev_err(&pdev->dev, "probe failed\n");
+
 	return error;
 }
 
@@ -404,6 +506,7 @@ static int nuc970_keypad_resume(struct platform_device *pdev)
 #define nuc970_keypad_resume	NULL
 #endif
 
+
 static struct platform_driver nuc970_keypad_driver = {
 	.probe		= nuc970_keypad_probe,
 	.remove		= nuc970_keypad_remove,
@@ -412,6 +515,7 @@ static struct platform_driver nuc970_keypad_driver = {
 	.driver		= {
 		.name	= "nuc970-kpi",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_kpi_of_match),
 	},
 };
 module_platform_driver(nuc970_keypad_driver);

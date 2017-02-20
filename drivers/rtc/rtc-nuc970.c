@@ -17,6 +17,10 @@
 #include <linux/io.h>
 #include <linux/bcd.h>
 #include <linux/clk.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/of_irq.h>
+
 #include <mach/map.h>
 #include <mach/regs-gcr.h>
 
@@ -278,6 +282,7 @@ static int __init nuc970_rtc_probe(struct platform_device *pdev)
 	rtc_reg_write(nuc970_rtc, REG_RTC_TSSR, (__raw_readl(nuc970_rtc->rtc_reg + REG_RTC_TSSR) | MODE24));
 
 	nuc970_rtc->irq_num = platform_get_irq(pdev, 0);
+	
 	if (devm_request_irq(&pdev->dev, nuc970_rtc->irq_num,
 			nuc970_rtc_interrupt, IRQF_NO_SUSPEND, "nuc970rtc", nuc970_rtc)) {
 		dev_err(&pdev->dev, "NUC970 RTC request irq failed\n");
@@ -309,6 +314,16 @@ static int nuc970_rtc_resume(struct platform_device *dev)
     return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id nuc970_rtc_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-rtc"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_rtc_of_match);
+#else
+#define nuc970_rtc_of_match NULL
+#endif
+
 static struct platform_driver nuc970_rtc_driver = {
 	.remove		= __exit_p(nuc970_rtc_remove),
 	.suspend        = nuc970_rtc_suspend,
@@ -317,6 +332,7 @@ static struct platform_driver nuc970_rtc_driver = {
 	.driver		= {
 		.name	= "nuc970-rtc",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_rtc_of_match),
 	},
 };
 
