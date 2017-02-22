@@ -882,6 +882,54 @@
 				};
 			};
 
+			sc0 {
+				pinctrl_sc0_PG: sc0-PG {
+					nuvoton,pins =
+						<6 0xA 0xA 0
+						 6 0xB 0xA 0
+						 6 0xC 0xA 0
+						 6 0xD 0xA 0
+						 6 0xE 0xA 0>;
+				};
+				pinctrl_sc0_PI: sc0-PI {
+					nuvoton,pins =
+						<8 0xB 0xA 0
+						 8 0xC 0xA 0
+						 8 0xD 0xA 0
+						 8 0xE 0xA 0
+						 8 0xF 0xA 0>;
+				};
+			};
+			scuart0 {
+				pinctrl_scuart0_PG: scuart0-PG {
+					nuvoton,pins =
+						<6 0xB 0xA 0
+						 6 0xC 0xA 0>;
+				};
+				pinctrl_scuart0_PI: scuart0-PI {
+					nuvoton,pins =
+						<8 0xC 0xA 0
+						 8 0xD 0xA 0>;
+				};
+			};
+			sc1 {
+				pinctrl_sc1_PI: sc1-PI {
+					nuvoton,pins =
+						<8 6 0xA 0
+						 8 7 0xA 0
+						 8 8 0xA 0
+						 8 9 0xA 0
+						 8 0xA 0xA 0>;
+				};
+			};
+			scuart1 {
+				pinctrl_scuart1_PI: scuart1-PI {
+					nuvoton,pins =
+						<8 7 0xA 0
+						 8 8 0xA 0>;
+				};
+			};
+
 		};  /* end of pinctrl */
 
 		uart0: serial@b8000000 {
@@ -1229,6 +1277,51 @@
 			map-addr = <0xf8001700>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_etimer3>;
+			status = "disabled";
+		};
+
+		sc0: sc@b8005000 {
+			compatible = "nuvoton,nuc970-sc";
+			reg = <0xb8005000 0x400>;
+			interrupts = <55 4 1>;
+			map-addr = <0xf8005000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sc0_PG>;
+			cdlvl = <0>;	// H(0), L(1), N(2)
+			pwrinv = <0>;
+			port-number = <0>;
+			status = "disabled";
+		};
+		sc1: sc@b8005400 {
+			compatible = "nuvoton,nuc970-sc";
+			reg = <0xb8005400 0x400>;
+			interrupts = <56 4 1>;
+			map-addr = <0xf8005400>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sc1_PI>;
+			cdlvl = <0>;	// H(0), L(1), N(2)
+			pwrinv = <0>;
+			port-number = <1>;
+			status = "disabled";
+		};
+		scuart0: serial@b8005000 {
+			compatible = "nuvoton,nuc970-scuart";
+			reg = <0xb8005000 0x400>;
+			interrupts = <55 4 1>;
+			map-addr = <0xf8005000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_scuart0_PG>;
+			port-number = <0>;
+			status = "disabled";
+		};
+		scuart1: serial@b8005400 {
+			compatible = "nuvoton,nuc970-scuart";
+			reg = <0xb8005400 0x400>;
+			interrupts = <56 4 1>;
+			map-addr = <0xf8005400>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_scuart1_PI>;
+			port-number = <1>;
 			status = "disabled";
 		};
 

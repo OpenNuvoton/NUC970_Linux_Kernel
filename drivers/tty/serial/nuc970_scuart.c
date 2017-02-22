@@ -33,7 +33,8 @@
 #include <linux/mutex.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
-
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/serial.h>
@@ -543,25 +544,25 @@ static int nuc970serial_pinctrl(struct platform_device *pdev)
 	struct pinctrl *p = NULL;
 	int retval = 0;
 
+#ifdef CONFIG_OF
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 	if(pdev->id == 0) {
-#if defined (CONFIG_NUC970_SCUART0_PG)
+
+#	if defined (CONFIG_NUC970_SCUART0_PG)
 		p = devm_pinctrl_get_select(&pdev->dev, "scuart0-PG");
-#elif defined (CONFIG_NUC970_SCUART0_PI)
+#	elif defined (CONFIG_NUC970_SCUART0_PI)
 		p = devm_pinctrl_get_select(&pdev->dev, "scuart0-PI");
-#endif
-
-		if (IS_ERR(p)) {
-			dev_err(&pdev->dev, "Unable to reserve pin\n");
-			retval = PTR_ERR(p);
-		}
-
+#	endif
 	} else { // if(pdev->id == 1)
 		p = devm_pinctrl_get_select(&pdev->dev, "scuart1");
-		if (IS_ERR(p)) {
-			dev_err(&pdev->dev, "Unable to reserve pin\n");
-			retval = PTR_ERR(p);
-		}
 	}
+#endif
+	if (IS_ERR(p)) {
+		dev_err(&pdev->dev, "Unable to reserve SC%d pin", pdev->id);
+		retval = PTR_ERR(p);
+	}
+
 	return retval;
 }
 
@@ -589,6 +590,12 @@ static void nuc970serial_set_clock(int id)
 
 }
 
+static const struct of_device_id nuc970_sc_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-scuart" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_sc_of_match);
+
 /*
  * Register a set of serial devices attached to a platform device.  The
  * list is terminated with a zero flags entry, which means we expect
@@ -596,11 +603,21 @@ static void nuc970serial_set_clock(int id)
  */
 static int nuc970serial_probe(struct platform_device *pdev)
 {
+#ifndef CONFIG_OF
 	struct plat_nuc970serial_port *p = pdev->dev.platform_data;
+#endif
 	struct uart_nuc970_port *up;
+	int retval, i;
 
-	int retval;
+#ifdef CONFIG_OF
 
+	if(!of_match_device(nuc970_sc_of_match, &pdev->dev)) {
+		dev_err(&pdev->dev, "Failed to find matching device\n");
+		return -EINVAL;
+	}
+	of_property_read_u32_array(pdev->dev.of_node, "port-number", &i, 1);
+	pdev->id = i;
+#endif
 	retval = nuc970serial_pinctrl(pdev);
 	if(retval != 0)
 		return retval;
@@ -609,13 +626,23 @@ static int nuc970serial_probe(struct platform_device *pdev)
 
 	up = &nuc970serial_ports[pdev->id];
 	up->port.line 		= pdev->id;
+#ifdef CONFIG_OF
+	of_property_read_u32_array(pdev->dev.of_node, "reg", &i, 1);
+	up->port.iobase 	= (long)i;
+	up->port.membase      	= (void *)i;
+	up->port.irq = platform_get_irq(pdev, 0);
+	up->port.uartclk 	= 12000000;
+	of_property_read_u32_array(pdev->dev.of_node, "map-addr", &up->port.mapbase, 1);
+#else
 	up->port.iobase       	= (long)p->membase;
 	up->port.membase      	= p->membase;
 	up->port.irq          	= p->irq;
 	up->port.uartclk      	= p->uartclk;
 	up->port.mapbase     	= p->mapbase;
-	up->port.private_data 	= p->private_data;
+	//up->port.private_data 	= p->private_data;
+#endif
 	up->port.dev 		= &pdev->dev;
+
 	up->port.flags 		= ASYNC_BOOT_AUTOCONF;
 	up->port.ops = &nuc970serial_ops;
 
@@ -652,13 +679,19 @@ static int nuc970serial_resume(struct platform_device *pdev)
 	return 0;
 }
 
+
 static struct platform_driver nuc970serial_driver = {
 	.probe		= nuc970serial_probe,
 	.remove		= nuc970serial_remove,
 	.suspend	= nuc970serial_suspend,
 	.resume		= nuc970serial_resume,
 	.driver		= {
-		.name	= "nuc970-sc",
+#ifdef CONFIG_OF
+		.name	= "nuc970-scuart",
+#else
+		.name	= "nuc970-sc",		// share same dev structure with smartcard
+#endif
+		.of_match_table = of_match_ptr(nuc970_sc_of_match),
 		.owner	= THIS_MODULE,
 	},
 };

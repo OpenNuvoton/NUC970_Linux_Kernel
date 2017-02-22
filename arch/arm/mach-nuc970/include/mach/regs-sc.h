@@ -209,7 +209,8 @@ struct nuc970_sc {
 	int atrlen;			// ATR length
 	int act;			// Card activated
 	int err;			// Last error code. 0 means no error
-	int ignorecd;			// ignore CD pin
+	int cdlvl;			// CD lvl
+	int pwrinv;			// power level inverse
 	int state;			// idle, read, write, atr, (removed?), (acted?)
 	int F;
 	int D;

@@ -294,7 +294,7 @@ config SCUART_NUC970
 
 config NUC970_SCUART0
 	bool "NUC970 SCUART0 support"
-	depends on SCUART_NUC970=y
+	depends on SCUART_NUC970=y && !USE_OF
 	help
 	  This selects NUC970 scuart0 driver
 choice
@@ -312,7 +312,7 @@ endchoice
 
 config NUC970_SCUART1
 	bool "NUC970 SCUART1 support"
-	depends on SCUART_NUC970=y
+	depends on SCUART_NUC970=y && !USE_OF
 	help
 	  This selects NUC970 scuart1 driver
 

@@ -26,7 +26,7 @@ config EMV_CHECK
 
 config	NUC970_SC0
 	bool "NUC970 SC0 support"
-	depends on NUC970_SC
+	depends on NUC970_SC && !USE_OF
 
 choice
 	prompt "NUC970 SC0 pin selection"
@@ -64,7 +64,7 @@ config	NUC970_SC0_PWRINV
 
 config	NUC970_SC1
 	bool "NUC970 SC1 support"
-	depends on NUC970_SC
+	depends on NUC970_SC && !USE_OF
 	help
 	 Enabe this option will configure SC1 MFP
 

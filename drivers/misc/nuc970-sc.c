@@ -25,6 +25,8 @@
 #include <linux/clk.h>
 #include <linux/wait.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <mach/map.h>
@@ -71,7 +73,7 @@ static void reset_reader(struct nuc970_sc *sc)
 
 
     /* Enable necessary interrupt for smartcard operation */
-    if(sc->ignorecd == 1) // Do not enable card detect interrupt if card present state ignore
+    if(sc->cdlvl == 2) // Do not enable card detect interrupt if card present state ignore
 	__raw_writel(SC_INTEN_RDAIEN |
                      SC_INTEN_TERRIEN |
                      SC_INTEN_TMR0IEN |
@@ -566,27 +568,13 @@ static int sc_open(struct inode *inode, struct file *filp)
 	clk_enable(sc[intf].eclk);
 	clk_set_rate(sc[intf].eclk, 4000000);	// Set SC clock to 4MHz
 
-	if(intf == 0) {
-#ifdef CONFIG_NUC970_SC0_PWRINV
+	if(sc[intf].pwrinv) {
 		__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
-#endif
-
-#ifdef CONFIG_NUC970_SC0_CDLV_H
-		__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
-#elif defined(CONFIG_NUC970_SC0_CD_IGNORE)
-		sc[intf].ignorecd = 1;
-#endif
-	} else {
-#ifdef CONFIG_NUC970_SC1_PWRINV
-		__raw_writel(__raw_readl(sc[intf].base + REG_SC_PINCTL) | SC_PINCTL_PWRINV, sc[intf].base + REG_SC_PINCTL);
-#endif
-
-#ifdef CONFIG_NUC970_SC1_CDLV_H
-		__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
-#elif defined(CONFIG_NUC970_SC1_CD_IGNORE)
-		sc[intf].ignorecd = 1;
-#endif
 	}
+	if(sc[intf].cdlvl == 0) {
+		__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_CDLV, sc[intf].base + REG_SC_CTL);
+	}
+
 	// enable SC engine
 	__raw_writel(__raw_readl(sc[intf].base + REG_SC_CTL) | SC_CTL_SCEN, sc[intf].base + REG_SC_CTL);
 	if (request_irq(sc[intf].irq, nuc970_sc_interrupt,
@@ -623,7 +611,6 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			reset_reader(sc);
 
 			if(sc->act == 1) {
-
 				sc->act = 0;
 				sc->state = SC_OP_DEACTIVATE;
 				__raw_writel(__raw_readl(sc->base + REG_SC_ALTCTL) | SC_ALTCTL_DACTEN, sc->base + REG_SC_ALTCTL);
@@ -647,7 +634,6 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				sc->err = parse_atr(sc, 0);
 
 			if(sc->err == SC_ERR_PARAM) {
-
 				sc->err = sc->protocol =  0;
 				sc->atrlen = sc->act = 0;
 				sc->state = SC_OP_WARM_RESET;
@@ -707,14 +693,14 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 
 		case SC_IOC_GETSTATUS:
-			if(sc->intf == 0) {
-#if defined(CONFIG_NUC970_SC0_CD_IGNORE)
+
+			if(sc->cdlvl == 2) {
 				if(sc->act == 1) {
 					param = ICC_PRESENT_ACTIVE;
 				} else {
 					param =ICC_PRESENT_INACTIVE;
 				}
-#else
+			} else {
 				int status = __raw_readl(sc->base + REG_SC_STATUS);
 				int ctl = __raw_readl(sc->base + REG_SC_CTL);
 				if(sc->act == 1) {
@@ -727,29 +713,6 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				} else {
 					param =ICC_PRESENT_INACTIVE;
 				}
-#endif
-			} else { // sc1
-#if defined(CONFIG_NUC970_SC1_CD_IGNORE)
-				if(sc->act == 1) {
-					param = ICC_PRESENT_ACTIVE;
-				} else {
-					param =ICC_PRESENT_INACTIVE;
-				}
-#else
-				int status = __raw_readl(sc->base + REG_SC_STATUS);
-				int ctl = __raw_readl(sc->base + REG_SC_CTL);
-				if(sc->act == 1) {
-					param = ICC_PRESENT_ACTIVE;
-				} else if(sc->err == SC_ERR_CARD_REMOVED) { // card once removed, maybe insert now, but, must report this event to user app.
-					param = ICC_ABSENT;
-					sc->err = 0;
-				} else if(((status & SC_STATUS_CDPINSTS) >> 13) != ((ctl & SC_CTL_CDLV) >> 26)) { // card is currently removed
-					param = ICC_ABSENT;
-				} else {
-					param =ICC_PRESENT_INACTIVE;
-				}
-
-#endif
 			}
 
 			if(copy_to_user((void *)arg, (const void *)&param, sizeof(unsigned int))) {
@@ -854,36 +817,76 @@ static struct miscdevice sc_dev[] = {
 	},
 };
 
+
+static const struct of_device_id nuc970_sc_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-sc" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_sc_of_match);
+
 static int nuc970_sc_probe(struct platform_device *pdev)
 {
-	int intf = pdev->id;
+	int intf;
 	struct resource *res;
 
-	memset(&sc[intf], 0, sizeof(struct nuc970_sc));
-
-	if(intf == 0) {
-#ifdef CONFIG_NUC970_SC0
-#if defined (CONFIG_NUC970_SC_PG)
-		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc0-PG");
-#elif defined (CONFIG_NUC970_SC_PI)
-		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc0-PI");
-#endif
-		if(IS_ERR(sc[intf].pinctrl)) {
-			dev_err(&pdev->dev, "Unable to reserve SC pin");
-			return PTR_ERR(sc[intf].pinctrl);
-		}
-#endif
-	} else {
-#ifdef CONFIG_NUC970_SC1
-		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc1");
-		if(IS_ERR(sc[intf].pinctrl)) {
-			dev_err(&pdev->dev, "Unable to reserve SC pin");
-			return PTR_ERR(sc[intf].pinctrl);
-		}
-#endif
+#ifdef CONFIG_OF
+	if(!of_match_device(nuc970_sc_of_match, &pdev->dev)) {
+		dev_err(&pdev->dev, "Failed to find matching device\n");
+		return -EINVAL;
 	}
 
+	of_property_read_u32_array(pdev->dev.of_node, "port-number", &intf, 1);
+	memset(&sc[intf], 0, sizeof(struct nuc970_sc));
+	sc[intf].pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+	of_property_read_u32_array(pdev->dev.of_node, "cdlvl", &sc[intf].cdlvl, 1);
+	of_property_read_u32_array(pdev->dev.of_node, "pwrinv", &sc[intf].pwrinv, 1);
 
+#else
+	intf = pdev->id;
+	memset(&sc[intf], 0, sizeof(struct nuc970_sc));
+	if(intf == 0) {
+#	ifdef CONFIG_NUC970_SC0
+#		if defined (CONFIG_NUC970_SC_PG)
+		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc0-PG");
+#		elif defined (CONFIG_NUC970_SC_PI)
+		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc0-PI");
+#		endif
+#	endif
+#	if defined(CONFIG_NUC970_SC0_CD_IGNORE)
+		sc[intf].cdlvl = 2;
+#	elif defined(CONFIG_NUC970_SC0_CDLV_H)
+		sc[intf].cdlvl = 0;
+#	else
+		sc[intf].cdlvl = 1;
+#	endif
+#	ifdef CONFIG_NUC970_SC0_PWRINV
+		sc[intf].pwrinv = 1;
+#	else
+		sc[intf].pwrinv = 0;
+#	endif
+	} else {
+#	ifdef CONFIG_NUC970_SC1
+		sc[intf].pinctrl = devm_pinctrl_get_select(&pdev->dev, "sc1");
+#	endif
+#	if defined(CONFIG_NUC970_SC1_CD_IGNORE)
+		sc[intf].cdlvl = 2;
+#	elif defined(CONFIG_NUC970_SC1_CDLV_H)
+		sc[intf].cdlvl = 0;
+#	else
+		sc[intf].cdlvl = 1;
+#	endif
+#	ifdef CONFIG_NUC970_SC1_PWRINV
+		sc[intf].pwrinv = 1;
+#	else
+		sc[intf].pwrinv = 0;
+#	endif
+	}
+
+#endif
+	if(IS_ERR(sc[intf].pinctrl)) {
+		dev_err(&pdev->dev, "Unable to reserve SC%d pin", intf);
+		return PTR_ERR(sc[intf].pinctrl);
+	}
 
 	misc_register(&sc_dev[intf]);
 
@@ -903,9 +906,7 @@ static int nuc970_sc_probe(struct platform_device *pdev)
 	}
 
 	init_waitqueue_head(&sc[intf].wq);
-
 	platform_set_drvdata(pdev, (void *)&sc[intf]);
-
 
 	return 0;
 }
@@ -967,9 +968,11 @@ static int nuc970_sc_resume(struct platform_device *pdev)
 #define nuc970_sc_resume	NULL
 #endif
 
+
 static struct platform_driver nuc970_sc_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_sc_of_match),
 		.name	= "nuc970-sc",
 	},
 	.probe		= nuc970_sc_probe,
