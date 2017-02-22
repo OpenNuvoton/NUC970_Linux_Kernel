@@ -140,6 +140,21 @@
 		usbh_ohci@b0007000{
 			status = "okay";
 		};
+
+        usbdev@b0006000 {
+			status = "okay";
+        };
+        fmi@b000d000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_nand_pc>;
+            status = "okay";
+        };
+        sdh@b000c000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sd0>;
+            status = "okay";
+        };
+
 		emac0@b0002000 {
 			status = "okay";
 		};

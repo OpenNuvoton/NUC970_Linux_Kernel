@@ -23,6 +23,7 @@
 #include <linux/atmel_pdc.h>
 #include <linux/gfp.h>
 #include <linux/freezer.h>
+#include <linux/of.h>
 
 #include <linux/mmc/host.h>
 
@@ -754,6 +755,7 @@ static int nuc970_emmc_probe(struct platform_device *pdev)
     struct clk *clkmux;
     struct pinctrl *p;
 
+printk("nuc970_emmc_probe\n");
     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
     if (!res)
         return -ENXIO;
@@ -828,6 +830,25 @@ static int nuc970_emmc_probe(struct platform_device *pdev)
 
     nuc970_emmc_disable(host);
 
+#ifdef CONFIG_OF
+    
+    p = devm_pinctrl_get_select_default(&pdev->dev);
+    if (IS_ERR(p)) {
+        return PTR_ERR(p);
+    }
+
+	/*
+	 * Right now device-tree probed devices don't get dma_mask set.
+	 * Since shared usb code relies on it, set it here for now.
+	 * Once we have dma capability bindings this can go away.
+	 */
+	if (!pdev->dev.dma_mask)
+	 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+	if (!pdev->dev.coherent_dma_mask)
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+
+#else
+
 #if defined (CONFIG_NUC970_EMMC_PC)
     /* initial SD1 pin -> PE2~9 */
     p = devm_pinctrl_get_select(&pdev->dev, "emmc-PC");
@@ -842,6 +863,8 @@ static int nuc970_emmc_probe(struct platform_device *pdev)
         dev_err(&pdev->dev, "unable to reserve pin\n");
         ret = PTR_ERR(p);
     }
+#endif
+
     nuc970_emmc_enable(host);
 
     /*
@@ -865,6 +888,7 @@ static int nuc970_emmc_probe(struct platform_device *pdev)
     host->present = 1;
 
     mmc_add_host(mmc);
+    printk("Added NUC970 EMMC driver\n");
     nuc970_emmc_debug("Added NUC970 EMMC driver\n");
     return 0;
 
@@ -917,6 +941,12 @@ static int nuc970_emmc_resume(struct platform_device *pdev)
 #define nuc970_emmc_resume    NULL
 #endif
 
+static const struct of_device_id nuc970_fmi_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-fmi" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_fmi_of_match);
+
 static struct platform_driver nuc970_emmc_driver = {
         .probe      = nuc970_emmc_probe,
         .suspend    = nuc970_emmc_suspend,
@@ -924,6 +954,7 @@ static struct platform_driver nuc970_emmc_driver = {
         .driver     = {
                 .name   = DRIVER_NAME,
                 .owner  = THIS_MODULE,
+		        .of_match_table = of_match_ptr(nuc970_fmi_of_match),
         },
 };
 

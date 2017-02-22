@@ -39,6 +39,7 @@
 #include <linux/usb/gadget.h>
 #include <linux/platform_device.h>
 #include <asm/byteorder.h>
+#include <linux/dma-mapping.h>
 #include <asm/io.h>
 #include <asm/irq.h>
 
@@ -210,6 +211,24 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 		}
 		else
 		{
+			while (!(__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000))
+			{
+				__raw_writel(__raw_readl(controller.reg + REG_USBD_CEP_CTRL_STAT)|CEP_FLUSH, controller.reg + REG_USBD_CEP_CTRL_STAT);// flush fifo
+				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
+				req->req.actual += len;
+				return len;
+			}
+#if 1
+			usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
+			buf = (u8*)(req->req.dma + req->req.actual);
+			while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20); //wait DMA complete
+			__raw_writel((__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0xe0) | 0x10, controller.reg + REG_USBD_DMA_CTRL_STS);
+			__raw_writel((u32)buf, controller.reg + REG_USBD_AHB_DMA_ADDR);
+			__raw_writel(len, controller.reg + REG_USBD_DMA_CNT);
+			__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) | 0x20, controller.reg + REG_USBD_DMA_CTRL_STS);
+			while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0);
+			__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
+#else
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
 			{
@@ -225,6 +244,7 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 			{
 				__raw_writeb( *buf++ & 0xff, controller.reg + REG_USBD_CEP_DATA_BUF);
 			}
+#endif
 			__raw_writel(len, controller.reg + REG_USBD_IN_TRNSFR_CNT);
 		}
 		req->req.actual += len;
@@ -232,7 +252,6 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 	else
 	{
 		len = req->req.length - req->req.actual;
-
 		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
 		buf = (u8*)(req->req.dma + req->req.actual);
 
@@ -284,6 +303,19 @@ static inline int read_packet(struct nuc970_ep *ep,u8 *buf,
 		fifo_count = __raw_readl(controller.reg + REG_USBD_CEP_CNT);
 		len = min(req->req.length - req->req.actual, fifo_count);
 
+#if 1
+		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
+		buf = (u8*)req->req.dma;
+		while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20); //wait DMA complete
+		__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0xe0, controller.reg + REG_USBD_DMA_CTRL_STS);
+		__raw_writel(0, controller.reg + REG_USBD_CEP_IRQ_ENB);
+
+		__raw_writel((u32)buf, controller.reg + REG_USBD_AHB_DMA_ADDR);
+		__raw_writel(len, controller.reg + REG_USBD_DMA_CNT);
+		__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) | 0x20, controller.reg + REG_USBD_DMA_CTRL_STS);
+		while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0);
+		__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
+#else
 		tmp = len / 4;
 		for (i=0; i<tmp; i++)
 		{
@@ -300,6 +332,7 @@ static inline int read_packet(struct nuc970_ep *ep,u8 *buf,
 			data = __raw_readb(controller.reg + REG_USBD_CEP_DATA_BUF);
 			*buf++ = data&0xFF;
 		}
+#endif
 		req->req.actual += len;
 
 	}
@@ -538,7 +571,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 					 controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1));
 		req = list_entry(ep->queue.next, struct nuc970_request, queue);
 	}
-	pr_devel("paser_irq_nep:0x%x\n", (int)req->req.dma);
+	//pr_devel("paser_irq_nep:0x%x\n", (int)req->req.dma);
 	switch (irq)
 	{
 		case EP_IN_TOK:
@@ -792,7 +825,8 @@ static irqreturn_t nuc970_udc_irq(int irq, void *_dev)
 							if ((ep->ep_type == EP_TYPE_BLK) || (ep->ep_type == EP_TYPE_ISO))
 								paser_irq_nep(1<<i, ep, IrqSt);
 							else if (ep->ep_type == EP_TYPE_INT)
-								paser_irq_nepint(1<<i, ep, IrqSt);
+								paser_irq_nep(1<<i, ep, IrqSt);
+//								paser_irq_nepint(1<<i, ep, IrqSt);
 							break;
 						}
 					}
@@ -946,7 +980,12 @@ static int nuc970_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descr
 			}
 		}
 		else if (ep->ep_type == EP_TYPE_INT)
-			ep->irq_enb = 0x40;
+		{
+			if (ep->ep_dir)//IN
+				ep->irq_enb = 0x40;
+			else
+				ep->irq_enb = 0x10;
+		}
 		else if (ep->ep_type == EP_TYPE_ISO)
 		{
 			if (ep->ep_dir)//IN
@@ -1734,32 +1773,38 @@ static int nuc970_udc_probe(struct platform_device *pdev)
 {
 	struct nuc970_udc *udc = &controller;
 	struct device *dev = &pdev->dev;
-	struct clk *clk;
+	struct pinctrl *p;
 	int error;
 
 	pr_devel("nuc970_udc_probe...\n");
 	dev_dbg(dev, "%s()\n", __func__);
 
-/*****************************************************************/
-#if 0
-	clk = clk_get(NULL, "gpio");
-		if (IS_ERR(clk)) {
-		pr_devel(KERN_ERR "nuc970-gpio:failed to get gpio clock source\n");
-		error = PTR_ERR(clk);
-		return error;
+#ifdef CONFIG_OF
+    
+        p = devm_pinctrl_get_select_default(&pdev->dev);
+        if (IS_ERR(p)) {
+            return PTR_ERR(p);
+        }
+
+		/*
+	 	 * Right now device-tree probed devices don't get dma_mask set.
+	 	 * Since shared usb code relies on it, set it here for now.
+	 	 * Once we have dma capability bindings this can go away.
+	 	 */
+		if (!pdev->dev.dma_mask)
+		 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+		if (!pdev->dev.coherent_dma_mask)
+			pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+
+#else
+	p = devm_pinctrl_get_select(&pdev->dev, "usbd-vbusvld");
+	if (IS_ERR(p))
+	{
+		dev_err(&pdev->dev, "unable to reserve pin\n");
+		error = PTR_ERR(p);
 	}
-
-	clk_prepare(clk);
-	clk_enable(clk);
-
-	__raw_writel(0x8000, REG_GPIOE_PUEN);
-	__raw_writel(0x4000, REG_GPIOE_PDEN);
-	__raw_writel(__raw_readl(REG_GPIOE_DIR) | 0xC000, REG_GPIOE_DIR);
-	__raw_writel(__raw_readl(REG_GPIOE_DATAOUT) | 0x8000, REG_GPIOE_DATAOUT);
 #endif
 
-	__raw_writel((__raw_readl(REG_MFP_GPH_L) & 0xf)|0x7, REG_MFP_GPH_L);
-/*****************************************************************/
 	udc->pdev = pdev;
 
 	udc->clk = clk_get(NULL, "usbd_hclk");
@@ -1906,6 +1951,12 @@ static int nuc970_udc_resume (struct platform_device *pdev)
 #define nuc970_udc_resume      NULL
 #endif
 
+static const struct of_device_id nuc970_usbd_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-usbdev" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_usbd_of_match);
+
 static struct platform_driver nuc970_udc_driver =
 {
 	.probe      = nuc970_udc_probe,
@@ -1915,6 +1966,7 @@ static struct platform_driver nuc970_udc_driver =
 	.driver     = {
 			.owner  = THIS_MODULE,
 			.name   = (char *) "nuc970-usbdev",
+		        .of_match_table = of_match_ptr(nuc970_usbd_of_match),
 	},
 };
 

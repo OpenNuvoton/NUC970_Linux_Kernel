@@ -451,6 +451,123 @@
 				};
 			};
 
+			fmi {
+				pinctrl_emmc_pc: emmc-PC {
+					nuvoton,pins =
+						<2 0 6 0 
+						 2 1 6 0
+						 2 2 6 0
+						 2 3 6 0
+						 2 4 6 0
+						 2 5 6 0>;
+				};
+
+				pinctrl_emmc_pi: emmc-PI {
+					nuvoton,pins =
+						<8 5 6 0 
+						 8 6 6 0
+						 8 7 6 0
+						 8 8 6 0
+						 8 9 6 0
+						 8 0xa 6 0>;
+				};
+
+				pinctrl_nand_pc: nand-PC {
+					nuvoton,pins =
+						<2 0 5 0 
+						 2 1 5 0
+						 2 2 5 0
+						 2 3 5 0
+						 2 4 5 0
+						 2 5 5 0
+						 2 6 5 0
+						 2 7 5 0
+						 2 8 5 0
+						 2 9 5 0
+						 2 0xa 5 0
+						 2 0xb 5 0
+						 2 0xc 5 0
+						 2 0xd 5 0
+						 2 0xe 5 0>;
+				};
+
+				pinctrl_nand_pi: nand-PI {
+					nuvoton,pins =
+						<8 1 5 0 
+						 8 2 5 0
+						 8 3 5 0
+						 8 4 5 0
+						 8 5 5 0
+						 8 6 5 0
+						 8 7 5 0
+						 8 8 5 0
+						 8 9 5 0
+						 8 0xa 5 0
+						 8 0xb 5 0
+						 8 0xc 5 0
+						 8 0xd 5 0
+						 8 0xe 5 0
+						 8 0xf 5 0>;
+				};
+			};
+
+			sdh {
+				pinctrl_sd0: sd0 {
+					nuvoton,pins =
+						<3 0 6 0 
+						 3 1 6 0
+						 3 2 6 0
+						 3 3 6 0
+						 3 4 6 0
+						 3 5 6 0
+						 3 6 6 0
+						 3 7 6 0>;
+				};
+
+				pinctrl_sd1_pi: sd1-PI {
+					nuvoton,pins =
+						<8 5 4 0 
+						 8 6 4 0
+						 8 7 4 0
+						 8 8 4 0
+						 8 9 4 0
+						 8 0xa 4 0
+						 8 0xc 4 0
+						 8 0xd 4 0>;
+				};
+
+				pinctrl_sd1_pe: sd1-PE {
+					nuvoton,pins =
+						<4 2 6 0 
+						 4 3 6 0
+						 4 4 6 0
+						 4 5 6 0
+						 4 6 6 0
+						 4 7 6 0
+						 4 8 6 0
+						 4 9 6 0>;
+				};
+
+				pinctrl_sd1_ph: sd1-PH {
+					nuvoton,pins =
+						<7 6 6 0 
+						 7 7 6 0
+						 7 8 6 0
+						 7 9 6 0
+						 7 0xa 6 0
+						 7 0xb 6 0
+						 7 0xc 6 0
+						 7 0xd 6 0>;
+				};
+			};
+
+			usbd {
+				pinctrl_usbd: usbd-vbusvld{
+					nuvoton,pins =
+						<7 0 7 0>;
+				};
+			};
+
 			emac0 {
 				pinctrl_emac0: emac0 {
 					nuvoton,pins =
@@ -1173,7 +1290,7 @@
 			eint5-config = <1 0 0>;
 			eint6-config = <1 0 0>;
 			eint7-config = <1 0 0>;
-			status = "okay";
+			status = "disabled";
 		};
         
 		adc: adc@b800a000 {
@@ -1333,13 +1450,32 @@
 		#size-cells = <1>;
 		ranges;
 
-		usbdev@b0006000 {
-			compatible = "nuvoton,nuc970-usbdev", "nuc970-usbdev";
-			reg = <0xb0006000 0x1000>;
-			interrupts = <29 4 1>;
-			interrupt-controller;
-			status = "okay";
-		};
+        usbdev@b0006000 {
+            compatible = "nuvoton,nuc970-usbdev";
+            reg = <0xb0006000 0x1000>;
+            interrupts = <29 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbd>;
+            status = "okay";
+        };
+
+        sdh@b000c000 {
+            compatible = "nuvoton,nuc970-sdh";
+            reg = <0xb000c000 0x1000>;
+            interrupts = <27 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sd0>;
+            status = "okay";
+        };
+
+        fmi@b000d000 {
+            compatible = "nuvoton,nuc970-fmi";
+            reg = <0xb000d000 0x1000>;
+            interrupts = <28 4 1>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_emmc_pc>;
+            status = "okay";
+        };
 
 		usbh_ehci@b0005000 {
 			compatible = "nuvoton,nuc970-ehci", "usbh-ehci";

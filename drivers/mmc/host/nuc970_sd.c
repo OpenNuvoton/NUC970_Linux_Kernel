@@ -23,6 +23,7 @@
 #include <linux/atmel_pdc.h>
 #include <linux/gfp.h>
 #include <linux/freezer.h>
+#include <linux/of.h>
 
 #include <linux/mmc/host.h>
 
@@ -986,6 +987,26 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     clk_set_rate(host->upll_clk, 33000000);
 
     nuc970_sd_disable(host);
+
+#ifdef CONFIG_OF
+    
+    p = devm_pinctrl_get_select_default(&pdev->dev);
+    if (IS_ERR(p)) {
+        return PTR_ERR(p);
+    }
+
+	/*
+	 * Right now device-tree probed devices don't get dma_mask set.
+	 * Since shared usb code relies on it, set it here for now.
+	 * Once we have dma capability bindings this can go away.
+	 */
+	if (!pdev->dev.dma_mask)
+	 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+	if (!pdev->dev.coherent_dma_mask)
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+
+#else
+
 #if defined (CONFIG_NUC970_SD_SD0)
     /* initial SD0 pin -> PD0~7 */
     p = devm_pinctrl_get_select(&pdev->dev, "sd0");
@@ -1012,6 +1033,8 @@ static int nuc970_sd_probe(struct platform_device *pdev)
         dev_err(&pdev->dev, "unable to reserve pin\n");
         ret = PTR_ERR(p);
     }
+#endif
+
     nuc970_sd_enable(host);
 
     /*
@@ -1137,6 +1160,12 @@ static int nuc970_sd_resume(struct platform_device *pdev)
 #define nuc970_sd_resume    NULL
 #endif
 
+static const struct of_device_id nuc970_sdh_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-sdh" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_sdh_of_match);
+
 static struct platform_driver nuc970_sd_driver = {
         .probe      = nuc970_sd_probe,
         .remove     = nuc970_sd_remove,
@@ -1145,6 +1174,7 @@ static struct platform_driver nuc970_sd_driver = {
         .driver     = {
                 .name   = DRIVER_NAME,
                 .owner  = THIS_MODULE,
+		        .of_match_table = of_match_ptr(nuc970_sdh_of_match),
         },
 };
 
