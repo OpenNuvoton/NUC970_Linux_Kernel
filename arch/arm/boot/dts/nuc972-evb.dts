@@ -77,6 +77,10 @@
 			status = "okay";
 		};
 		
+		pwm: pwm@b8007000 {
+			status = "okay";
+		};
+		
 		spi0: spi0@b8006200 {
 			status = "okay";
 			#address-cells = <1>;

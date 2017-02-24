@@ -17,6 +17,7 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/clk.h>
+#include <linux/of.h>
 #include <linux/io.h>
 #include <linux/pwm.h>
 
@@ -203,6 +204,9 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	__raw_writel(0x4444, REG_PWM_CSR);
 
 	if(pdev->id == 0) {
+#if defined(CONFIG_OF)
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 #if defined (CONFIG_NUC970_PWM0_PA12)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PA");
 #elif defined (CONFIG_NUC970_PWM0_PB2)
@@ -219,8 +223,12 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 
 		}
 #endif
+#endif
 	}
 	if(pdev->id == 1) {
+#if defined(CONFIG_OF)
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 #if defined (CONFIG_NUC970_PWM1_PA13)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm1-PA");
 #elif defined (CONFIG_NUC970_PWM1_PB3)
@@ -234,8 +242,12 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "unable to reserve output pin\n");
 		}
 #endif
+#endif
 	}
 	if(pdev->id == 2) {
+#if defined(CONFIG_OF)
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 #if defined (CONFIG_NUC970_PWM2_PA14)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm2-PA");
 #elif defined (CONFIG_NUC970_PWM2_PH2)
@@ -249,8 +261,12 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "unable to reserve output pin\n");
 		}
 #endif
+#endif
 	}
 	if(pdev->id == 3) {
+#if defined(CONFIG_OF)
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+#else
 #if defined (CONFIG_NUC970_PWM3_PA15)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm3-PA");
 #elif defined (CONFIG_NUC970_PWM3_PH3)
@@ -263,6 +279,7 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 		if(IS_ERR(p)) {
 			dev_err(&pdev->dev, "unable to reserve output pin\n");
 		}
+#endif
 #endif
 	}
 
@@ -353,11 +370,21 @@ static int nuc970_pwm_resume(struct platform_device *pdev)
 #endif
 
 
+#if defined(CONFIG_OF)
+static const struct of_device_id nuc970_pwm0_of_match[] = {
+	{   .compatible = "nuvoton,nuc970-pwm0" } ,
+	{	},
+};
+MODULE_DEVICE_TABLE(of, nuc970_pwm0_of_match);
+#endif
 
 static struct platform_driver nuc970_pwm_driver = {
 	.driver		= {
 		.name	= "nuc970-pwm",
 		.owner	= THIS_MODULE,
+#if defined(CONFIG_OF)
+		.of_match_table = of_match_ptr(nuc970_pwm0_of_match),
+#endif
 //#ifdef CONFIG_PM
 //		.pm	= &nuc970_pwm_pm_ops,
 //#endif

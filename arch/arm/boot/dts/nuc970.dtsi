@@ -999,6 +999,83 @@
 				};
 			};
 
+			pwm0 {
+				pinctrl_pwm0_PA: pwm0-PA {
+					nuvoton,pins =
+						<0 0xc 0xd 0>;
+				};
+
+				pinctrl_pwm0_PB: pwm0-PB {
+					nuvoton,pins =
+						<1 2 0xd 0>;
+				};
+
+				pinctrl_pwm0_PC: pwm0-PC {
+					nuvoton,pins =
+						<2 0xe 0xd 0>;
+				};
+
+				pinctrl_pwm0_PD: pwm0-PD {
+					nuvoton,pins =
+						<3 0xc 0xd 0>; 
+				};
+
+			};
+
+			pwm1 {
+				pinctrl_pwm1_PA: pwm1-PA {
+					nuvoton,pins =
+						<0 0xd 0xd 0>;
+				};
+
+				pinctrl_pwm1_PB: pwm0-PB {
+					nuvoton,pins =
+						<1 3 0xd 0>;
+				};
+
+				pinctrl_pwm1_PD: pwm0-PD {
+					nuvoton,pins =
+						<3 0xd 0xd 0>;
+				};
+
+			};
+
+			pwm2 {
+				pinctrl_pwm2_PA: pwm2-PA {
+					nuvoton,pins =
+						<0 0xe 0xd 0>;
+				};
+
+				pinctrl_pwm2_PH: pwm2-PH {
+					nuvoton,pins =
+						<7 2 0xd 0>;
+				};
+
+				pinctrl_pwm2_PD: pwm2-PD {
+					nuvoton,pins =
+						<3 0xe 0xd 0>;
+				};
+
+			};
+
+			pwm3 {
+				pinctrl_pwm3_PA: pwm3-PA {
+					nuvoton,pins =
+						<0 0xf 0xd 0>;
+				};
+
+				pinctrl_pwm3_PH: pwm3-PH {
+					nuvoton,pins =
+						<7 3 0xd 0>;
+				};
+
+				pinctrl_pwm3_PD: pwm3-PD {
+					nuvoton,pins =
+						<3 0xf 0xd 0>;
+				};
+
+			};
+
 			sc0 {
 				pinctrl_sc0_PG: sc0-PG {
 					nuvoton,pins =
@@ -1394,6 +1471,16 @@
 			map-addr = <0xf8001700>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_etimer3>;
+			status = "disabled";
+		};
+
+		pwm: pwm@b8007000 {
+			compatible = "nuvoton,nuc970-pwm0";
+			reg = <0xb8007000 0x100>;
+			interrupts = <60 4 1>;
+			map-addr = <0xf8007000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm0_PA>;
 			status = "disabled";
 		};
 
