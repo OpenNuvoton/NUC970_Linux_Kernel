@@ -19,6 +19,7 @@
 #include <linux/blkdev.h>
 
 #include <linux/freezer.h>
+#include <linux/of.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
@@ -83,6 +84,7 @@ static struct nuc970_nand_ecclayout	nuc970_nand_SYSTEM_oob;
 static struct nuc970_nand_ecclayout	nuc970_nand_EXECUTE_oob;
 
 #ifndef	CONFIG_MTD_CMDLINE_PARTS
+#ifndef CONFIG_OF
 static struct mtd_partition	partitions[] = {
 	{
 		.name =	"u-boot",
@@ -102,6 +104,7 @@ static struct mtd_partition	partitions[] = {
 		.size =	MTDPART_SIZ_FULL
 	}
 };
+#endif
 #endif
 
 struct nuc970_nand_info	{
@@ -1175,6 +1178,7 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 {
 	struct nand_chip *chip;
 	struct nuc970_nand_info	*nuc970_nand;
+	struct mtd_part_parser_data ppdata = {};
 	struct mtd_info	*mtd;
 	struct pinctrl *p;
 
@@ -1186,6 +1190,12 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 	nuc970_nand	= devm_kzalloc(&pdev->dev, sizeof(struct nuc970_nand_info),	GFP_KERNEL);
 	if (!nuc970_nand)
 		return -ENOMEM;
+
+	if (pdev->dev.of_node)
+	{
+		pdev->dev.platform_data = nuc970_nand;
+		nuc970_nand = dev_get_platdata(&pdev->dev);
+	}
 
 	nuc970_nand->pnand_vaddr = (unsigned char *) dma_alloc_writecombine(NULL, 512*16, (dma_addr_t *)&nuc970_nand->pnand_phyaddr, GFP_KERNEL);
 	if(nuc970_nand->pnand_vaddr	== NULL){
@@ -1254,6 +1264,25 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 	chip->ecc.read_oob	= nuc970_nand_read_oob_hwecc;
 	chip->ecc.layout	= &nuc970_nand_oob;
 
+#ifdef CONFIG_OF
+    
+    p = devm_pinctrl_get_select_default(&pdev->dev);
+    if (IS_ERR(p)) {
+        return PTR_ERR(p);
+    }
+
+	/*
+	 * Right now device-tree probed devices don't get dma_mask set.
+	 * Since shared usb code relies on it, set it here for now.
+	 * Once we have dma capability bindings this can go away.
+	 */
+	if (!pdev->dev.dma_mask)
+	 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+	if (!pdev->dev.coherent_dma_mask)
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+
+#else
+
 #if	defined	(CONFIG_NUC970_NAND_PC)
 	p =	devm_pinctrl_get_select(&pdev->dev,	"nand-PC");
 
@@ -1265,6 +1294,8 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 		dev_err(&pdev->dev,	"unable	to reserve pin\n");
 		retval = PTR_ERR(p);
 	}
+#endif
+
 	nuc970_nand_initialize(	);
 
 	/* first scan to find the device and get the page size */
@@ -1342,8 +1373,10 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 	}
 
 #ifndef	CONFIG_MTD_CMDLINE_PARTS
+#ifndef CONFIG_OF
 	nuc970_nand->parts = (struct mtd_partition*)partitions;
 	nuc970_nand->nr_parts =	ARRAY_SIZE(partitions);
+#endif
 #endif
 
 	nuc970_nand->m_i32SMRASize	= mtd->oobsize;
@@ -1388,7 +1421,8 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 	}
 
 	/* add mtd-id. The string should same as uboot definition */
-	mtd->name =	"nand0";
+	mtd->name = "nand0";
+	ppdata.of_node = pdev->dev.of_node;
 
 	/* second phase	scan */
 	if ( nand_scan_tail( &(nuc970_nand->mtd) ) ) {
@@ -1409,7 +1443,7 @@ static int nuc970_nand_probe(struct	platform_device	*pdev)
 
 	/* First look for RedBoot table	or partitions on the command
 	 * line, these take	precedence over	device tree	information	*/
-	mtd_device_parse_register(&(nuc970_nand->mtd), NULL, NULL, nuc970_nand->parts, nuc970_nand->nr_parts);
+	mtd_device_parse_register(&(nuc970_nand->mtd), NULL, &ppdata, nuc970_nand->parts, nuc970_nand->nr_parts);
 
 	LEAVE();
 
@@ -1478,10 +1512,17 @@ static int nuc970_nand_resume(struct platform_device *pdev)
 #define nuc970_nand_resume NULL
 #endif
 
+static const struct of_device_id nuc970_fmi_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-fmi" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_fmi_of_match);
+
 static struct platform_driver nuc970_nand_driver = {
 		.driver	= {
 		.name	= "nuc970-fmi",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(nuc970_fmi_of_match),
 		},
 		.probe		= nuc970_nand_probe,
 		.remove		= nuc970_nand_remove,

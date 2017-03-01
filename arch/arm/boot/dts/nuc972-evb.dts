@@ -31,7 +31,7 @@
 		};
 
 		uart4: serial@b8000400 {
-			status = "okay";
+			status = "disabled";
 		};
 
 		can0: can@b800b000 {
@@ -149,10 +149,29 @@
 			status = "okay";
         };
         fmi@b000d000 {
+            compatible = "nuvoton,nuc970-fmi", "nand0";
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_nand_pc>;
-            status = "okay";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0x0 {
+				label = "u-boot";
+				reg = <0x00000000 0x0200000>;
+			};
+
+			partition@0x200000 {
+				label = "Kernel";
+				reg = <0x0200000 0x1400000>;
+			};                   
+
+			partition@0x1600000 {
+				label = "user";
+				reg = <0x1600000 0x6480000>;
+			};                   
         };
+
         sdh@b000c000 {
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_sd0>;
