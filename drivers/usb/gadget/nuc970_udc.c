@@ -218,17 +218,6 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 				req->req.actual += len;
 				return len;
 			}
-#if 1
-			usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
-			buf = (u8*)(req->req.dma + req->req.actual);
-			while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20); //wait DMA complete
-			__raw_writel((__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0xe0) | 0x10, controller.reg + REG_USBD_DMA_CTRL_STS);
-			__raw_writel((u32)buf, controller.reg + REG_USBD_AHB_DMA_ADDR);
-			__raw_writel(len, controller.reg + REG_USBD_DMA_CNT);
-			__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) | 0x20, controller.reg + REG_USBD_DMA_CTRL_STS);
-			while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0);
-			__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
-#else
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
 			{
@@ -244,7 +233,6 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 			{
 				__raw_writeb( *buf++ & 0xff, controller.reg + REG_USBD_CEP_DATA_BUF);
 			}
-#endif
 			__raw_writel(len, controller.reg + REG_USBD_IN_TRNSFR_CNT);
 		}
 		req->req.actual += len;
@@ -303,19 +291,6 @@ static inline int read_packet(struct nuc970_ep *ep,u8 *buf,
 		fifo_count = __raw_readl(controller.reg + REG_USBD_CEP_CNT);
 		len = min(req->req.length - req->req.actual, fifo_count);
 
-#if 1
-		usb_gadget_map_request(&udc->gadget, &req->req, ep->ep_dir);
-		buf = (u8*)req->req.dma;
-		while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20); //wait DMA complete
-		__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0xe0, controller.reg + REG_USBD_DMA_CTRL_STS);
-		__raw_writel(0, controller.reg + REG_USBD_CEP_IRQ_ENB);
-
-		__raw_writel((u32)buf, controller.reg + REG_USBD_AHB_DMA_ADDR);
-		__raw_writel(len, controller.reg + REG_USBD_DMA_CNT);
-		__raw_writel(__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) | 0x20, controller.reg + REG_USBD_DMA_CTRL_STS);
-		while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0);
-		__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
-#else
 		tmp = len / 4;
 		for (i=0; i<tmp; i++)
 		{
@@ -332,7 +307,6 @@ static inline int read_packet(struct nuc970_ep *ep,u8 *buf,
 			data = __raw_readb(controller.reg + REG_USBD_CEP_DATA_BUF);
 			*buf++ = data&0xFF;
 		}
-#endif
 		req->req.actual += len;
 
 	}
