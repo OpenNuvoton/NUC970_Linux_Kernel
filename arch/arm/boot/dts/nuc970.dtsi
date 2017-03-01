@@ -43,7 +43,7 @@
 			uart0 {
 				pinctrl_uart0_PE: uart0-PE {
 					nuvoton,pins =
-						<4 0 9 0 
+						<4 0 9 0
 						 4 1 9 0>;
 				};
 			};
@@ -51,10 +51,10 @@
 			uart1 {
 				pinctrl_uart1_PE: uart1-PE {
 					nuvoton,pins =
-						<4 2 9 0 
+						<4 2 9 0
 						 4 3 9 0>;
 				};
-				
+
 				pinctrl_uart1_fc_PE: uart1-fc-PE {
 					nuvoton,pins =
 						<4 2 9 0
@@ -103,14 +103,14 @@
 						 8 8 9 0>;
 				};
 			};
-			
+
 			uart2 {
 				pinctrl_uart2: uart2 {
 					nuvoton,pins =
-						<5 0xb 9 0 
+						<5 0xb 9 0
 						 5 0xc 9 0>;
 				};
-			
+
 				pinctrl_uart2_fc: uart2-fc {
 					nuvoton,pins =
 						<5 0xb 9 0
@@ -123,7 +123,7 @@
 			uart3 {
 				pinctrl_uart3_PE: uart3-PE {
 					nuvoton,pins =
-						<4 0xc 0xa 0 
+						<4 0xc 0xa 0
 						 4 0xd 0xa 0>;
 				};
 			};
@@ -134,7 +134,7 @@
 						<2 0xa 9 0
 						 2 0xb 9 0>;
 				};
-				
+
 				pinctrl_uart4_fc_PC: uart4-fc-PC {
 					nuvoton,pins =
 						<2 0xa 9 0
@@ -167,11 +167,11 @@
 			uart5 {
 				pinctrl_uart5_PB: uart5-PB {
 					nuvoton,pins =
-						<1 0 9 0 
+						<1 0 9 0
 						 1 1 9 0>;
 				};
 			};
-			
+
 			uart6 {
 				pinctrl_uart6_PB: uart6-PB {
 					nuvoton,pins =
@@ -189,7 +189,7 @@
 
 				pinctrl_uart6_PG: uart6-PG {
 					nuvoton,pins =
-						<6 0xb 9 0 
+						<6 0xb 9 0
 						 6 0xc 9 0>;
 				};
 
@@ -219,7 +219,7 @@
 			uart8 {
 				pinctrl_uart8_PE: uart8-PE {
 					nuvoton,pins =
-						<4 0xa 9 0 
+						<4 0xa 9 0
 						 4 0xb 9 0>;
 				};
 
@@ -283,7 +283,7 @@
 			uart10 {
 				pinctrl_uart10_PB0: uart10-PB0 {
 					nuvoton,pins =
-						<1 0xa 9 0 
+						<1 0xa 9 0
 						 1 0xb 9 0>;
 				};
 
@@ -434,14 +434,14 @@
 			usbh {
 				pinctrl_usbh_ppwr_pe: usbh-ppwr-pe {
 					nuvoton,pins =
-						<4 0xe 7 0 
+						<4 0xe 7 0
 						 4 0xf 7 0
 						 7 1 7 0>;
 				};
 
 				pinctrl_usbh_ppwr_pf: usbh-ppwr-pf {
 					nuvoton,pins =
-						<5 0xa 7 0 
+						<5 0xa 7 0
 						 7 1 7 0>;
 				};
 
@@ -454,7 +454,7 @@
 			fmi {
 				pinctrl_emmc_pc: emmc-PC {
 					nuvoton,pins =
-						<2 0 6 0 
+						<2 0 6 0
 						 2 1 6 0
 						 2 2 6 0
 						 2 3 6 0
@@ -464,7 +464,7 @@
 
 				pinctrl_emmc_pi: emmc-PI {
 					nuvoton,pins =
-						<8 5 6 0 
+						<8 5 6 0
 						 8 6 6 0
 						 8 7 6 0
 						 8 8 6 0
@@ -474,7 +474,7 @@
 
 				pinctrl_nand_pc: nand-PC {
 					nuvoton,pins =
-						<2 0 5 0 
+						<2 0 5 0
 						 2 1 5 0
 						 2 2 5 0
 						 2 3 5 0
@@ -493,7 +493,7 @@
 
 				pinctrl_nand_pi: nand-PI {
 					nuvoton,pins =
-						<8 1 5 0 
+						<8 1 5 0
 						 8 2 5 0
 						 8 3 5 0
 						 8 4 5 0
@@ -514,7 +514,7 @@
 			sdh {
 				pinctrl_sd0: sd0 {
 					nuvoton,pins =
-						<3 0 6 0 
+						<3 0 6 0
 						 3 1 6 0
 						 3 2 6 0
 						 3 3 6 0
@@ -526,7 +526,7 @@
 
 				pinctrl_sd1_pi: sd1-PI {
 					nuvoton,pins =
-						<8 5 4 0 
+						<8 5 4 0
 						 8 6 4 0
 						 8 7 4 0
 						 8 8 4 0
@@ -538,7 +538,7 @@
 
 				pinctrl_sd1_pe: sd1-PE {
 					nuvoton,pins =
-						<4 2 6 0 
+						<4 2 6 0
 						 4 3 6 0
 						 4 4 6 0
 						 4 5 6 0
@@ -550,7 +550,7 @@
 
 				pinctrl_sd1_ph: sd1-PH {
 					nuvoton,pins =
-						<7 6 6 0 
+						<7 6 6 0
 						 7 7 6 0
 						 7 8 6 0
 						 7 9 6 0
@@ -571,7 +571,7 @@
 			emac0 {
 				pinctrl_emac0: emac0 {
 					nuvoton,pins =
-						<5 0 1 0 
+						<5 0 1 0
 						 5 1 1 0
 						 5 2 1 0
 						 5 3 1 0
@@ -587,7 +587,7 @@
 			emac1 {
 				pinctrl_emac1: emac1 {
 					nuvoton,pins =
-						<4 2 1 0 
+						<4 2 1 0
 						 4 3 1 0
 						 4 4 1 0
 						 4 5 1 0
@@ -599,190 +599,190 @@
 						 4 0xb 1 0>;
 				};
 			};
-			
+
 			spi0 {
 				pinctrl_spi0: spi0 {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0 >;
 				};
-				
+
 				pinctrl_spi0_quad: spi0-quad {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0
-						 1 0xa 0xb 0 
+						 1 0xa 0xb 0
 						 1 0xb 0xb 0 >;
 				};
-				
+
 				pinctrl_spi0_ss1_PB: spi0-ss1-PB {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0
 						 1 0 0xb 0 >;
 				};
-				
+
 				pinctrl_spi0_ss1_PH: spi0-ss1-PH {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0
 						 7 0xc 0xb 0 >;
 				};
-				
+
 				pinctrl_spi0_quad_ss1_PB: spi0-quad-ss1-PB {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0
-						 1 0xa 0xb 0 
-						 1 0xb 0xb 0 
+						 1 0xa 0xb 0
+						 1 0xb 0xb 0
 						 1 0 0xb 0 >;
 				};
-				
+
 				pinctrl_spi0_quad_ss1_PH: spi0-quad-ss1-PH {
 					nuvoton,pins =
-						<1 6 0xb 0 
+						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
 						 1 9 0xb 0
-						 1 0xa 0xb 0 
-						 1 0xb 0xb 0 
+						 1 0xa 0xb 0
+						 1 0xb 0xb 0
 						 7 0xc 0xb 0 >;
 				};
 			};
-			
+
 			spi1 {
 				pinctrl_spi1: spi1 {
 					nuvoton,pins =
-						<1 0xc 0xb 0 
+						<1 0xc 0xb 0
 						 1 0xd 0xb 0
 						 1 0xe 0xb 0
 						 1 0xf 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_ss1_PB: spi1-ss1-PB {
 					nuvoton,pins =
-						<1 0xc 0xb 0 
+						<1 0xc 0xb 0
 						 1 0xd 0xb 0
 						 1 0xe 0xb 0
-						 1 0xf 0xb 0 
+						 1 0xf 0xb 0
 						 1 1 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_quad_PB: spi1-quad-PB {
 					nuvoton,pins =
-						<1 0xc 0xb 0 
+						<1 0xc 0xb 0
 						 1 0xd 0xb 0
 						 1 0xe 0xb 0
-						 1 0xf 0xb 0 
-						 6 4 0xb 0 
+						 1 0xf 0xb 0
+						 6 4 0xb 0
 						 6 5 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_quad_ss1_PB: spi1-quad-ss1-PB {
 					nuvoton,pins =
-						<1 0xc 0xb 0 
+						<1 0xc 0xb 0
 						 1 0xd 0xb 0
 						 1 0xe 0xb 0
-						 1 0xf 0xb 0 
-						 6 4 0xb 0 
-						 6 5 0xb 0 
+						 1 0xf 0xb 0
+						 6 4 0xb 0
+						 6 5 0xb 0
 						 1 1 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_PI: spi1-PI {
 					nuvoton,pins =
-						<8 5 0xb 0 
+						<8 5 0xb 0
 						 8 6 0xb 0
 						 8 7 0xb 0
 						 8 8 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_ss1_PI: spi1-ss1-PI {
 					nuvoton,pins =
-						<8 5 0xb 0 
+						<8 5 0xb 0
 						 8 6 0xb 0
 						 8 7 0xb 0
-						 8 8 0xb 0 
+						 8 8 0xb 0
 						 7 0xd 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_quad_PI: spi1-quad-PI {
 					nuvoton,pins =
-						<8 5 0xb 0 
+						<8 5 0xb 0
 						 8 6 0xb 0
 						 8 7 0xb 0
-						 8 8 0xb 0 
+						 8 8 0xb 0
 						 6 4 0xb 0
 						 6 5 0xb 0 >;
 				};
-				
+
 				pinctrl_spi1_quad_ss1_PI: spi1-quad-ss1-PI {
 					nuvoton,pins =
-						<8 5 0xb 0 
+						<8 5 0xb 0
 						 8 6 0xb 0
 						 8 7 0xb 0
-						 8 8 0xb 0 
+						 8 8 0xb 0
 						 6 4 0xb 0
-						 6 5 0xb 0 
+						 6 5 0xb 0
 						 7 0xd 0xb 0 >;
 				};
 			};
-			
+
 			i2c0 {
 				pinctrl_i2c0: i2c0 {
 					nuvoton,pins =
-						<6 0 8 0 
+						<6 0 8 0
 						 6 1 8 0 >;
 				};
 			};
-			
+
 			i2c1 {
 				pinctrl_i2c1_PB: i2c1-PB {
 					nuvoton,pins =
-						<1 0 8 0 
+						<1 0 8 0
 						 1 1 8 0 >;
 				};
-				
+
 				pinctrl_i2c1_PG: i2c1-PG {
 					nuvoton,pins =
-						<6 2 8 0 
+						<6 2 8 0
 						 6 3 8 0 >;
 				};
-				
+
 				pinctrl_i2c1_PH: i2c1-PH {
 					nuvoton,pins =
-						<7 2 8 0 
+						<7 2 8 0
 						 7 3 8 0 >;
 				};
-				
+
 				pinctrl_i2c1_PI: i2c1-PI {
 					nuvoton,pins =
-						<8 3 8 0 
+						<8 3 8 0
 						 8 4 8 0 >;
 				};
 			};
-			
+
 			i2s {
 				pinctrl_i2s: i2s {
 					nuvoton,pins =
-						<6 0xa 8 0 
-						 6 0xb 8 0 
-						 6 0xc 8 0 
-						 6 0xd 8 0 
+						<6 0xa 8 0
+						 6 0xb 8 0
+						 6 0xc 8 0
+						 6 0xd 8 0
 						 6 0xe 8 0 >;
 				};
 			};
-			
+
 			lcd {
 				pinctrl_lcd_16bit: lcd-16bit {
 					nuvoton,pins =
@@ -807,7 +807,7 @@
 						 6 8 2 0
 						 6 9 2 0 >;
 				};
-				
+
 				pinctrl_lcd_18bit: lcd-18bit {
 					nuvoton,pins =
 						<0 0 2 0
@@ -833,7 +833,7 @@
 						 3 8 2 0
 						 3 9 2 0 >;
 				};
-				
+
 				pinctrl_lcd_24bit: lcd-24bit {
 					nuvoton,pins =
 						<0 0 2 0
@@ -857,12 +857,12 @@
 						 6 8 2 0
 						 6 9 2 0
 						 3 8 2 0
-						 3 9 2 0 
-						 3 0xa 2 0 
-						 3 0xb 2 0 
-						 3 0xc 2 0 
-						 3 0xd 2 0 
-						 3 0xe 2 0 
+						 3 9 2 0
+						 3 0xa 2 0
+						 3 0xb 2 0
+						 3 0xc 2 0
+						 3 0xd 2 0
+						 3 0xe 2 0
 						 3 0xf 2 0 >;
 				};
 			};
@@ -873,31 +873,31 @@
 						<
 						 7 0x0 0xF 0   /* eint0_H0 */
 						 //5 0xB 0xF 0   /* eint0_F11 */
-						 
+
 						 7 0x1 0xF 0   /* eint1_H1 */
 						 //5 0xc 0xF 0   /* eint1_F12 */
-						 
+
 						 7 0x2 0xF 0   /* eint2_H2 */
 						 //5 0xD 0xF 0   /* eint2_F13 */
-						 
+
 						 7 0x3 0xF 0   /* eint3_H3 */
 						 //5 0xE 0xF 0   /* eint3_F14 */
-						 
+
 						 //7 0x4 0xF 0   /* eint4_H4 */
 						 //5 0xF 0xF 0   /* eint4_F15 */
-						 
+
 						 //7 0x5 0xF 0   /* eint5_H5 */
 						 //6 0x5 0xF 0   /* eint5_G5 */
-						 
+
 						 //7 0x6 0xF 0   /* eint6_H6 */
 						 //8 0x1 0xF 0   /* eint6_I1 */
-						 
+
 						 //7 0x7 0xF 0   /* eint7_H7 */
 						 //8 0x2 0xF 0   /* eint7_I2 */
-						 >;	
+						 >;
 				};
 			};
-				
+
 			cap {
 				pinctrl_cap: cap {
 					nuvoton,pins =
@@ -916,13 +916,13 @@
 						>;
 				};
 			};
-			
+
 			ebi {
-				pinctrl_ebi: ebi {                                      
+				pinctrl_ebi: ebi {
 					nuvoton,pins =
-					< 
+					<
 						/* nWAIT, nOE, nWE */
-						 3 0xd 0xe 0 
+						 3 0xd 0xe 0
 						 3 0xe 0xe 0
 						 3 0xf 0xe 0
 						/* address0~10 */
@@ -958,7 +958,7 @@
 			etimer0 {
 				pinctrl_etimer0: etimer0 {
 					nuvoton,pins =
-						<2 6 0xd 0 
+						<2 6 0xd 0
 						 2 7 0xd 0
 						 //1 2 0xf 0
 						 //1 3 0xf 0
@@ -969,7 +969,7 @@
 			etimer1 {
 				pinctrl_etimer1: etimer1 {
 					nuvoton,pins =
-						<2 8 0xd 0 
+						<2 8 0xd 0
 						 2 9 0xd 0
 						 //1 0 0xd 0
 						 //1 1 0xd 0
@@ -980,7 +980,7 @@
 			etimer2 {
 				pinctrl_etimer2: etimer2 {
 					nuvoton,pins =
-						<2 0xa 0xd 0 
+						<2 0xa 0xd 0
 						 2 0xb 0xd 0
 						 //5 0xb 0xd 0
 						 //5 0xc 0xd 0
@@ -991,7 +991,7 @@
 			etimer3 {
 				pinctrl_etimer3: etimer3 {
 					nuvoton,pins =
-						<2 0xc 0xd 0 
+						<2 0xc 0xd 0
 						 2 0xd 0xd 0
 						 //5 0xd 0xd 0
 						 //5 0xe 0xd 0
@@ -1017,7 +1017,7 @@
 
 				pinctrl_pwm0_PD: pwm0-PD {
 					nuvoton,pins =
-						<3 0xc 0xd 0>; 
+						<3 0xc 0xd 0>;
 				};
 
 			};
@@ -1169,7 +1169,7 @@
 			pinctrl-0 = <&pinctrl_uart3_PE>;
 			status = "disabled";
 		};
-			
+
 		uart4: serial@b8000400 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000400 0x100>;
@@ -1179,8 +1179,8 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart4_fc_PC>;
 			status = "disabled";
-		};          
-			
+		};
+
 		uart5: serial@b8000500 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000500 0x100>;
@@ -1189,9 +1189,9 @@
 			map-addr = <0xf8000500>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart5_PB>;
-			status = "okay";
+			status = "disabled";
 		};
-				
+
 		uart6: serial@b8000600 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000600 0x100>;
@@ -1200,9 +1200,9 @@
 			map-addr = <0xf8000600>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart6_PB>;
-			status = "okay";
-		};  
-				
+			status = "disabled";
+		};
+
 		uart7: serial@b8000700 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000700 0x100>;
@@ -1211,9 +1211,9 @@
 			map-addr = <0xf8000700>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart7_PG>;
-			status = "okay";
+			status = "v";
 		};
-		
+
 		uart8: serial@b8000800 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000800 0x100>;
@@ -1223,8 +1223,8 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart8_PE>;
 			status = "disabled";
-		};          
-		
+		};
+
 		uart9: serial@b8000900 {
 			compatible = "nuvoton,nuc970-uart";
 			reg = <0xb8000900 0x100>;
@@ -1245,7 +1245,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_uart10_PB0>;
 			status = "disabled";
-		};		  
+		};
 
 		can0: can@b800b000 {
 			compatible = "nuvoton,nuc970-can0";
@@ -1341,7 +1341,7 @@
 				reg = <0x44>;
 			};
 		};
-			
+
 		gpio: gpio@b8003000 {
 			compatible = "nuvoton,nuc970-gpio";
 			reg = <0xb8003000 0x100>;
@@ -1354,12 +1354,12 @@
 			gpio-controller;
 			interrupt-controller;
 			interrupt-cells = <2>;
-            
+
 			/* eintX-config : */
 			/* 1st: 0(Disable)/1(Enable) */
 			/* 2nd: 0(PH0)/1(PF11) */
 			/* 3rd: 0(both)/1(rasing)/2(falling)/3(heigh level)/4(low level) */
-			eint0-config = <1 0 0>; 
+			eint0-config = <1 0 0>;
 			eint1-config = <1 0 0>;
 			eint2-config = <1 0 0>;
 			eint3-config = <1 0 0>;
@@ -1369,7 +1369,7 @@
 			eint7-config = <1 0 0>;
 			status = "disabled";
 		};
-        
+
 		adc: adc@b800a000 {
 				compatible = "nuvoton,nuc970-adc";
 			reg = <0xb800a000 0x100>;
@@ -1390,9 +1390,9 @@
 			map-addr = <0xf8006200>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_spi0>;
-			status = "disabled";            
+			status = "disabled";
 		};
-		
+
 		spi1: spi1@b8006300 {
 			compatible = "nuvoton,nuc970-spi1";
 			reg = <0xb8006300 0x100>;
@@ -1402,7 +1402,7 @@
 			pinctrl-0 = <&pinctrl_spi1>;
 			status = "disabled";
 		};
-		
+
 		i2c0: i2c0@b8006000 {
 			compatible = "nuvoton,nuc970-i2c0";
 			reg = <0xb8006000 0x100>;
@@ -1412,12 +1412,12 @@
 			pinctrl-0 = <&pinctrl_i2c0>;
 			bus_num = <0>;
 			bus_freq = <100000>;
-			status = "okay";
-			
+			status = "disabled";
+
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
-		
+
 		i2c1: i2c1@b8006100 {
 			compatible = "nuvoton,nuc970-i2c1";
 			reg = <0xb8006100 0x100>;
@@ -1537,32 +1537,32 @@
 		#size-cells = <1>;
 		ranges;
 
-        usbdev@b0006000 {
-            compatible = "nuvoton,nuc970-usbdev";
-            reg = <0xb0006000 0x1000>;
-            interrupts = <29 4 1>;
+		usbdev@b0006000 {
+			compatible = "nuvoton,nuc970-usbdev";
+			reg = <0xb0006000 0x1000>;
+			interrupts = <29 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_usbd>;
-            status = "okay";
-        };
+			status = "disabled";
+		};
 
-        sdh@b000c000 {
-            compatible = "nuvoton,nuc970-sdh";
-            reg = <0xb000c000 0x1000>;
-            interrupts = <27 4 1>;
+		sdh@b000c000 {
+			compatible = "nuvoton,nuc970-sdh";
+			reg = <0xb000c000 0x1000>;
+			interrupts = <27 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_sd0>;
-            status = "okay";
-        };
+			status = "disabled";
+		};
 
-        fmi@b000d000 {
-            compatible = "nuvoton,nuc970-fmi";
-            reg = <0xb000d000 0x1000>;
-            interrupts = <28 4 1>;
+		fmi@b000d000 {
+			compatible = "nuvoton,nuc970-fmi";
+			reg = <0xb000d000 0x1000>;
+			interrupts = <28 4 1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_emmc_pc>;
-            status = "okay";
-        };
+			status = "disabled";
+		};
 
 		usbh_ehci@b0005000 {
 			compatible = "nuvoton,nuc970-ehci", "usbh-ehci";
@@ -1571,14 +1571,14 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_usbh_ppwr_pe>;
 			ov_active = <0>;				 /* over-current active level, 1: active high; 0: active low				  */
-			status = "disabled";
+			status = "okay";
 		};
 
 		usbh_ohci@b0007000{
 			compatible = "nuvoton,nuc970-ohci", "usbh-ohci";
 			reg = <0xb0007000 0x1000>;
 			interrupts = <24 4 1>;
-			status = "disabled";
+			status = "okay";
 		};
 
 		emac0@b0002000 {
@@ -1610,7 +1610,7 @@
 			model = "nt99050";  /*Support ov7725, nt99141, nt99050, ov5640 and tw9912 */
 			powerdown-pin = "PI0"; /* NUC972-EVB use PI0, NUC977-EVB use PI2 */
 		};
-        
+
 		dma@b0004000 {
 			compatible = "nuvoton,nuc970-dma";
 			reg = <0xb0004000 0x100>;
@@ -1635,12 +1635,12 @@
 			pinctrl-0 = <&pinctrl_i2s>;
 			status = "disabled";
 		};
-		
+
 		i2s_pcm {
-			compatible = "nuvoton,nuc970-audio-pcm";                       
+			compatible = "nuvoton,nuc970-audio-pcm";
 			status = "disabled";
 		};
-		
+
 		lcd@b0008000 {
 			compatible = "nuvoton,nuc970-lcd";
 			reg = <0xb0008000 0x100>;
@@ -1650,12 +1650,12 @@
 			pinctrl-0 = <&pinctrl_lcd_16bit>;
 			status = "disabled";
 		};
-		
+
 		ge2d@b000b000 {
 			compatible = "nuvoton,nuc970-ge2d";
 			reg = <0xb000b000 0x100>;
 			interrupts = <34 4 1>;
-			map-addr = <0xf000b000>;           
+			map-addr = <0xf000b000>;
 			status = "disabled";
 		};
 	};  /* end of ahb */
