@@ -425,11 +425,13 @@ static long etimer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     unsigned long flag;
     struct nuc970_etimer *t = (struct nuc970_etimer *)filp->private_data;
-    int ch = t->ch, j;
+    int ch = t->ch;
     int unsigned param;
-    struct pinctrl_state *s;
     u32 clksrc;
+#ifndef CONFIG_OF
+    struct pinctrl_state *s;
     int ret;
+#endif
 
     // stop timer before we do any change
     stop_timer(t);
