@@ -530,7 +530,8 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 	struct nuc970_udc *dev = ep->dev;
 	struct nuc970_request *req;
 	int i;
-	u16 data, fifo_count, tmp, loop;
+	u16 fifo_count, tmp, loop;
+	u32 data;
 	u8 *buf;
 	u32 datacnt_reg;
 
