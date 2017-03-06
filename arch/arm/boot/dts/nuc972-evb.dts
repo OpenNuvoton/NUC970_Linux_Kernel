@@ -77,7 +77,19 @@
 			status = "disabled";
 		};
 
-		pwm: pwm@b8007000 {
+		pwm0: pwm0@b8007000 {
+			status = "disabled";
+		};
+
+		pwm1: pwm1@b8007000 {
+			status = "disabled";
+		};
+
+		pwm2: pwm2@b8007000 {
+			status = "disabled";
+		};
+
+		pwm3: pwm3@b8007000 {
 			status = "disabled";
 		};
 

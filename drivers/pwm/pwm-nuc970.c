@@ -372,7 +372,7 @@ static int nuc970_pwm_resume(struct platform_device *pdev)
 
 #if defined(CONFIG_OF)
 static const struct of_device_id nuc970_pwm0_of_match[] = {
-	{   .compatible = "nuvoton,nuc970-pwm0" } ,
+	{   .compatible = "nuvoton,nuc970-pwm" } ,
 	{	},
 };
 MODULE_DEVICE_TABLE(of, nuc970_pwm0_of_match);

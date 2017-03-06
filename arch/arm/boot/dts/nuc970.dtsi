@@ -1474,13 +1474,43 @@
 			status = "disabled";
 		};
 
-		pwm: pwm@b8007000 {
-			compatible = "nuvoton,nuc970-pwm0";
+		pwm0: pwm0@b8007000 {
+			compatible = "nuvoton,nuc970-pwm";
 			reg = <0xb8007000 0x100>;
 			interrupts = <60 4 1>;
 			map-addr = <0xf8007000>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm0_PA>;
+			status = "disabled";
+		};
+
+		pwm1: pwm1@b8007000 {
+			compatible = "nuvoton,nuc970-pwm";
+			reg = <0xb8007000 0x100>;
+			interrupts = <60 4 1>;
+			map-addr = <0xf8007000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm1_PA>;
+			status = "disabled";
+		};
+
+		pwm2: pwm2@b8007000 {
+			compatible = "nuvoton,nuc970-pwm";
+			reg = <0xb8007000 0x100>;
+			interrupts = <60 4 1>;
+			map-addr = <0xf8007000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm2_PA>;
+			status = "disabled";
+		};
+
+		pwm3: pwm3@b8007000 {
+			compatible = "nuvoton,nuc970-pwm";
+			reg = <0xb8007000 0x100>;
+			interrupts = <60 4 1>;
+			map-addr = <0xf8007000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm3_PA>;
 			status = "disabled";
 		};
 
