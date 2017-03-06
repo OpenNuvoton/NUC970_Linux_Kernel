@@ -894,7 +894,7 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 	int err;
 	struct clk *clk;	
 	
-	printk("%s - pdev = %s\n", __func__, pdev->name);
+	//printk("%s - pdev = %s\n", __func__, pdev->name);
 #ifndef CONFIG_OF
 	if(pdev->id == 0)
 #endif

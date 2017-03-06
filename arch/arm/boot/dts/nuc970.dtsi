@@ -1371,7 +1371,7 @@
 		};
 
 		adc: adc@b800a000 {
-				compatible = "nuvoton,nuc970-adc";
+			compatible = "nuvoton,nuc970-adc";
 			reg = <0xb800a000 0x100>;
 			interrupts = <18 4 1>;
 			map-addr = <0xf800a000>;
@@ -1380,6 +1380,14 @@
 			penup_delay_time = <3000>;  /* 20ms * penup_delay_time = 60sec */
 			keypad-status = "disabled";
 			touch-status = "disabled";
+			status = "disabled";
+		};
+		
+		nadc: nadc@b800a000 {
+			compatible = "nuvoton,nuc970-nadc";
+			reg = <0xb800a000 0x100>;
+			interrupts = <18 4 1>;
+			map-addr = <0xf800a000>;
 			status = "disabled";
 		};
 

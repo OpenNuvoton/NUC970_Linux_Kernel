@@ -1,0 +1,127 @@
+/*
+ * nuc972-evb.dts - Device Tree file for Nuvoton NUC976 Tomato board
+ *
+ * Copyright (C) 2015 Tanshi Li <chuncky@sohu.com>
+ *
+ * Licensed under GPLv2.
+ */
+/dts-v1/;
+/include/ "nuc970.dtsi"
+/* /include/ "nuc972.dtsi" */
+
+/ {
+	model = "Nuvoton NUC976 Tomato";
+	compatible = "nuvoton,nuc972-tomato", "nuvoton,nuc972", "nuvoton,nuc970";
+
+	chosen {
+		bootargs = "root=/dev/ram0 console=ttyS0,115200n8 rdinit=/sbin/init mem=64M";
+	};
+	
+	apb {
+		nadc: nadc@b800a000 {
+			status = "okay";
+		};
+		
+		i2c0: i2c0@b8006000 {            
+			status = "okay";
+			
+			nau8822: nau8822@1a {
+				compatible = "nuvoton,nau8822";
+				reg = <0x1a> ;
+			};
+		};
+
+		spi0: spi0@b8006200 {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			num_cs  = <2>;
+			lsb     = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <0>;
+			
+			spidev@0x00 {
+				compatible = "spidev";               
+				spi-max-frequency = <30000000>;
+				reg = <0>;
+			};
+		};
+		
+		spi1: spi1@b8006300 {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		   
+			num_cs  = <2>;
+			lsb     = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <1>;
+						
+			spidev@0x01 {
+				compatible = "spidev";               
+				spi-max-frequency = <30000000>;
+				reg = <0>;
+			};
+		};
+		
+		pwm0: pwm0@b8007000 {
+			status = "okay";
+		};
+
+		pwm1: pwm1@b8007000 {
+			status = "okay";
+		};
+
+		pwm2: pwm2@b8007000 {
+			status = "okay";
+		};
+
+		pwm3: pwm3@b8007000 {
+			status = "okay";
+		};
+	};
+
+	ahb {
+		usbh_ehci@b0005000 {
+			status = "okay";
+		};
+		usbh_ohci@b0007000{
+			status = "okay";
+		};
+
+        sdh@b000c000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sd0>;
+			status = "okay";
+		};
+
+		emac0@b0002000 {
+			status = "okay";
+		};
+		
+		i2s: i2s@b0009000 {
+			status = "okay";
+		};
+		
+		i2s_pcm: i2s_pcm {
+			status = "okay";
+		};   
+		
+		sound {
+			compatible = "nuvoton,nuc970-audio";
+			i2s-controller = <&i2s>;
+			i2s-platform = <&i2s_pcm>;
+		};
+	};
+};

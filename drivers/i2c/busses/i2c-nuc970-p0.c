@@ -447,7 +447,7 @@ static int nuc970_i2c0_doxfer(struct nuc970_i2c *i2c,
 	i2c->msg_ptr = 0;
 	i2c->msg_idx = 0;
 	i2c->state   = STATE_START;
-printk("[%x] %x %x\n", (i2c->msg->addr & 0x7f), i2c->msg->buf[0]>>1, (i2c->msg->buf[1] | ((i2c->msg->buf[0] & 1) << 8)));
+//printk("[%x] %x %x\n", (i2c->msg->addr & 0x7f), i2c->msg->buf[0]>>1, (i2c->msg->buf[1] | ((i2c->msg->buf[0] & 1) << 8)));
 	nuc970_i2c0_message_start(i2c, msgs);
 	spin_unlock_irq(&i2c->lock);
 

@@ -59,6 +59,10 @@
 			touch-status = "disabled";
 			status = "disabled";
 		};
+		
+		nadc: nadc@b800a000 {
+			status = "disabled";
+		};
 
 		i2c_gpio@0 {
 			status = "disabled";
