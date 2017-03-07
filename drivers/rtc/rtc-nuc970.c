@@ -250,7 +250,7 @@ static struct rtc_class_ops nuc970_rtc_ops = {
 	.alarm_irq_enable = nuc970_alarm_irq_enable,
 };
 
-static int __init nuc970_rtc_probe(struct platform_device *pdev)
+static int nuc970_rtc_probe(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct nuc970_rtc *nuc970_rtc;
@@ -299,7 +299,7 @@ static int __init nuc970_rtc_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int __exit nuc970_rtc_remove(struct platform_device *pdev)
+static int nuc970_rtc_remove(struct platform_device *pdev)
 {
 	platform_set_drvdata(pdev, NULL);
 

@@ -1056,7 +1056,7 @@ static void nuc970_dma_issue_pending(struct dma_chan *chan)
 
 #define CLK_HCLKEN_GDMA (1<<12)
 
-static int __init nuc970_dma_probe(struct platform_device *pdev)
+static int nuc970_dma_probe(struct platform_device *pdev)
 {
 	struct nuc970_dma_platform_data *pdata;
 	struct nuc970_dma_engine *edma;
