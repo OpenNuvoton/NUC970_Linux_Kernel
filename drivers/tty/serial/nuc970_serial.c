@@ -506,8 +506,8 @@ nuc970serial_set_termios(struct uart_port *port, struct ktermios *termios,
 		lcr |= SPE;
 
 	baud = uart_get_baud_rate(port, termios, old,
-				  port->uartclk / 16 / 0xffff,
-				  port->uartclk / 16);
+				  port->uartclk / 0xffff,
+				  port->uartclk / 11);
 
 	quot = nuc970serial_get_divisor(port, baud);
 
