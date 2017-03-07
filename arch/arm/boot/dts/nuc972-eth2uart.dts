@@ -1,0 +1,299 @@
+/*
+ * nuc972-evb.dts - Device Tree file for Nuvoton NUC972 EVB board
+ *
+ * Copyright (C) 2015 Tanshi Li <chuncky@sohu.com>
+ *
+ * Licensed under GPLv2.
+ */
+/dts-v1/;
+/include/ "nuc970.dtsi"
+/* /include/ "nuc972.dtsi" */
+
+/ {
+	model = "Nuvoton NUC972 EVB";
+	compatible = "nuvoton,nuc972-evb", "nuvoton,nuc972", "nuvoton,nuc970";
+
+	chosen {
+		bootargs = "root=/dev/ram0 console=ttyS0,115200n8 rdinit=/sbin/init mem=64M lpj=744448";
+	};
+
+	apb {
+		uart1: serial@b8000100 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart1_PH>;
+			status = "okay";
+		};
+
+		uart2: serial@b8000200 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart2>;
+			status = "okay";
+		};
+
+		uart3: serial@b8000300 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart3_PE>;
+			status = "okay";
+		};
+
+		uart4: serial@b8000400 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart4_PH>;
+			status = "okay";
+		};
+
+		uart5: serial@b8000500 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart5_PB>;
+			status = "okay";
+		};
+
+		uart6: serial@b8000600 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart6_PB>;
+			status = "okay";
+		};
+
+		uart7: serial@b8000700 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart7_PI>;
+			status = "okay";
+		};
+
+		uart8: serial@b8000800 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart8_PH>;
+			status = "okay";
+		};
+
+		uart9: serial@b8000900 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart9_PH>;
+			status = "okay";
+		};
+
+		uart10: serial@b8000a00 {
+		        pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart10_PC>;
+			status = "okay";
+		};
+
+		can0: can@b800b000 {
+			status = "disabled";
+		};
+
+		can1: can@b800b400 {
+			status = "disabled";
+		};
+
+		kpi: kpi@b8008000 {
+			status = "disabled";
+		};
+
+		rtc: rtc@b8004000 {
+			status = "disabled";
+		};
+
+		jpeg: jpeg@b000a000 {
+			status = "disabled";
+		};
+
+		adc: adc@b800a000 {
+			keypad-status = "disabled";
+			touch-status = "disabled";
+			status = "disabled";
+		};
+		
+		nadc: nadc@b800a000 {
+			status = "disabled";
+		};
+
+		i2c_gpio@0 {
+			status = "disabled";
+		};
+
+		i2c0: i2c0@b8006000 {
+			status = "disabled";
+
+			nau8822: nau8822@1a {
+				compatible = "nuvoton,nau8822";
+				reg = <0x1a> ;
+			};
+		};
+
+		i2c1: i2c1@b8006100 {
+			status = "disabled";
+		};
+
+		pwm0: pwm0@b8007000 {
+			status = "disabled";
+		};
+
+		pwm1: pwm1@b8007000 {
+			status = "disabled";
+		};
+
+		pwm2: pwm2@b8007000 {
+			status = "disabled";
+		};
+
+		pwm3: pwm3@b8007000 {
+			status = "disabled";
+		};
+
+		spi0: spi0@b8006200 {
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			num_cs  = <2>;
+			lsb	 = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <0>;
+
+			flash: m25p80@0 {
+				compatible = "w25q128";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				reg = <0>;
+				spi-max-frequency = <12000000>;
+
+				partition@0 {
+					label = "kernel";
+					reg = <0x00000000 0x0800000>;
+				};
+				partition@1 {
+					label = "rootfs";
+					reg = <0x0800000 0x0800000>;
+				};
+			};
+		};
+
+		spi1: spi1@b8006300 {
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			num_cs  = <2>;
+			lsb	 = <0>;
+			txneg   = <1>;
+			rxneg   = <0>;
+			divider = <4>;
+			sleep   = <0>;
+			txnum   = <0>;
+			txbitlen = <8>;
+			bus_num	= <1>;
+
+			spidev@0x01 {
+				compatible = "spidev";
+				spi-max-frequency = <30000000>;
+				reg = <0>;
+			};
+		};
+	};
+
+	ahb {
+		usbh_ehci@b0005000 {
+			status = "okay";
+		};
+		usbh_ohci@b0007000{
+			status = "okay";
+		};
+
+		usbdev@b0006000 {
+			status = "disabled";
+		};
+		fmi@b000d000 {
+			compatible = "nuvoton,nuc970-fmi", "nand0";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_nand_pc>;
+			status = "disabled";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0x0 {
+				label = "u-boot";
+				reg = <0x00000000 0x0200000>;
+			};
+
+			partition@0x200000 {
+				label = "Kernel";
+				reg = <0x0200000 0x1400000>;
+			};
+
+			partition@0x1600000 {
+				label = "user";
+				reg = <0x1600000 0x6480000>;
+			};
+		};
+
+		sdh@b000c000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sd0>;
+			status = "disabled";
+		};
+
+		emac0@b0002000 {
+			status = "okay";
+		};
+		cap@b000e000 {
+			status = "disabled";
+		};
+		dma@b0004000 {
+			status = "disabled";
+		};
+		ebi@b0001000 {
+			status = "disabled";
+		};
+		emac1@b0003000 {
+			status = "okay";
+		};
+
+		lcd@b0008000 {
+			status = "disabled";
+			type = <0x200>;
+			bpp = <32>;
+			width = <800>;
+			height = <480>;
+			xres = <800>;
+			yres = <480>;
+			pixclock = <20000000>;
+			left_margin = <88>;
+			right_margin = <40>;
+			hsync_len = <48>;
+			upper_margin = <32>;
+			lower_margin = <13>;
+			vsync_len = <3>;
+			dccs = <0x0e00020a>;
+			fbctrl = <0x03200320>;
+			devctl = <0x070000c0>;
+			scale = <0x04000400>;
+			gpio_blen = <0xC3>;
+			gpio_lcs = <0xC2>;
+
+		};
+
+		i2s: i2s@b0009000 {
+			status = "disabled";
+		};
+
+		i2s_pcm: i2s_pcm {
+			status = "disabled";
+		};
+
+		sound {
+			compatible = "nuvoton,nuc970-audio";
+			i2s-controller = <&i2s>;
+			i2s-platform = <&i2s_pcm>;
+		};
+
+		ge2d@b000b000 {
+			status = "disabled";
+		};
+	};
+};
