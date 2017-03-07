@@ -31,6 +31,11 @@ struct nand_flash_dev nand_flash_ids[] = {
 	 * listed by full ID. We list them first so that we can easily identify
 	 * the most specific match.
 	 */
+	{"W25N01GV 128MiB 3.3V",
+		{ .id = {0xef, 0xaa} }, SZ_2K, 128, SZ_128K, 0, 2, 64},
+	///WB
+	{"W25M02GV 256MiB 3.3V(Dual die)",
+		{ .id = {0xef, 0xab} }, SZ_2K, 256, SZ_128K, 0, 2, 64},
 	{"TC58NVG2S0F 4G 3.3V 8-bit",
 		{ .id = {0x98, 0xdc, 0x90, 0x26, 0x76, 0x15, 0x01, 0x08} },
 		  SZ_4K, SZ_512, SZ_256K, 0, 8, 224},
@@ -169,6 +174,9 @@ struct nand_manufacturers nand_manuf_ids[] = {
 	{NAND_MFR_AMD, "AMD/Spansion"},
 	{NAND_MFR_MACRONIX, "Macronix"},
 	{NAND_MFR_EON, "Eon"},
+	{NAND_MFR_WINBOND, "Winbond"},
+	{NAND_MFR_GIGA, "GigaDevice"},
+	{NAND_MFR_ATO, "ATO"},
 	{0x0, "Unknown"}
 };
 
