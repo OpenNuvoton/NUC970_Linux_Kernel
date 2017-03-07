@@ -853,6 +853,13 @@ config ENABLE_RTC_WAKEUP
 	help
 	  This selects NUC970 RTC wake-up function
 
+config ENABLE_RTC_TICK_WAKEUP
+	bool "Enable RTC tick wake-up function"
+        default n
+	depends on ENABLE_RTC_WAKEUP
+	help
+	  Select this to enable rtc tick wakeup
+
 comment "on-CPU RTC drivers"
 
 config RTC_DRV_DAVINCI

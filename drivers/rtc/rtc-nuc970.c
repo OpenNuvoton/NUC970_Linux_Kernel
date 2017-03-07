@@ -289,6 +289,8 @@ static int __init nuc970_rtc_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 
+        rtc_reg_write(nuc970_rtc, REG_RTC_RIER, (__raw_readl(nuc970_rtc->rtc_reg + REG_RTC_RIER) | TICKINTENB));
+
 	#ifdef CONFIG_ENABLE_RTC_WAKEUP
 	__raw_writel((1<<24) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
         enable_irq_wake(nuc970_rtc->irq_num);
@@ -306,11 +308,27 @@ static int __exit nuc970_rtc_remove(struct platform_device *pdev)
 
 static int nuc970_rtc_suspend(struct platform_device *pdev, pm_message_t state)
 {
+    struct nuc970_rtc *nuc970_rtc = platform_get_drvdata(pdev);
+
+    #ifdef CONFIG_ENABLE_RTC_TICK_WAKEUP
+    
+    #else
+    rtc_reg_write(nuc970_rtc, REG_RTC_RIER, (__raw_readl(nuc970_rtc->rtc_reg + REG_RTC_RIER) &~ TICKINTENB));
+    #endif
+
     return 0;
 }
 
-static int nuc970_rtc_resume(struct platform_device *dev)
+static int nuc970_rtc_resume(struct platform_device *pdev)
 {
+    struct nuc970_rtc *nuc970_rtc = platform_get_drvdata(pdev);
+
+    #ifdef CONFIG_ENABLE_RTC_TICK_WAKEUP
+
+    #else
+    rtc_reg_write(nuc970_rtc, REG_RTC_RIER, (__raw_readl(nuc970_rtc->rtc_reg + REG_RTC_RIER) | TICKINTENB));
+    #endif
+
     return 0;
 }
 
