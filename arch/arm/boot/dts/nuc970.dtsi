@@ -1619,6 +1619,13 @@
 			status = "okay";
 		};
 
+		crypto@b000f000{
+			compatible = "nuvoton,nuc970-crypto";
+			reg = <0xb000f000 0x1000>;
+			interrupts = <35 4 1>;
+			status = "okay";
+		};
+
 		emac0@b0002000 {
 			compatible = "nuvoton,nuc970-emac0";
 			reg = <0xb0002000 0x1000>;

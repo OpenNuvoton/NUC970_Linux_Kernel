@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
 #include <linux/crypto.h>
 #include <linux/cryptohash.h>
 #include <linux/spinlock.h>
@@ -1777,6 +1778,14 @@ static int nuc970_crypto_resume(struct platform_device *pdev)
 	return 0;
 }
 
+
+static const struct of_device_id nuc970_crypto_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-crypto" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_crypto_of_match);
+
+
 static struct platform_driver nuc970_crypto_driver = {
 	.probe		= nuc970_crypto_probe,
 	.remove		= nuc970_crypto_remove,
@@ -1785,6 +1794,7 @@ static struct platform_driver nuc970_crypto_driver = {
 	.driver		= {
 		.name	= "nuc970-crypto",
 		.owner	= THIS_MODULE,
+        .of_match_table = of_match_ptr(nuc970_crypto_of_match),
 	},
 };
 

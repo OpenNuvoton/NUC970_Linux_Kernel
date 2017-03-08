@@ -24,6 +24,9 @@
 #include <mach/regs-timer.h>
 #include <mach/regs-gpio.h>
 
+static int  of_pm_vbus_off;
+static int  of_mfp_setting;   /* D+/D- multi-function pin setting - 0: not used; 1: PE.14/PE.15; 2: PF.10  */
+
 #if 0
 #include <linux/kthread.h>
 static int port_dump_thread(void *__unused)
@@ -63,11 +66,20 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         clk_enable(clk_get(NULL, "usbh_hclk"));
 
 #ifdef CONFIG_OF
-    
+
         p = devm_pinctrl_get_select_default(&pdev->dev);
         if (IS_ERR(p)) {
             return PTR_ERR(p);
         }
+
+		if ((__raw_readl(REG_MFP_GPE_H) & 0xFF000000) == 0x77000000)
+			of_mfp_setting = 1;
+		else if ((__raw_readl(REG_MFP_GPF_H) & 0x00000F00) == 0x00000700)
+			of_mfp_setting = 2;
+		else
+			of_mfp_setting = 0;
+			
+		//printk("of_mfp_setting = %d\n", of_mfp_setting);
 
 		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) != 0) 
 		{
@@ -86,6 +98,18 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
         }
 
+		if (of_property_read_u32_array(pdev->dev.of_node, "pm_vbus_off", val32, 1) == 0) 
+		{
+			if (val32[0])
+				of_pm_vbus_off = 1;
+			else
+				of_pm_vbus_off = 0;
+		}
+		else
+		{
+		    of_pm_vbus_off = 0;
+		}
+
 		/*
 	 	 * Right now device-tree probed devices don't get dma_mask set.
 	 	 * Since shared usb code relies on it, set it here for now.
@@ -95,7 +119,6 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 		 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 		if (!pdev->dev.coherent_dma_mask)
 			pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-
 #else
 
 		/* multi-function pin select */
@@ -287,18 +310,40 @@ static int ehci_nuc970_pm_suspend(struct device *dev)
     __raw_writel(0x60, NUC970_VA_EHCI+0xC4);
     __raw_writel(0x20, NUC970_VA_EHCI+0xC8);
 
-#ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
-    /* turn off port power */
-#if defined (CONFIG_NUC970_USBH_PWR_PE)
-	__raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
-	__raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
-	__raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
-#elif defined (CONFIG_NUC970_USBH_PWR_PF)
-	__raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
-	__raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
-	__raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
-#endif
-#endif
+#ifdef CONFIG_OF
+
+	if (of_pm_vbus_off)
+	{
+		if (of_mfp_setting == 1)
+		{
+	        __raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
+	        __raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
+	        __raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
+		}
+		else if (of_mfp_setting == 2)
+		{
+	        __raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
+	        __raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
+	        __raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
+	    }
+	}
+
+#else   /* !CONFIG_OF */
+
+    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
+        /* turn off port power */
+        #if defined (CONFIG_NUC970_USBH_PWR_PE)
+	        __raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
+	        __raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
+	        __raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
+        #elif defined (CONFIG_NUC970_USBH_PWR_PF)
+	        __raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
+	        __raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
+	        __raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
+        #endif
+    #endif  /* end of CONFIG_USB_NUC970_PM_VBUS_OFF */
+
+#endif  /* end of CONFIG_OFF */
 	
 	return ret;
 }
@@ -307,13 +352,31 @@ static int ehci_nuc970_pm_resume(struct device *dev)
 {
 	struct usb_hcd *hcd = dev_get_drvdata(dev);
 
-#ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
-#if defined (CONFIG_NUC970_USBH_PWR_PE)
-	__raw_writel(__raw_readl(REG_MFP_GPE_H) | 0x77000000, REG_MFP_GPE_H);       // PE.14 & PE.15 for USBH_PWR
-#elif defined (CONFIG_NUC970_USBH_PWR_PF)
-	__raw_writel(__raw_readl(REG_MFP_GPF_H) | 0x00000700, REG_MFP_GPF_H);       // PF.10 for USBH_PWR
-#endif
-#endif
+#ifdef CONFIG_OF
+
+	if (of_pm_vbus_off)
+	{
+		if (of_mfp_setting == 1)
+		{
+	        __raw_writel(__raw_readl(REG_MFP_GPE_H) | 0x77000000, REG_MFP_GPE_H);       // PE.14 & PE.15 for USBH_PWR
+		}
+		else if (of_mfp_setting == 2)
+		{
+	        __raw_writel(__raw_readl(REG_MFP_GPF_H) | 0x00000700, REG_MFP_GPF_H);       // PF.10 for USBH_PWR
+	    }
+	}
+
+#else  /* !CONFIG_OF */
+
+    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
+        #if defined (CONFIG_NUC970_USBH_PWR_PE)
+	        __raw_writel(__raw_readl(REG_MFP_GPE_H) | 0x77000000, REG_MFP_GPE_H);       // PE.14 & PE.15 for USBH_PWR
+        #elif defined (CONFIG_NUC970_USBH_PWR_PF)
+	        __raw_writel(__raw_readl(REG_MFP_GPF_H) | 0x00000700, REG_MFP_GPF_H);       // PF.10 for USBH_PWR
+        #endif
+    #endif
+
+#endif  /* end of CONFIG_OF */
 
 	/* re-enable PHY0 and PHY1 */
     __raw_writel(0x160, NUC970_VA_EHCI+0xC4);
