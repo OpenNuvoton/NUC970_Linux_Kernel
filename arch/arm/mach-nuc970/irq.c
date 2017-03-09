@@ -73,7 +73,7 @@ static struct irq_chip nuc970_irq_chip = {
 	.irq_set_wake	= nuc970_irq_set_wake,
 };
 
-#if defined(CONFIG_GPIO_NUC970) || defined(CONFIG_OF)
+#if defined(CONFIG_GPIO_NUC970)
 
 static const unsigned int Port[10]={
 				(unsigned int)REG_GPIOA_DIR,
@@ -392,6 +392,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 
 void __init nuc970_init_irq(void)
 {
+#if !defined(CONFIG_OF)
+
 	int irqno;
 
 	__raw_writel(0xFFFFFFFC, REG_AIC_MDCR);
@@ -402,7 +404,7 @@ void __init nuc970_init_irq(void)
 		set_irq_flags(irqno, IRQF_VALID);
 	}
 
-#if defined(CONFIG_GPIO_NUC970) || !defined(CONFIG_OF)
+#if defined(CONFIG_GPIO_NUC970) 
 	/*
 	 * Install handler for GPIO edge detect interrupts
 	 */
@@ -427,7 +429,8 @@ void __init nuc970_init_irq(void)
 			irq_set_chip_and_handler(irqno, &nuc970_irq_ext, handle_level_irq);
 			set_irq_flags(irqno, IRQF_VALID);
 	}
-	#endif
+#endif
+#endif
 }
 
 #ifdef CONFIG_OF
@@ -444,6 +447,8 @@ static int nuc970_aic_irq_map(struct irq_domain *h, unsigned int virq,
 		irq_set_chip_and_handler(virq, &nuc970_irq_chip, handle_level_irq);
 		set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
 		
+#if defined(CONFIG_GPIO_NUC970) 
+
 		if(hw==IRQ_GPIO){
 			int irqno;
 			/*
@@ -471,6 +476,8 @@ static int nuc970_aic_irq_map(struct irq_domain *h, unsigned int virq,
 					set_irq_flags(irqno, IRQF_VALID);
 			}
 		}
+#endif
+
 	}
 //	else if ((IRQ_GPIO_START <= hw) && (hw < NR_IRQS-IRQ_GPIO_END))
 //	{
