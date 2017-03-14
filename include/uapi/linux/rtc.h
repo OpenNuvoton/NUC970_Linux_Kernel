@@ -94,6 +94,9 @@ struct rtc_pll_info {
 #define RTC_VL_READ	_IOR('p', 0x13, int)	/* Voltage low detector */
 #define RTC_VL_CLR	_IO('p', 0x14)		/* Clear voltage low information */
 
+#define RTC_GET_SPARE_DATA	_IOR('p', 0x20, unsigned long) /* Get spare register data */
+#define RTC_SET_SPARE_DATA	_IOW('p', 0x21, unsigned long) /* Set spare register data */
+
 /* interrupt flags */
 #define RTC_IRQF 0x80	/* Any of the following is active */
 #define RTC_PF 0x40	/* Periodic interrupt */

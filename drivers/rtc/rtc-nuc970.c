@@ -242,12 +242,62 @@ static int nuc970_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	return 0;
 }
 
+static int nuc970_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
+{
+	struct nuc970_rtc *rtc = dev_get_drvdata(dev);
+	unsigned int spare_data[16], i;
+	int *err;
+
+	switch(cmd)
+	{
+		case RTC_GET_SPARE_DATA:
+			err = check_rtc_access_enable(rtc);
+			if (IS_ERR(err))
+				return PTR_ERR(err);
+
+			for(i = 0; i < 16; i++)
+			{
+				spare_data[i] =  __raw_readl(rtc->rtc_reg + (0x40+(i*4)));
+			}
+
+			if(copy_to_user((void*)arg, (void *)&spare_data[0], sizeof(spare_data)))
+			{
+				return -EFAULT;
+			}
+
+		break;
+        
+		case RTC_SET_SPARE_DATA:
+			if(copy_from_user((void *)&spare_data[0], (void*)arg, sizeof(spare_data)))
+			{
+				return -EFAULT;
+			}
+             
+			err = check_rtc_access_enable(rtc);
+			if (IS_ERR(err))
+				return PTR_ERR(err);
+		
+			for(i = 0; i < 16; i++)
+			{
+				rtc_reg_write(rtc, (0x40+(i*4)), spare_data[i]);
+			}
+
+		break;
+
+		default:
+			return -ENOIOCTLCMD;
+	}
+
+	return 0;
+}
+
 static struct rtc_class_ops nuc970_rtc_ops = {
 	.read_time = nuc970_rtc_read_time,
 	.set_time = nuc970_rtc_set_time,
 	.read_alarm = nuc970_rtc_read_alarm,
 	.set_alarm = nuc970_rtc_set_alarm,
 	.alarm_irq_enable = nuc970_alarm_irq_enable,
+	.ioctl = nuc970_ioctl,
 };
 
 static int nuc970_rtc_probe(struct platform_device *pdev)
