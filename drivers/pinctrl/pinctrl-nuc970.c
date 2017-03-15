@@ -537,7 +537,7 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.name = "sd01_0_grp",
 		.pins = sd01_0_pins,
 		.num_pins = ARRAY_SIZE(sd01_0_pins),
-		.func = 0x6,
+		.func = 0x4,
 	},
 	{
 		.name = "sd01_1_grp",
