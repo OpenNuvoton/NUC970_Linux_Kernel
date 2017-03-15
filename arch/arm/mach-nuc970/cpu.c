@@ -38,6 +38,12 @@
 #include "cpu.h"
 #include "clock.h"
 
+#ifdef CONFIG_DEBUG_LL
+u32 nuc970_uart_init[1] = {
+	/* Debug UART initialization required */
+	1,
+};
+#endif
 
 void nuc970_restart(char mode, const char *cmd)
 {
