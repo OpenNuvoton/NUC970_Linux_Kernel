@@ -744,6 +744,8 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.func = 0x9,
 	},
 	{
+
+
 		.name = "uart5_grp",
 		.pins = uart5_pins,
 		.num_pins = ARRAY_SIZE(uart5_pins),
@@ -1757,6 +1759,7 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 	},
 	{
 		.name = "etimer0_cap",
+
 		.groups = etimer0_cap_groups,
 		.num_groups = ARRAY_SIZE(etimer0_cap_groups),
 	},
@@ -1920,7 +1923,7 @@ int nuc970_enable(struct pinctrl_dev *pctldev, unsigned selector,
 	unsigned int i, j;
 	unsigned int reg, offset;
 
-	//printk("enable =>%x %x\n", selector, group);
+	//printk("enable =>%x %x  %s\n", selector, group, nuc970_pinctrl_groups[group].name);
 	for(i = 0; i < nuc970_pinctrl_groups[group].num_pins; i++) {
 		j = nuc970_pinctrl_groups[group].pins[i];
 		offset = (j >> 4) * 8 + ((j & 0x8) ? 4 : 0);
@@ -2375,7 +2378,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-usbdev",
-		.name = PINCTRL_STATE_DEFAULT,
+		.name = "usbd-vbusvld",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "usbd",

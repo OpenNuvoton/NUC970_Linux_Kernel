@@ -196,8 +196,8 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 
 	buf = req->req.buf + req->req.actual;
 	prefetch(buf);
-	if (udc->gadget.speed == USB_SPEED_FULL)
-		udelay(500);
+//	if (udc->gadget.speed == USB_SPEED_FULL)
+//		udelay(500);
 
 	if (ep->ep_num == 0)
 	{ //ctrl pipe don't use DMA
@@ -207,17 +207,11 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 		if (len == 0)
 		{
 			if (req->req.zero&&!req->req.length)
-					__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
+				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
 		}
 		else
 		{
-			while (!(__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000))
-			{
-				__raw_writel(__raw_readl(controller.reg + REG_USBD_CEP_CTRL_STAT)|CEP_FLUSH, controller.reg + REG_USBD_CEP_CTRL_STAT);// flush fifo
-				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
-				req->req.actual += len;
-				return len;
-			}
+			while ((__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000) != 0x1000);
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
 			{
@@ -284,7 +278,7 @@ static inline int read_packet(struct nuc970_ep *ep,u8 *buf,
 {
 	struct nuc970_udc *udc = &controller;
 	unsigned    len, tmp, fifo_count;
-	u16 data, i;
+	unsigned int data, i;
 
 	if (ep->ep_num == 0)
 	{ //ctrl pipe don't use DMA
@@ -463,7 +457,6 @@ void paser_irq_cep(int irq, struct nuc970_udc *dev, u32 IrqSt)
 					__raw_writel(0x440, controller.reg + REG_USBD_CEP_IRQ_ENB);//enable out token and status complete int
 				else
 				{ //transfer finished
-					__raw_writel(0x04C, controller.reg + REG_USBD_CEP_IRQ_STAT);
 					__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
 					__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
 					dev->ep0state = EP0_END_XFER;
@@ -472,28 +465,18 @@ void paser_irq_cep(int irq, struct nuc970_udc *dev, u32 IrqSt)
 			return;
 
 		case CEP_IN_TOK:
-			if ((IrqSt & CEP_STS_END))
-				dev->ep0state=EP0_IDLE;
-
-			if (dev->setup_ret < 0)
-			{ // == -EOPNOTSUPP)
-				pr_devel("CEP send zero pkt\n");
-				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
-				__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_ENB);     //enb sts completion int
-			}
-
-			else if (dev->ep0state == EP0_IN_DATA_PHASE)
+			if (dev->ep0state == EP0_IN_DATA_PHASE)
 			{
 				if (req)
 					is_last = write_fifo(ep,req);
 
 				if (!is_last)
-					__raw_writel(0x408, controller.reg + REG_USBD_CEP_IRQ_ENB);
+					__raw_writel(0x428, controller.reg + REG_USBD_CEP_IRQ_ENB);
 				else
 				{
 					if (dev->setup_ret >= 0)
 						__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
-					__raw_writel(0x402, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
+					__raw_writel(0x422, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
 
 					if (dev->setup_ret < 0)//== -EOPNOTSUPP)
 						dev->ep0state=EP0_IDLE;
@@ -772,6 +755,7 @@ static irqreturn_t nuc970_udc_irq(int irq, void *_dev)
 				}
 			}
 		}
+//		__raw_writel(IrqSt, controller.reg + REG_USBD_CEP_IRQ_STAT);
 	}
 
 	if (IrqStL & IRQ_NCEP)
@@ -1110,7 +1094,7 @@ static int nuc970_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
             dev->ep0state = EP0_IN_DATA_PHASE;
             __raw_writel(0x08, controller.reg + REG_USBD_CEP_IRQ_ENB);
 		}
-		if (dev->setup_ret > 1000|| ((req->req.length==0)&&(dev->ep0state == EP0_OUT_DATA_PHASE)))
+		if ((dev->setup_ret > 1000) || ((req->req.length==0)&&(dev->ep0state == EP0_OUT_DATA_PHASE)))
 		{
 			__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
 			__raw_writel(0x402, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
@@ -1535,7 +1519,6 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
 
             ret = dev->driver->setup(&dev->gadget, &crq);
             dev->setup_ret = ret;
-//            if (ret < 0)
             if ((ret < 0) || (crq.bRequest == 0x05))
 			{
 				__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_STAT);
