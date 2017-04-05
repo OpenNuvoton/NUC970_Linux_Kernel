@@ -80,7 +80,7 @@ choice
 	config NUC970_UART2_PF
 		bool "Tx:PF11, Rx:PF12"
 	config NUC970_UART2_FC_PF
-		bool "Tx:PF11, Rx:PF12, CTS:PF13, RTS:PF14"
+		bool "Tx:PF11, Rx:PF12, CTS:PF14, RTS:PF13"
 endchoice
 
 config NUC970_UART3
