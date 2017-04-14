@@ -423,7 +423,7 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 	//printk("aes_regs = 0x%x\n", (u32)aes_regs);	
 	for (i = 0; i < keylen/4; i++)
 	{
-		aes_regs->key[i] = *(u32 *)(key + i * 4);
+		aes_regs->key[i] = (key[i*4]<<24) | (key[i*4+1]<<16) | (key[i*4+2]<<8) | key[i*4+3];
 		//printk("AES KEY %d = 0x%x, 0x%x\n", i, aes_regs->key[i], *(u32 *)(key + i * 4));
 	}
 	return 0;
@@ -501,6 +501,8 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	
 	crpt_regs->CRPT_TDES_CTL = ctx->mode | TDES_INSWAP | TDES_OUTSWAP | TDES_BLKSWAP |
 	                            TDES_DMAEN | (ctx->channel << 24);
+	                            
+	//printk("CRPT_TDES_CTL = 0x%x\n", crpt_regs->CRPT_TDES_CTL);	                            
 
 	if (ctx->is_first_block)
 		ctx->is_first_block = 0;
@@ -580,7 +582,7 @@ static int nuc970_des_setkey(struct crypto_ablkcipher *cipher,
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
 	
 	if (keylen == 3 * DES_KEY_SIZE)
-		ctx->mode |= TDES_TMODE;         /* is Tripple DES */
+		ctx->mode |= TDES_TMODE | TDES_3KEYS;      /* is Tripple DES */
 	else if (keylen != DES_KEY_SIZE)
 	{
 		printk("[%s]: Unsupported keylen %d!", __func__, keylen);
@@ -591,7 +593,7 @@ static int nuc970_des_setkey(struct crypto_ablkcipher *cipher,
 	//printk("tdes_regs = 0x%x\n", (u32)tdes_regs);	
 	for (i = 0; i < keylen/4; i++)
 	{
-		tdes_regs->key[i] = *(u32 *)(key + i * 4);
+		tdes_regs->key[i] = (key[i*4]<<24) | (key[i*4+1]<<16) | (key[i*4+2]<<8) | key[i*4+3];
 		//printk("DES/TDES KEY %d = 0x%x, 0x%x\n", i, tdes_regs->key[i], *(u32 *)(key + i * 4));
 	}
 	return 0;
