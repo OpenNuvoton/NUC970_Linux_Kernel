@@ -98,6 +98,9 @@ struct nuc970_sd_host {
     /* Latest in the scatterlist that has been enabled for transfer */
     int transfer_index;
 
+	/* chekc nuc970 chip version */
+	u32 IsVersionC;
+
     /* Timer for timeouts */
     struct timer_list timer;
 };
@@ -529,13 +532,15 @@ static void nuc970_sd_send_stop(struct nuc970_sd_host *host, struct mmc_command 
  */
 static void nuc970_sd_send_request(struct nuc970_sd_host *host)
 {
-#if 0
+
 	/***************************************************/
-	nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_SW_RST);
-	while(nuc970_sd_read(REG_SDCSR) & SDCSR_SW_RST);
-	nuc970_sd_write(REG_SDISR, 0xffffffff);
+	if (host->IsVersionC == 0)
+	{
+		nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_SW_RST);
+		while(nuc970_sd_read(REG_SDCSR) & SDCSR_SW_RST);
+		nuc970_sd_write(REG_SDISR, 0xffffffff);
+	}
 	/***************************************************/
-#endif
 
     if (!(host->flags & FL_SENT_COMMAND)) {
         host->flags |= FL_SENT_COMMAND;
@@ -985,6 +990,23 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     }
     clk_set_parent(clkmux, host->upll_clk);
     clk_set_rate(host->upll_clk, 33000000);
+
+	//UnlockReg
+	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) {
+		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
+	}
+	if ((__raw_readl(REG_PDID) & 0x0f000000) == 0x02000000)
+	{
+		//printk("This is Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
+		host->IsVersionC = 1;
+	}
+	else
+	{
+		//printk("This is not Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
+		host->IsVersionC = 0;
+	}
 
     nuc970_sd_disable(host);
 
