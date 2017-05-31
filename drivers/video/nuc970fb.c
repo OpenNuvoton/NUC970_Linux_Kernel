@@ -506,7 +506,7 @@ static int nuc970fb_init_registers(struct fb_info *info)
 #ifdef CONFIG_ILI9431_MPU80_240x320 
 {
 	int ret;
-	struct nuc970fb_mach_info *mach_info = fbi->macn_info;
+	struct nuc970fb_mach_info *mach_info = fbi->mach_info;
 		
 	/* control blen pin to let LED on */    
 	ret = gpio_request(mach_info->gpio_blen,NULL);
