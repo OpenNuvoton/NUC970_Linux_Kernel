@@ -27,6 +27,7 @@
 #include <linux/mtd/physmap.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
+#include <linux/pwm_backlight.h>
 
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
@@ -1134,7 +1135,7 @@ struct platform_device nuc970_device_ebi = {
 
 #if defined(CONFIG_PWM_NUC970) || defined(CONFIG_PWM_NUC970_MODULE)
 static struct pwm_lookup board_pwm_lookup[] = {
-	PWM_LOOKUP("nuc970-pwm.0", 0, "pwm-backlight", NULL),
+	PWM_LOOKUP("nuc970-pwm", 0, "pwm-backlight", NULL),
 };
 
 #if 0
@@ -1479,7 +1480,21 @@ static struct platform_device iio_gpio_trigger = {
 	.resource = iio_gpio_trigger_resources,
 };
 #endif
+#if defined(CONFIG_BACKLIGHT_PWM)
+static struct platform_pwm_backlight_data nuc970_backlight_data = {
+	.pwm_id		= 0,
+	.max_brightness	= 1,
+	.dft_brightness	= 1,
+	.pwm_period_ns	= 78000,
+};
 
+struct platform_device nuc970_pwm_bl = {
+        .name		  = "pwm-backlight",
+	.dev		= {
+		.platform_data = &nuc970_backlight_data,
+	},
+};
+#endif
 static struct platform_device *nuc970_public_dev[] __initdata = {
         &nuc970_serial_device0,
 
@@ -1651,6 +1666,9 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 
 #if defined(CONFIG_IIO_GPIO_TRIGGER) || defined(CONFIG_IIO_GPIO_TRIGGER_MODULE)
     &iio_gpio_trigger,
+#endif
+#if defined(CONFIG_BACKLIGHT_PWM)
+    &nuc970_pwm_bl,
 #endif
 };
 
