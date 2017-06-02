@@ -281,7 +281,7 @@ static struct platform_driver nuc970_can1_driver = {
 	.remove = c_can_plat_remove,
 	.suspend = c_can_suspend,
 	.resume = c_can_resume,
-	.id_table = nuc970_can1_driver_ids,
+	.id_table = &nuc970_can1_driver_ids[NUC970_CAN1],
 };
 
 
