@@ -1167,16 +1167,13 @@ static int nuc970_dma_suspend(struct platform_device *pdev,pm_message_t state){
 	ENTRY();
 	spin_lock(&edmac->wklock);
 	while(__raw_readl(edmac->regs + GDMA_CTL)&0x1);
+        spin_unlock(&edmac->wklock);
 	LEAVE();
 	return 0;
 }
 
 static int nuc970_dma_resume(struct platform_device *pdev){
-	struct nuc970_dma_engine *edma = platform_get_drvdata(pdev);
-	struct nuc970_dma_chan *edmac = &edma->channels[0];
-	ENTRY();
-	spin_unlock(&edmac->wklock);
-	LEAVE();
+
 	return 0;
 }
 
