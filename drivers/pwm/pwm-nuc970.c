@@ -135,6 +135,12 @@ static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	// now pwm time unit is 1000ns.
 	period = (period_ns + 500) / 1000;
 	duty = (duty_ns + 500) / 1000;
+	
+	// don't want the minus 1 below change the value to -1 (0xFFFF)
+	if(period == 0)
+		period = 1;
+	if(duty == 0)
+		duty = 1;
 
 	local_irq_save(flags);
 	// Set prescale for all pwm channels
