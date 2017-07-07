@@ -237,7 +237,7 @@ choice
 
 	config NUC970_UART9_PD0
 		bool "Tx:PD11, Rx:PD12"
-	config NUC970_UART9_PD2
+	config NUC970_UART9_PD1
 		bool "Tx:PD14, Rx:PD15"
 	config NUC970_UART9_PH
 		bool "Tx:PH2, Rx:PH3"
