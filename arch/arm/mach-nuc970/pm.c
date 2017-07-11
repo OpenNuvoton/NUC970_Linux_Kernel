@@ -61,6 +61,8 @@ static int nuc970_suspend_enter(suspend_state_t state)
 		return -ENOMEM;
 	}
 
+	__raw_writel(__raw_readl(REG_WKUPSER), REG_WKUPSSR);	// clear wake source flag
+
 	/* Backup a small area of SRAM used for the suspend code */
 	memcpy(sram_swap_area, (void *) TEMP_SRAM_AREA,nuc970_sys_suspend_sz);
 	/*
@@ -76,8 +78,6 @@ static int nuc970_suspend_enter(suspend_state_t state)
 	/* Restore original SRAM contents */
 	memcpy((void *) TEMP_SRAM_AREA, sram_swap_area,nuc970_sys_suspend_sz);
 	#endif
-	
-	__raw_writel(__raw_readl(REG_WKUPSER), REG_WKUPSSR);	// clear wake source flag
 
 
 	return 0;
