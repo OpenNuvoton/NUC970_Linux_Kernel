@@ -65,7 +65,7 @@
 #define MCMDR_OPMOD		(0x01 << 20)
 #define SWR				(0x01 << 24)
 
-/* cam command regiser */
+/* cam command register */
 #define CAMCMR_AUP		0x01
 #define CAMCMR_AMP		(0x01 << 1)
 #define CAMCMR_ABP		(0x01 << 2)
@@ -248,7 +248,7 @@ static void adjust_link(struct net_device *dev)
 	bool status_change = false;
 	unsigned long flags;
 
-	// clear GPIO interrupt status whihc indicates PHY statu change?
+	// clear GPIO interrupt status which indicates PHY status change?
 
 	spin_lock_irqsave(&ether->lock, flags);
 
@@ -292,7 +292,7 @@ static void adjust_link(struct net_device *dev)
 		}
 
 		__raw_writel(val,  REG_MCMDR);
-		ETH_TRIGGER_TX; // incase some packets queued in descriptor
+		ETH_TRIGGER_TX; // in case some packets queued in descriptor
 	}
 }
 
@@ -373,10 +373,7 @@ static int nuc970_init_desc(struct net_device *dev)
 		tdesc->next = ether->tdesc_phys + offset;
 		tdesc->buffer = (unsigned int)NULL;
 		tdesc->sl = 0;
-		if(i % 4 == 0)	// Trigger TX interrupt every 4 packets
-			tdesc->mode = PADDINGMODE | CRCMODE | MACTXINTEN;
-		else
-			tdesc->mode = PADDINGMODE | CRCMODE;
+		tdesc->mode = PADDINGMODE | CRCMODE | MACTXINTEN;
 	}
 
 	ether->start_tx_ptr = ether->tdesc_phys;
@@ -646,25 +643,12 @@ static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 	struct nuc970_txbd *txbd;
-	struct sk_buff *s;
 
 	txbd = ether->tdesc + ether->cur_tx;
 	if(txbd->mode & TX_OWEN_DMA) {
 		netif_stop_queue(dev);
 		return NETDEV_TX_BUSY;
 	}
-	// only recycle descriptor when needed, so tx status shown in ifconfig is not up-to-date.
-	if(likely((s = tx_skb[ether->cur_tx]) != NULL)) {
-		dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
-		dev_kfree_skb(s);
-		if (txbd->sl & TXDS_TXCP) {
-			ether->stats.tx_packets++;
-			ether->stats.tx_bytes += (txbd->sl & 0xFFFF);
-		} else {
-			ether->stats.tx_errors++;
-		}
-	}
-
 
 	txbd->buffer = dma_map_single(&dev->dev, skb->data,
 					skb->len, DMA_TO_DEVICE);
@@ -679,7 +663,11 @@ static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	if (++ether->cur_tx >= TX_DESC_SIZE)
 		ether->cur_tx = 0;
-
+	txbd = ether->tdesc + ether->cur_tx;
+	if(txbd->mode & TX_OWEN_DMA) {
+		netif_stop_queue(dev);
+		//return NETDEV_TX_BUSY;
+	}
 	return NETDEV_TX_OK;
 }
 
@@ -689,12 +677,32 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 	struct platform_device *pdev;
 	struct net_device *dev;
 	unsigned int status;
+	struct sk_buff *s;
+	struct nuc970_txbd *txbd;
 
 	dev = dev_id;
 	ether = netdev_priv(dev);
 	pdev = ether->pdev;
 
 	nuc970_get_and_clear_int(dev, &status, 0xFFFF0000);
+
+	txbd = ether->tdesc + ether->finish_tx;
+	while((txbd->mode & TX_OWEN_DMA) != TX_OWEN_DMA) {
+		if((s = tx_skb[ether->finish_tx]) != NULL) {
+			dma_unmap_single(&dev->dev, txbd->buffer, s->len, DMA_TO_DEVICE);
+			dev_kfree_skb_irq(s);
+			tx_skb[ether->finish_tx] = NULL;
+			if (txbd->sl & TXDS_TXCP) {
+				ether->stats.tx_packets++;
+				ether->stats.tx_bytes += (txbd->sl & 0xFFFF);
+			} else {
+				ether->stats.tx_errors++;
+			}
+		} else
+			break;
+		ether->finish_tx = (ether->finish_tx + 1) % TX_DESC_SIZE;
+		txbd = ether->tdesc + ether->finish_tx;	
+	}
 
 	if (status & MISTA_EXDEF) {
 		dev_err(&pdev->dev, "emc defer exceed interrupt\n");
@@ -733,10 +741,9 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (likely(status & RXDS_RXGD)) {
+		if (likely((status & RXDS_RXGD) && (length <= 1514))) {
 
 			skb = dev_alloc_skb(2048);
-
 			if (!skb) {
 				struct platform_device *pdev = ether->pdev;
 				dev_err(&pdev->dev, "get skb buffer error\n");
@@ -1198,7 +1205,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	dev->netdev_ops = &nuc970_ether_netdev_ops;
 	dev->ethtool_ops = &nuc970_ether_ethtool_ops;
 
-	dev->tx_queue_len = 16;
+	dev->tx_queue_len = 32;  //16
 	dev->dma = 0x0;
 	dev->watchdog_timeo = TX_TIMEOUT;
 
@@ -1212,7 +1219,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 	ether->duplex = DUPLEX_FULL;
 	spin_lock_init(&ether->lock);
 
-	netif_napi_add(dev, &ether->napi, nuc970_poll, 16);
+	netif_napi_add(dev, &ether->napi, nuc970_poll, /*16*/32);
 
 	ether_setup(dev);
 
