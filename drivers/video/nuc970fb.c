@@ -1118,6 +1118,9 @@ static int nuc970fb_resume(struct platform_device *dev)
 	writel(readl(info->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, info->io + REG_LCM_DCCS);
 	writel(readl(info->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, info->io + REG_LCM_INT_CS);
 
+#ifdef CONFIG_ILI9431_MPU80_240x320
+	init_ili9341(fbinfo);
+#endif
 	return 0;
 }
 
