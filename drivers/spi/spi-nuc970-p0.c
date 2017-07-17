@@ -610,9 +610,9 @@ static int nuc970_spi0_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, hw);
 	init_completion(&hw->done);
 #if defined(CONFIG_SPI_NUC970_P0_NORMAL)
-	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST);
+	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
 #elif defined(CONFIG_SPI_NUC970_P0_QUAD)
-	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST);
+	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
 #endif
 	master->dev.of_node        = pdev->dev.of_node;
 	master->num_chipselect     = hw->pdata->num_cs;
