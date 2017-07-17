@@ -211,8 +211,10 @@ receive_chars(struct uart_nuc970_port *up)
 	char flag;
 
 	do {
-		ch = (unsigned char)serial_in(up, UART_REG_RBR);
+                if(serial_in(up, UART_REG_FSR) & (1 << 14)) break;
+
 		fsr = serial_in(up, UART_REG_FSR);
+                ch = (unsigned char)serial_in(up, UART_REG_RBR);
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
 
@@ -226,12 +228,12 @@ receive_chars(struct uart_nuc970_port *up)
 
 			if (fsr & FEF) {
 				serial_out(up, UART_REG_FSR, FEF);
-				up->port.icount.parity++;
+				up->port.icount.frame++;
 			}
 
 			if (fsr & PEF) {
 				serial_out(up, UART_REG_FSR, PEF);
-				up->port.icount.frame++;
+				up->port.icount.parity++;
 			}
 
 			if (fsr & RX_OVER_IF) {
@@ -323,6 +325,11 @@ static irqreturn_t nuc970serial_interrupt(int irq, void *dev_id)
 
 	if (isr & THRE_IF)
 		transmit_chars(up);
+
+        if(isr & (BIF | FEF | PEF | RX_OVER_IF))
+	{
+	    serial_out(up, UART_REG_FSR, (BIF | FEF | PEF | RX_OVER_IF));
+	}
 
 	return IRQ_HANDLED;
 }
