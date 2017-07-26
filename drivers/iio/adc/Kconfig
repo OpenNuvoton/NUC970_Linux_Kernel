@@ -157,26 +157,50 @@ config VIPERBOARD_ADC
 	  Say yes here to access the ADC part of the Nano River
 	  Technologies Viperboard.
 
-config NUC970_NADC
-	tristate "Nuvoton NUC970 Normal ADC driver"
-	depends on ARCH_NUC970
-    	select IIO_BUFFER
-	select IIO_TRIGGERED_BUFFER
-	help
-	  Say yes here to build support for NUC970 normal ADC.
+#config NUC970_NADC
+#	tristate "Nuvoton NUC970 Normal ADC driver"
+#	depends on ARCH_NUC970
+#    	select IIO_BUFFER
+#	select IIO_TRIGGERED_BUFFER
+#	help
+#	  Say yes here to build support for NUC970 normal ADC.
+#choice
+#	prompt "Reference voltage selection"
+#	default NUC970_NADC_BANDGAP
+#	depends on NUC970_NADC
+#	help
+#        Select reference voltage source
+#
+#    config NUC970_NADC_BANDGAP
+#		bool "Internal bandgap, 2.5V"
+#    config NUC970_NADC_I33V
+#		bool "Internal AVDD, 3.3V"
+#	config NUC970_NADC_VREF
+#		bool "VREF input"
+#endchoice
+
+config IIO_NUC970ADC
+       tristate "Nuvoton NUC970 Normal ADC driver"
+       depends on ARCH_NUC970
+       select IIO_BUFFER
+       select IIO_TRIGGERED_BUFFER
+       select NUC970_ADC
+       help
+         Say yes here to build support for NUC970 normal ADC.
 choice
-	prompt "Reference voltage selection"
-	default NUC970_NADC_BANDGAP
-	depends on NUC970_NADC
-	help
+        prompt "Reference voltage selection"
+        default NUC970ADC_I33V
+        depends on IIO_NUC970ADC
+        help
         Select reference voltage source
-        
-    config NUC970_NADC_BANDGAP
-		bool "Internal bandgap, 2.5V"
-    config NUC970_NADC_I33V
-		bool "Internal AVDD, 3.3V"    
-	config NUC970_NADC_VREF
-		bool "VREF input"    
+
+    config NUC970ADC_BANDGAP
+                bool "Internal bandgap, 2.5V"
+    config NUC970ADC_I33V
+                bool "Internal AVDD, 3.3V"
+    config NUC970ADC_VREF
+                bool "VREF input"
 endchoice
+
         
 endmenu

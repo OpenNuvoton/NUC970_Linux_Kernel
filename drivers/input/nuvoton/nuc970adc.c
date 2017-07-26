@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Nuvoton technology corporation.
+ * Copyright (c) 2017 Nuvoton technology corporation.
  *
  * Wan ZongShun <mcuos.com@gmail.com>
  *
@@ -8,6 +8,7 @@
  * the Free Software Foundation;version 2 of the License.
  *
  */
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/async_tx.h>
@@ -21,12 +22,19 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 
-
-
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+
+#include <linux/blkdev.h>
+#include <linux/iio/iio.h>
+#include <linux/iio/sysfs.h>
+#include <linux/iio/trigger.h>
+#include <linux/iio/buffer.h>
+#include <linux/iio/trigger_consumer.h>
+#include <linux/iio/triggered_buffer.h>
+
 #include <linux/clk.h>
 #include <linux/input.h>
 #include <linux/interrupt.h>
@@ -37,9 +45,8 @@
 #include <mach/regs-gcr.h>
 #include <mach/regs-adc.h>
 
-#include <linux/platform_data/keypad-nuc970.h>
-
 #ifdef CONFIG_BATTREY_NUC970ADC
+#include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/param.h>
 #include <linux/platform_device.h>
@@ -66,10 +73,31 @@
 #endif
 
 
+#define NUC970_ADC_TIMEOUT	(msecs_to_jiffies(1000))
+
+#define ADC_CHANNEL(_index, _id) {			\
+	.type = IIO_VOLTAGE,				\
+	.indexed = 1,					\
+	.channel = _index,				\
+	.address = _index,				\
+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),   \
+	.datasheet_name = _id,				\
+    .scan_index = _index,               \
+    .scan_type = {                      \
+        .sign = 'u',                    \
+        .realbits = 12,                 \
+        .storagebits = 16,              \
+        .shift = 0,                     \
+        .endianness = IIO_BE,           \
+    },                                  \
+}
+
 volatile uint8_t IsEnableKP = 0;
 volatile uint8_t IsEnableKP_wakeup = 0;
 volatile uint8_t IsEnableTS = 0;
 volatile uint8_t IsEnableTS_wakeup = 0;
+volatile uint8_t IsEnableIIO = 0;
+volatile uint8_t IsEnableBT = 0;
 
 enum touch_state {
     TS_IDLE,						/* We are waiting next key report */
@@ -88,6 +116,7 @@ enum keypad_state {
 #define KP_USED (1<<1)
 #define TS_USED (1<<2)
 #define BT_USED (1<<3)
+#define IIO_USED (1<<4)
 
 struct key_threshold {
     u32	thl;
@@ -144,6 +173,10 @@ struct nuc970_adc {
     u32 bt_data;
     u8 bt_finish;
 #endif
+
+    struct iio_dev	*indio_dev;
+    struct iio_trigger	*trig;
+    struct completion   completion;
 };
 
 static void enable_menu(void)
@@ -153,7 +186,7 @@ static void enable_menu(void)
 static void nuc970_detect2touch(void)
 {
     ENTRY();
-    /* Diable penwdown : ts_disable_pendown  */
+    /* Disable penwdown : ts_disable_pendown  */
     __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */
     __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
 
@@ -201,9 +234,9 @@ __attribute__ ((unused)) static int nuc970_kp_conversion(struct nuc970_adc *nuc9
                 }
             }
             if(nuc970_adc->used_state & TS_USED)
-            {
-                if(nuc970_adc->ts_state==TS_IDLE)
-                    nuc970_touch2detect();
+						{
+								if(nuc970_adc->ts_state==TS_IDLE)
+									nuc970_touch2detect();
             }
             LEAVE();
             return true;
@@ -398,6 +431,12 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
     }
   }
 
+  if(IsEnableIIO==1 && (nuc970_adc->isr & ADC_ISR_NACF)==ADC_ISR_NACF)
+  {
+	complete(&nuc970_adc->completion);
+	__raw_writel(ADC_ISR_NACF,REG_ADC_ISR);
+  }
+
     if(nuc970_adc->isr & ADC_ISR_MF)
     {
         __raw_writel(ADC_ISR_MF,REG_ADC_ISR);
@@ -417,6 +456,7 @@ static irqreturn_t nuc970_adc_interrupt(int irq, void *dev_id)
                 goto leave;
             }
     }
+    LEAVE();
     return IRQ_HANDLED;
 leave :
     tasklet_schedule(&nuc970_adc->irq_tasklet);
@@ -503,10 +543,13 @@ static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
 
     if(nuc970_adc->used_state & TS_USED)
     {
-        nuc970_detect2touch();
-        __raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */
-        __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */
-        __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
+	if(nuc970_adc->ts_state==TS_IDLE)
+	{
+            nuc970_detect2touch();
+            __raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */
+            __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */
+            __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
+        }
     }
     if(nuc970_adc->used_state & KP_USED)
     {
@@ -525,8 +568,10 @@ static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
     {
         if(nuc970_adc->ts_state==TS_IDLE)
             nuc970_touch2detect();
-        else
+        else{
             nuc970_detect2touch();
+	    nuc970_ts_conversion(nuc970_adc);
+	}
     }
     if(nuc970_adc->used_state & KP_USED)
     {
@@ -606,13 +651,187 @@ static enum power_supply_property nuc970adc_battery_props[] = {
 };
 #endif
 
+static const struct iio_chan_spec nuc970adc_iio_channels[] = {
+	ADC_CHANNEL(0, "adc0"),
+	ADC_CHANNEL(1, "adc1"),
+	ADC_CHANNEL(2, "adc2"),
+	ADC_CHANNEL(3, "adc3"),
+  ADC_CHANNEL(4, "adc4"),
+	ADC_CHANNEL(5, "adc5"),
+	ADC_CHANNEL(6, "adc6"),
+	ADC_CHANNEL(7, "adc7"),
+
+};
+#ifdef CONFIG_IIO_NUC970ADC
+static void nuc970adc_channels_remove(struct iio_dev *indio_dev)
+{
+	kfree(indio_dev->channels);
+}
+
+static void nuc970adc_buffer_remove(struct iio_dev *idev)
+{
+  ENTRY();
+	iio_triggered_buffer_cleanup(idev);
+  LEAVE();
+}
+
+static irqreturn_t nuc970adc_iio_trigger_handler(int irq, void *p)
+{
+	  struct iio_poll_func *pf = p;
+	  struct iio_dev *indio_dev = pf->indio_dev;
+    struct nuc970_adc *info = iio_device_get_drvdata(indio_dev);
+	  int val;
+    int channel;
+    unsigned long timeout;
+    ENTRY();
+		channel = find_first_bit(indio_dev->active_scan_mask,indio_dev->masklength);
+    printk("channel=%d\n",channel);
+    // enable channel
+    writel((readl(REG_ADC_CONF) & ~(0x7 << 3)) | (channel << 3) | ADC_CONF_NACEN, REG_ADC_CONF);
+
+    // enable MST
+    writel(readl(REG_ADC_CTL) | ADC_CTL_MST, REG_ADC_CTL);
+
+    timeout = wait_for_completion_interruptible_timeout(&info->completion, NUC970_ADC_TIMEOUT);
+    //wait_event_interruptible(adc_wq_xfer, (adc_state_xfer != 0));
+
+    val = readl(REG_ADC_DATA);
+
+	  iio_push_to_buffers(indio_dev, (void *)&val);
+	  iio_trigger_notify_done(indio_dev->trig);
+		LEAVE();
+	  return IRQ_HANDLED;
+}
+#endif
+static int nuc970adc_read_raw(struct iio_dev *indio_dev,
+		struct iio_chan_spec const *chan,
+		int *val, int *val2, long mask)
+{
+
+//0:VBT(A0), 1:VHS(A1), 2:A2,     3:VSENSE
+//4:YM(A4),  5:YP(A5),  6:XM(A6), 7:XP(A7)
+
+	  struct nuc970_adc *nuc970_adc = iio_device_get_drvdata(indio_dev);
+    unsigned long timeout;
+    ENTRY();
+    if (mask != IIO_CHAN_INFO_RAW)
+		    return -EINVAL;
+
+    if(IsEnableTS==1 && chan->channel>=4 && chan->channel<=7)
+    {
+				*val = 0;
+				printk("this channel used by touch\n");
+				return -EALREADY;
+    }
+
+    if(IsEnableKP==1 && chan->channel==2)
+    {
+				*val = 0;
+				printk("this channel used by keybad\n");
+				return -EALREADY;
+    }
+    mutex_lock(&indio_dev->mlock);
+
+    init_completion(&nuc970_adc->completion);
+
+    writel(readl(REG_ADC_CTL) | ADC_CTL_ADEN, REG_ADC_CTL); //Enable ADC
+
+    if(nuc970_adc->used_state & TS_USED)
+    {
+			if(nuc970_adc->ts_state==TS_IDLE)
+			{
+        nuc970_detect2touch();
+				__raw_writel(__raw_readl(REG_ADC_CONF)  & ~(ADC_CONF_TEN | ADC_CONF_ZEN |  ADC_CONF_DISTMAVEN), REG_ADC_CONF); /* CONF */
+        __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PEDEEN), REG_ADC_CTL); /* Disable pen down */
+        __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_PEDEIEN), REG_ADC_IER); /* Disable pen down interrupt flag */
+      }
+    }
+    if(nuc970_adc->used_state & KP_USED)
+    {
+        __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CTL_PKWPEN),REG_ADC_CTL);
+        __raw_writel(__raw_readl(REG_ADC_CONF)& ~(ADC_CONF_KPCEN), REG_ADC_CONF);
+        __raw_writel(__raw_readl(REG_ADC_IER) & ~(ADC_IER_KPEIEN | ADC_IER_KPUEIEN), REG_ADC_IER);
+    }
+
+#ifdef CONFIG_NUC970ADC_BANDGAP
+    __raw_writel(__raw_readl(REG_ADC_CTL) | ADC_CTL_VBGEN , REG_ADC_CTL); //Enable bandgap
+    __raw_writel((__raw_readl(REG_ADC_CONF) & ~(0x3 << 6)), REG_ADC_CONF); //select bandgap
+#endif
+#ifdef CONFIG_NUC970ADC_VREF
+    __raw_writel((__raw_readl(REG_ADC_CONF) & ~(0x3 << 6)), REG_ADC_CONF); //select vref
+#endif
+#ifdef CONFIG_NUC970ADC_I33V
+    __raw_writel((__raw_readl(REG_ADC_CONF) |(0x3<<6)), REG_ADC_CONF); //select AGND33 vs AVDD33
+#endif
+
+    // enable channel
+    __raw_writel((__raw_readl(REG_ADC_CONF) & ~(0x7 << 3)) | (chan->channel << 3)|ADC_CONF_NACEN, REG_ADC_CONF);
+
+    __raw_writel(__raw_readl(REG_ADC_IER)|ADC_IER_MIEN, REG_ADC_IER);
+
+    __raw_writel(ADC_ISR_NACF, REG_ADC_ISR);
+
+    // enable MST
+    __raw_writel(__raw_readl(REG_ADC_CTL) | ADC_CTL_MST, REG_ADC_CTL);
+
+    timeout = wait_for_completion_interruptible_timeout(&nuc970_adc->completion, NUC970_ADC_TIMEOUT);
+
+    *val = __raw_readl(REG_ADC_DATA);
+
+    __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CONF_NACEN),REG_ADC_CTL);
+
+		if(nuc970_adc->used_state & TS_USED)
+    {
+				if(nuc970_adc->ts_state==TS_IDLE)
+            nuc970_touch2detect();
+        else{
+            nuc970_detect2touch();
+            nuc970_ts_conversion(nuc970_adc);
+            }
+    }
+    if(nuc970_adc->used_state & KP_USED)
+    {
+        __raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_PKWPEN),REG_ADC_CTL);
+        __raw_writel(__raw_readl(REG_ADC_CONF)| (ADC_CONF_KPCEN), REG_ADC_CONF);
+        __raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_KPEIEN | ADC_IER_KPUEIEN), REG_ADC_IER);
+    }
+    mutex_unlock(&indio_dev->mlock);
+    if (timeout == 0)
+		    return -ETIMEDOUT;
+    LEAVE();
+	  return IIO_VAL_INT;
+}
+
+static int nuc970adc_ring_preenable(struct iio_dev *indio_dev)
+{
+#ifdef CONFIG_IIO_NUC970ADC
+	int ret;
+  ENTRY();
+	ret = iio_sw_buffer_preenable(indio_dev);
+	if (ret < 0)
+		return ret;
+  LEAVE();
+#endif
+	return 0;
+}
+
+static const struct iio_buffer_setup_ops nuc970adc_ring_setup_ops = {
+	.preenable = &nuc970adc_ring_preenable,
+	.postenable = &iio_triggered_buffer_postenable,
+	.predisable = &iio_triggered_buffer_predisable,
+};
+
+static const struct iio_info nuc970adc_iio_info = {
+	.read_raw = &nuc970adc_read_raw,
+};
+
 static int nuc970adc_probe(struct platform_device *pdev)
 {
     struct nuc970_adc *nuc970_adc;
     struct input_dev *input_ts_dev=NULL;
     struct input_dev *input_kp_dev=NULL;
 		int err;
-		
+		printk("==================================1\n");
 		#ifndef CONFIG_OF
 			#ifdef CONFIG_KEYBOARD_NUC970ADC
 					IsEnableKP = 1;
@@ -627,6 +846,14 @@ static int nuc970adc_probe(struct platform_device *pdev)
 			
 			#ifdef CONFIG_TOUCHSCREEN_NUC970ADC_WKUP
 					IsEnableTS_wakeup = 1;
+			#endif
+
+			#ifdef CONFIG_IIO_NUC970ADC
+			    IsEnableIIO = 1;
+			#endif
+
+			#ifdef CONFIG_BATTREY_NUC970ADC
+			    IsEnableBT = 1;
 			#endif
 		#else	
 		{
@@ -647,6 +874,19 @@ static int nuc970adc_probe(struct platform_device *pdev)
 			if(adc_sample_cnt>255) adc_sample_cnt=255;
 			of_property_read_u32_array(pdev->dev.of_node,"z_th", &z_th,1);
 			of_property_read_u32_array(pdev->dev.of_node,"penup_delay_time", &penup_delay_time,1);
+
+
+                        of_property_read_string(pdev->dev.of_node,"iio-status",&pstr);
+                        if(pstr[0]=='d')
+                                IsEnableIIO = 0;
+                        else
+                                IsEnableIIO = 1;
+
+                        of_property_read_string(pdev->dev.of_node,"battery-status",&pstr);
+                        if(pstr[0]=='d')
+                                IsEnableBT = 0;
+                        else
+                                IsEnableBT = 1;
 		}
 		#endif
 		
@@ -731,6 +971,43 @@ static int nuc970adc_probe(struct platform_device *pdev)
 		}
 	}
 
+	if(IsEnableIIO==1)
+	{
+	#ifdef CONFIG_IIO_NUC970ADC
+	int ret;
+	nuc970_adc->used_state |= IIO_USED ;
+	nuc970_adc->indio_dev = iio_device_alloc(0);
+	if (nuc970_adc->indio_dev == NULL) {
+		dev_err(&pdev->dev, "failed to allocate iio device\n");
+		printk("failed to allocate iio device\n");
+		return -ENOMEM;
+	}
+	iio_device_set_drvdata(nuc970_adc->indio_dev,nuc970_adc);
+	nuc970_adc->indio_dev->dev.parent = &pdev->dev;
+	nuc970_adc->indio_dev->name = dev_name(&pdev->dev);
+	nuc970_adc->indio_dev->modes = INDIO_DIRECT_MODE;
+	nuc970_adc->indio_dev->info = &nuc970adc_iio_info;
+	nuc970_adc->indio_dev->num_channels = 8;
+	nuc970_adc->indio_dev->channels = nuc970adc_iio_channels;
+	nuc970_adc->indio_dev->masklength = nuc970_adc->indio_dev->num_channels - 1;
+	ret = iio_triggered_buffer_setup(nuc970_adc->indio_dev, &iio_pollfunc_store_time,
+			&nuc970adc_iio_trigger_handler, &nuc970adc_ring_setup_ops);
+	  if (ret){
+				nuc970adc_channels_remove(nuc970_adc->indio_dev);
+				iio_device_free(nuc970_adc->indio_dev);
+				return ret;
+		  }
+
+	  ret = iio_device_register(nuc970_adc->indio_dev);
+	  if (ret < 0) {
+		    printk("Couldn't register NC970 ADC..\n");
+				nuc970adc_channels_remove(nuc970_adc->indio_dev);
+				iio_device_free(nuc970_adc->indio_dev);
+				return ret;
+	}
+	#endif
+	}
+
     __raw_writel(__raw_readl(REG_APBIPRST1) | (1<<24), REG_APBIPRST1);
     udelay(100);
     __raw_writel(__raw_readl(REG_APBIPRST1) & ~(1<<24), REG_APBIPRST1);
@@ -742,6 +1019,8 @@ static int nuc970adc_probe(struct platform_device *pdev)
         goto fail4;
 	}
 
+  if(IsEnableBT==1)
+  {
 #ifdef CONFIG_BATTREY_NUC970ADC
     nuc970_adc->used_state |= BT_USED;
     nuc970_adc->bat.name = "NUC970 Battery(ADC)";
@@ -754,10 +1033,12 @@ static int nuc970adc_probe(struct platform_device *pdev)
         goto fail5;
     }
 #endif
+  }
+
     platform_set_drvdata(pdev, nuc970_adc);
 
     tasklet_init(&nuc970_adc->irq_tasklet,
-                 (void (*)(unsigned long))nuc970adc_irq_tasklet,
+              (void (*)(unsigned long))nuc970adc_irq_tasklet,
                  (unsigned long)nuc970_adc);
 
     LEAVE();
@@ -790,6 +1071,15 @@ static int nuc970adc_remove(struct platform_device *pdev)
 
     if(IsEnableKP==1)
     	input_unregister_device(nuc970_adc->input_kp);
+
+    if(IsEnableIIO==1){
+	#ifdef CONFIG_IIO_NUC970ADC
+	iio_device_unregister(nuc970_adc->indio_dev);
+	nuc970adc_channels_remove(nuc970_adc->indio_dev);
+	iio_device_free(nuc970_adc->indio_dev);
+	nuc970adc_buffer_remove(nuc970_adc->indio_dev);
+	#endif
+    }
 
     kfree(nuc970_adc);
 
@@ -852,14 +1142,14 @@ static int nuc970adc_suspend(struct platform_device *pdev,pm_message_t state){
 			nuc970_adc->ts_state = TS_IDLE;
 			del_timer(&nuc970_adc->timer);
 		}
-    /* Clear interrupt before enable pendown */
-    __raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_TEN | ADC_CONF_ZEN), REG_ADC_CONF);
-    __raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_WKTIEN|ADC_IER_PEDEIEN)), REG_ADC_IER); /*Disable Interrupt */
-    __raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN| ADC_CTL_WKTEN | ADC_CTL_PEDEEN), REG_ADC_CTL); /* Enable pen down event */
-    udelay(10);
-    __raw_writel(ADC_ISR_PEDEF|ADC_ISR_PEUEF|ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);/* Clear pen down/up interrupt status */
-    __raw_writel(ADC_WKISR_WPEDEF,REG_ADC_WKISR);  /* Clear ts wakeup up flag */
-    __raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_PEDEIEN|ADC_IER_WKTIEN), REG_ADC_IER); /*Enable Interrupt */
+		/* Clear interrupt before enable pendown */
+		__raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_TEN | ADC_CONF_ZEN), REG_ADC_CONF);
+		__raw_writel( (__raw_readl(REG_ADC_IER) & ~(ADC_IER_WKTIEN|ADC_IER_PEDEIEN)), REG_ADC_IER); /*Disable Interrupt */
+		__raw_writel(__raw_readl(REG_ADC_CTL) | (ADC_CTL_ADEN| ADC_CTL_WKTEN | ADC_CTL_PEDEEN), REG_ADC_CTL); /* Enable pen down event */
+		udelay(10);
+		__raw_writel(ADC_ISR_PEDEF|ADC_ISR_PEUEF|ADC_ISR_TF|ADC_ISR_ZF,REG_ADC_ISR);/* Clear pen down/up interrupt status */
+		__raw_writel(ADC_WKISR_WPEDEF,REG_ADC_WKISR);  /* Clear ts wakeup up flag */
+		__raw_writel(__raw_readl(REG_ADC_IER) | (ADC_IER_PEDEIEN|ADC_IER_WKTIEN), REG_ADC_IER); /*Enable Interrupt */
 	}
 	}
 
