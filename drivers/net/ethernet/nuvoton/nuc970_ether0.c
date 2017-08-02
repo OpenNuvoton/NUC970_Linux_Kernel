@@ -621,6 +621,7 @@ static int nuc970_ether_close(struct net_device *dev)
 	free_irq(ether->txirq, dev);
 	free_irq(ether->rxirq, dev);
 
+	nuc970_return_default_idle(dev);
 	nuc970_free_desc(dev);
 
 	if (ether->phy_dev)
