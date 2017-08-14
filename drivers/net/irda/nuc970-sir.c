@@ -67,6 +67,8 @@ struct n_irda_data {
 
 	struct mutex atomic_read_lock;
 	raw_spinlock_t read_lock;
+
+        void  *priv;
 };
 
 
@@ -248,6 +250,9 @@ static int nuc970irda_open(struct tty_struct *tty)
 
 	tty_driver_flush_buffer(tty);
 	
+        /* apply mtt override */
+        sir_nuc970_drv.qos_mtt_bits = qos_mtt_bits;
+
 	/* get a sir device instance for this driver */
 	dev = sirdev_get_instance(&sir_nuc970_drv, tty->name);
 	if (!dev) {
@@ -272,6 +277,7 @@ static int nuc970irda_open(struct tty_struct *tty)
 	dev->priv = priv;
 
 	tty->disc_data = ldata;
+        ldata->priv = priv;
 		nuc970_reset_buffer_flags(tty->disc_data);
 	tty->receive_room = 65536;
 
@@ -300,13 +306,15 @@ err_free_bufs:
  */
 static void nuc970irda_close(struct tty_struct *tty) 
 {
+	struct n_irda_data *ldata = tty->disc_data;
+        struct sirtty_cb *priv = ldata->priv;
+
 	/* we are dead now */
 	tty->disc_data = NULL;
 
-	/* Stop tty */
-	if (tty->ops->stop)
-		tty->ops->stop(tty);
+        sirdev_put_instance(priv->dev);
 
+        kfree(priv);
 
 	IRDA_DEBUG(0, "%s - %s: irda line discipline closed\n", __func__, tty->name);
 }
