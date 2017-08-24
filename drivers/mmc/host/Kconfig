@@ -395,43 +395,28 @@ config MMC_SPI
 	  If unsure, or if your system has no SPI master driver, say N.
 
 config MMC_NUC970_SD
-	tristate "Nuvoton NUC970 SD Card support"
-	depends on MACH_NUC970
+        tristate "Nuvoton NUC970 SD Card support"
+        depends on MACH_NUC970
 
-choice
-    prompt "NUC970 SD port selection"
-    default NUC970_SD_ONE
-    depends on MMC_NUC970_SD
-	
-    config NUC970_SD_ONE
-	bool "one port"
-    config NUC970_SD_TWO
-	bool "two port"
-endchoice
-
-choice
-    prompt "NUC970 SD selection"
-    default NUC970_SD_SD0
-    depends on  NUC970_SD_ONE
-	
-    config NUC970_SD_SD0
-	bool "SD0"
-    config NUC970_SD_SD1
-	bool "SD1"
-endchoice
+config NUC970_SD0_EN
+        tristate "SD0 support"
+        depends on MMC_NUC970_SD
+config NUC970_SD1_EN
+        tristate "SD1 support"
+        depends on MMC_NUC970_SD
 
 choice
     prompt "NUC970 SD1 pin selection"
     default NUC970_SD1_PH
-    depends on NUC970_SD_SD1 || NUC970_SD_TWO
+    depends on NUC970_SD1_EN
     help
         Select SD1 multi-function pin.
     config NUC970_SD1_PE
-	bool "Port E"
+        bool "Port E"
     config NUC970_SD1_PH
-	bool "Port H"
+        bool "Port H"
     config NUC970_SD1_PI
-	bool "Port I"
+        bool "Port I"
 endchoice
 
 config MMC_NUC970_EMMC
