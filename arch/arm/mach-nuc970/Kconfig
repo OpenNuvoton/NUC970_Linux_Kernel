@@ -55,3 +55,20 @@ config NUC970_FIQ
 	  Support FIQ in NUC970. For more information, please refer to NUC970 BSP user's manual.
       
 endif
+
+choice 
+    prompt "Nuvoton NUC970 System Clock Selection"
+	help
+	  To support NO_HZ or HRTIMER, ETIMER must be used as system clock source.
+          NOTE: If ETIMER is selected, ETIMER0/1will be used as system clock souce and 
+          clock event and cannot used for capture or toggle out.
+    
+config NUC970_CLK_TIMER
+    bool "TIMER as system clock source"
+    select ARCH_USES_GETTIMEOFFSET
+
+config NUC970_CLK_ETIMER
+    bool "ETIMER as system clock source"
+
+endchoice
+

@@ -90,7 +90,7 @@ config	NUC970_SC1_PWRINV
 
 config NUC970_ETIMER
 	tristate "NUC970 Enhance Timer (ETIMER) support"
-	depends on ARCH_NUC970
+	depends on ARCH_NUC970 && !NUC970_CLK_ETIMER
 	help
 	  Enhance timer dirver Nuvoton NUC970 Series processor. This timer also supports capture function.
 
