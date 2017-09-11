@@ -233,7 +233,7 @@ static const unsigned usbh_oc_pin[] = {0x71};            // over-current
 static const unsigned usbd_pin[] = {0x70};  // vbvld
 
 static const unsigned i2c0_pins[] = {0x60, 0x61};
-static const unsigned i2c1_0_pins[] = {0x10, 0x11};
+
 static const unsigned i2c1_1_pins[] = {0x62, 0x63};
 static const unsigned i2c1_2_pins[] = {0x72, 0x73};
 static const unsigned i2c1_3_pins[] = {0x83, 0x84};
@@ -615,12 +615,6 @@ static const struct nuc970_pinctrl_group nuc970_pinctrl_groups[] = {
 		.name = "i2c0_grp",
 		.pins = i2c0_pins,
 		.num_pins = ARRAY_SIZE(i2c0_pins),
-		.func = 0x8,
-	},
-	{
-		.name = "i2c1_0_grp",
-		.pins = i2c1_0_pins,
-		.num_pins = ARRAY_SIZE(i2c1_0_pins),
 		.func = 0x8,
 	},
 	{
@@ -1390,7 +1384,7 @@ static const char * const emmc_groups[] = {"emmc_0_grp", "emmc_1_grp"};
 static const char * const usbh_ppwr_groups[] = {"usbh_pe_grp", "usbh_pf_grp", "usbh_oc_grp" };
 static const char * const usbd_groups[] = {"usbd_grp"};
 static const char * const i2c0_groups[] = {"i2c0_grp"};
-static const char * const i2c1_groups[] = {"i2c1_0_grp", "i2c1_1_grp", "i2c1_2_grp", "i2c1_3_grp"};
+static const char * const i2c1_groups[] = {"i2c1_1_grp", "i2c1_2_grp", "i2c1_3_grp"};
 static const char * const i2s_groups[] = {"i2s_grp"};
 static const char * const uart0_groups[] = {"uart0_grp"};
 static const char * const uart1_groups[] = {"uart1_0_grp", "uart1_3_grp", "uart1_5_grp"};
@@ -2391,14 +2385,6 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "i2c0",
 		.data.mux.group = "i2c0_grp",
-	},
-	{
-		.dev_name = "nuc970-i2c1",
-		.name = "i2c1-PB",
-		.type = PIN_MAP_TYPE_MUX_GROUP,
-		.ctrl_dev_name = "pinctrl-nuc970",
-		.data.mux.function = "i2c1",
-		.data.mux.group = "i2c1_0_grp",
 	},
 	{
 		.dev_name = "nuc970-i2c1",

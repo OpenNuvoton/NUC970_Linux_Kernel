@@ -629,9 +629,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 #if defined(CONFIG_OF)
 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
 #else
- #ifdef CONFIG_NUC970_I2C1_PB   
-	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c1-PB");
- #elif defined(CONFIG_NUC970_I2C1_PG)
+ #if defined(CONFIG_NUC970_I2C1_PG)
 	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c1-PG");
  #elif defined(CONFIG_NUC970_I2C1_PH)
 	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c1-PH");

@@ -563,10 +563,8 @@ choice
 	default NUC970_I2C1_PG
 	depends on I2C_BUS_NUC970_P1
 	help
-	  Select I2C1 multi-function pin. Can be PB0/PB1 ,PG2/PG3, PH2/PH3, PI3/PI4.
+	  Select I2C1 multi-function pin. Can be PG2/PG3, PH2/PH3, PI3/PI4.
 
-	config NUC970_I2C1_PB
-		bool "Port B"
 	config NUC970_I2C1_PG
 		bool "Port G"
 	config NUC970_I2C1_PH
