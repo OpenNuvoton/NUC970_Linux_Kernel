@@ -1072,7 +1072,6 @@ static void nuc900_sd_enable_sdio_irq(struct mmc_host *mmc, int enable)
 {
     struct nuc970_sd_host *host = mmc_priv(mmc);
     ENTRY();
-    if (down_interruptible(&sdh_fmi_sem)) return;
     nuc970_sd_write(REG_DMACIER, DMACIER_TABORT_IE);    //Enable target abort interrupt generation during DMA transfer
     nuc970_sd_write(REG_FMIIER, FMIIER_DTA_IE); //Enable DMAC READ/WRITE target abort interrupt generation
 
@@ -1104,7 +1103,6 @@ static void nuc900_sd_enable_sdio_irq(struct mmc_host *mmc, int enable)
             nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) & ~0x80000000);    /* clock keep */
         }
     }
-    up(&sdh_fmi_sem);
     LEAVE();
 }
 
