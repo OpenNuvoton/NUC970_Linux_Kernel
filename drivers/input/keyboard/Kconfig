@@ -644,34 +644,29 @@ config NUC970_KEYPAD_WKUP
 	tristate "NUC970 KEYPAD wake-up support"
 	depends on KEYBOARD_NUC970
     
-config  PULL_UP_MATRIX_KEYPAD_PIN
-        tristate "Pull-up NUC970 Matrix Keypad Pin"
-        default y
-        depends on KEYBOARD_NUC970
-        help
-	  Select keypad pin pull-up or not.
-
 choice
 	prompt "NUC970 matrix keypad pin selection"
-	default NUC970_KEYPAD_PA_4x8
+	default NUC970_KEYPAD_PH
 	depends on KEYBOARD_NUC970
 	help
 	  Select keypad multi-function pin.
 
-	config NUC970_KEYPAD_PA_3x2
-		bool "Keypad pins are 3x2 matrix PA pin"
-	config NUC970_KEYPAD_PA_4x2
-		bool "Keypad pins are 4x2 matrix PA pin"
-	config NUC970_KEYPAD_PA_4x4
-		bool "Keypad pins are 4x4 matrix PA pin"
-	config NUC970_KEYPAD_PA_4x8
-		bool "Keypad pins are 4x8 matrix PA pin"
-	config NUC970_KEYPAD_PH_4x2
-		bool "Keypad pins are 4x2 matrix PH pin"
-	config NUC970_KEYPAD_PH_4x4
-		bool "Keypad pins are 4x4 matrix PH pin"
-	config NUC970_KEYPAD_PH_4x8
-		bool "Keypad pins are 4x8 matrix PH pin"
+	config NUC970_KEYPAD_PH
+		bool "Keypad pins are PH pin"
+
+        config ROW_NUMBER
+        depends on NUC970_KEYPAD_PH
+        depends on KEYBOARD_NUC970
+        int "Row Number (1~4)"
+        default "4"
+
+        config COL_NUMBER
+        depends on NUC970_KEYPAD_PH
+        depends on KEYBOARD_NUC970
+        int "Column Number (1~8)"
+        default "8"
+
+
 endchoice
 
 config KEYBOARD_CROS_EC

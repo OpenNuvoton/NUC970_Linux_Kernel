@@ -39,6 +39,11 @@
 
 #include <mach/irqs.h>
 
+#include <mach/gpio.h>
+#include <linux/gpio.h>
+
+#include <linux/platform_data/keypad-nuc970.h>
+
 //#define GPIO_DEBUG_ENABLE_ENTER_LEAVE
 #ifdef GPIO_DEBUG_ENABLE_ENTER_LEAVE
 #define ENTRY()					printk("[%-20s] : Enter...\n", __FUNCTION__)
@@ -926,37 +931,6 @@ static int nuc970_gpio_probe(struct platform_device *pdev)
 			goto err_nuc970_gpio_port;
 		}
 
-		#if defined (CONFIG_PULL_UP_MATRIX_KEYPAD_PIN)
-		#if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-	                __raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc8f), (void *)(NUC970_VA_GPIO+0x24));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x370), (void *)(NUC970_VA_GPIO+0x20));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PA_3x2 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x24));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x20));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x2 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x24));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xff0), (void *)(NUC970_VA_GPIO+0x20));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x4 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PA_4x8)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x24)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x24));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x20)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x20));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PA_4x8 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x2)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffffc0f), (void *)(NUC970_VA_GPIO+0x1e4));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0x3f0), (void *)(NUC970_VA_GPIO+0x1e0));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x2 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x4)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xfffff00f), (void *)(NUC970_VA_GPIO+0x1e4));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xff0), (void *)(NUC970_VA_GPIO+0x1e0));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x4 \n");
-		#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e4)) &~ 0xffff000f), (void *)(NUC970_VA_GPIO+0x1e4));
-			__raw_writel((__raw_readl((void *)(NUC970_VA_GPIO+0x1e0)) | 0xfff0), (void *)(NUC970_VA_GPIO+0x1e0));
-			//printk("\n select CONFIG_NUC970_KEYPAD_PH_4x8 \n");
-		#endif
-		#endif
 	}
 
 #ifdef CONFIG_OF
@@ -1015,23 +989,97 @@ static int nuc970_gpio_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int kpi_suspend_flag = 0;
+static int kpi_resume_flag = 0;
+
 static int nuc970_gpio_resume(struct platform_device *pdev){
-ENTRY();
-LEAVE();
-return 0;
+#if defined CONFIG_NUC970_KEYPAD_PH
+	int i;
+#endif
+
+	ENTRY();
+
+#if defined CONFIG_NUC970_KEYPAD_PH
+	if(kpi_resume_flag == 0)
+	{
+		__raw_writel(__raw_readl(REG_WKUPSER)& ~(1 << 25),REG_WKUPSER);
+
+		for(i = 0; i < NUC970_KPD_ROW_NUMBER; i++)
+		{
+			disable_irq_nosync(gpio_to_irq(NUC970_PH4+i));
+		}
+
+		// Set Column
+		writel(readl(REG_GPIOH_DIR) & ~( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 8), REG_GPIOH_DIR); // input
+		writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 8), REG_GPIOH_PUEN); // pull-up
+
+		// Set Row
+		writel(readl(REG_GPIOH_DIR) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_DIR);  // output
+		writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_PUEN); // pull up
+		writel(readl(REG_GPIOH_DATAOUT) & ~( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_DATAOUT); // low
+
+		// clear ISR
+		writel(readl(REG_GPIOH_ISR), REG_GPIOH_ISR);
+
+		for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+		{
+			enable_irq(gpio_to_irq(NUC970_PH8+i));
+		}
+
+		kpi_suspend_flag = 0;
+		kpi_resume_flag = 1;
+	}
+    
+#endif
+	LEAVE();
+	return 0;
 }
 
 static int nuc970_gpio_suspend(struct platform_device *pdev,pm_message_t state){
-ENTRY();
-LEAVE();
-return 0;
+#if defined CONFIG_NUC970_KEYPAD_PH
+	int i;
+#endif
+	ENTRY();
+#if defined CONFIG_NUC970_KEYPAD_PH
+	if(kpi_suspend_flag == 0)
+	{
+		for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+		{
+			disable_irq_nosync(gpio_to_irq(NUC970_PH8+i));
+		}
+
+		// Set Row
+		writel(readl(REG_GPIOH_DIR) & ~( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 4), REG_GPIOH_DIR); // input
+		writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 4), REG_GPIOH_PUEN); // pull-up
+
+		// Set Column
+		writel(readl(REG_GPIOH_DIR) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 8), REG_GPIOH_DIR);  // output
+		writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 8), REG_GPIOH_PUEN); // pull up
+		writel(readl(REG_GPIOH_DATAOUT) & ~( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 8), REG_GPIOH_DATAOUT); // low
+
+		// clear ISR
+		writel(readl(REG_GPIOH_ISR), REG_GPIOH_ISR);
+
+		__raw_writel(__raw_readl(REG_WKUPSER)| (1 << 25),REG_WKUPSER);
+
+		for(i = 0; i < NUC970_KPD_ROW_NUMBER; i++)
+		{
+			enable_irq(gpio_to_irq(NUC970_PH4+i));
+		}
+
+		kpi_suspend_flag = 1;
+		kpi_resume_flag = 0;
+	}
+#endif
+	LEAVE();
+	return 0;
 }
 
 static const struct of_device_id nuc970_gpio_of_match[] = {
 	{ .compatible = "nuvoton,nuc970-gpio" },
 	{},
 };
-MODULE_DEVICE_TABLE(of, nuc970_serial_of_match);
+MODULE_DEVICE_TABLE(of, nuc970_gpio_of_match);
 
 static struct platform_driver nuc970_gpio_driver = {
 	.probe		= nuc970_gpio_probe,

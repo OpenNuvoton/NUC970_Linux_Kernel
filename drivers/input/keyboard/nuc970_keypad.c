@@ -1,516 +1,425 @@
-/*
- * Copyright (c) 2014 Nuvoton technology corporation.
+/* linux/driver/input/nuc970_keypad.c
+ *
+ * Copyright (c) 2017 Nuvoton technology corporation
+ * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation;version 2 of the License.
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Changelog:
  *
  */
+
+#include <linux/init.h>
+#include <linux/slab.h>
+
+#include <linux/input.h>
+#include <linux/device.h>
+
+#include <asm/errno.h>
+#include <asm/delay.h>
+#include <linux/mm.h>
+#include <linux/poll.h>
+#include <linux/module.h>
+#include <asm/io.h>
+#include <linux/cdev.h>
+#include <linux/interrupt.h>
+#include <linux/completion.h>
+
+#include <linux/platform_device.h>
+
+#include <mach/map.h>
+#include <mach/mfp.h>
+
+#include <mach/gpio.h>
+#include <linux/clk.h>
+#include <linux/delay.h>
+#include <linux/gpio.h>
+
+#include <mach/map.h>
+#include <mach/regs-gpio.h>
+#include <mach/regs-clock.h>
+#include <mach/regs-gcr.h>
+#include <mach/regs-aic.h>
+
+#include <mach/irqs.h>
 
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/ioport.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/input.h>
-#include <linux/device.h>
-#include <linux/platform_device.h>
-#include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/err.h>
 #include <linux/io.h>
-#include <linux/slab.h>
-#include <mach/map.h>
-#include <mach/regs-gcr.h>
-#include <mach/mfp.h>
 #include <linux/platform_data/keypad-nuc970.h>
 
-/* Keypad Interface Control Registers */
-#define KPI_CONF		0x00
-#define KPI_3KCONF		0x04
-#define KPI_STATUS		0x08
-#define KPI_RSTC		0x0C
-#define KPI_KEST		0x10
-#define KPI_KPE			0x18
-#define KPI_KRE			0x20
-#define KPI_PRESCALDIV	0x28
 
-// KPI_CONF
-#define KROW		(0x70000000)	// Keypad Matrix ROW number
-#define KCOL		(0x07000000)	// Keypad Matrix COL Number
-#define DB_EN		(0x00200000)	// Scan In Signal De-bounce Enable
-#define DB_CLKSEL	(0x000F0000)	// Scan In De-bounce sampling cycle selection
-#define PRESCALE	(0x0000FF00)	// Row Scan Cycle Pre-scale Value
-#define INPU		(0x00000040)	// key Scan In Pull-UP Enable Register
-#define WAKEUP		(0x00000020)	// Lower Power Wakeup Enable	
-#define ODEN		(0x00000010)	// Open Drain Enable
-#define INTEN		(0x00000008)	// Key Interrupt Enable Control 
-#define RKINTEN 	(0x00000004)	// Release Key Interrupt Enable Control
-#define PKINTEN 	(0x00000002)	// Press Key Interrupt Enable Control
-#define ENKP		(0x00000001)	// Keypad Scan Enable
+#undef BIT
+#include <linux/input.h>
+#define BIT(x)  (1UL<<((x)%BITS_PER_LONG))
 
-// KPI_STATUS
-#define RROW7		(0x00800000)	// Release key row coordinate
-#define RROW6		(0x00400000)
-#define RROW5		(0x00200000)
-#define RROW4		(0x00100000)
-#define RROW3		(0x00080000)
-#define RROW2		(0x00040000)
-#define RROW1		(0x00020000)
-#define RROW0		(0x00010000)
-#define PROW7		(0x00008000)	// Press key row coordinate
-#define PROW6		(0x00004000)
-#define PROW5		(0x00002000)
-#define PROW4		(0x00001000)
-#define PROW3		(0x00000800)
-#define PROW2		(0x00000400)
-#define PROW1		(0x00000200)
-#define PROW0		(0x00000100)
-#define PKEY_INT	(0x00000010)	// Press key interrupt
-#define RKEY_INT	(0x00000008)	// Release key interrupt
-#define KEY_INT		(0x00000004)	// Key Interrupt
-#define RST_3KEY	(0x00000002)	// 3-Keys Reset Flag 
-#define PDWAKE		(0x00000001)	// Power Down Wakeup Flag	
- 
-#define PROW 		(0x00000f00)	// Press Key Row Coordinate
+#define DEF_KPD_DELAY           HZ/100
 
-#define KPI_PRESCALE	(8)
-#define DEBOUNCE_BIT	(16)
+#define KEY_COUNT		32
 
-#define NUC970_NUM_ROWS		4
-#define NUC970_NUM_COLS		8
-#define NUC970_ROW_SHIFT	3
+#if defined CONFIG_OF
+#define CONFIG_NUC970_KEYPAD_PH 1
+#endif
 
-#ifdef CONFIG_OF
+static struct input_dev *nuc970_keypad_input_dev;
+static struct timer_list kpd_timer;
+static char timer_active = 0;
+
+static u32 old_key;
+static u32 new_key;
+static u32 open_cnt = 0;
+
+u32 nuc970_key_pressing = 0;
+EXPORT_SYMBOL(nuc970_key_pressing);
 
 static int nuc970_keymap[] = {
-	KEY(0, 0, KEY_A),	KEY(0, 1, KEY_B),
-	KEY(0, 2, KEY_C),	KEY(0, 3, KEY_D),
-	KEY(0, 4, KEY_E),	KEY(0, 5, KEY_F),
-	KEY(0, 6, KEY_G),	KEY(0, 7, KEY_H),
+	// row 0
+	KEY_RESERVED,	KEY_LEFTALT, 	KEY_F5,         KEY_INFO,
+	KEY_UP,	        KEY_F7,         KEY_TAB,	KEY_F1,
 
-	KEY(1, 0, KEY_I),	KEY(1, 1, KEY_J),
-	KEY(1, 2, KEY_K),	KEY(1, 3, KEY_L),
-	KEY(1, 4, KEY_M),	KEY(1, 5, KEY_N),
-	KEY(1, 6, KEY_O),	KEY(1, 7, KEY_P),
+	// row 1
+	KEY_ESC,	KEY_DOWN,	KEY_RIGHT,	KEY_F6,
+	KEY_F2,	        KEY_1,          KEY_2,	        KEY_4,
 
-	KEY(2, 0, KEY_Q),	KEY(2, 1, KEY_R),
-	KEY(2, 2, KEY_S),	KEY(2, 3, KEY_T),
-	KEY(2, 4, KEY_U),	KEY(2, 5, KEY_V),
-	KEY(2, 6, KEY_W),	KEY(2, 7, KEY_X),
+	// row 2
+	KEY_LEFT,	KEY_CAPSLOCK,   KEY_F3,          KEY_B,
+	KEY_5,          KEY_6,          KEY_SPACE,       KEY_F4,
 
-	KEY(3, 0, KEY_Y),	KEY(3, 1, KEY_Z),
-	KEY(3, 2, KEY_1),	KEY(3, 3, KEY_2),
-	KEY(3, 4, KEY_3),	KEY(3, 5, KEY_4),
-	KEY(3, 6, KEY_5),	KEY(3, 7, KEY_6),
+	// row 3
+	KEY_RESERVED,	KEY_7,          KEY_8,	         KEY_9,
+	KEY_BACKSPACE,	KEY_DOT,        KEY_0,	         KEY_ENTER,
 };
 
-static struct matrix_keymap_data nuc970_map_data = {
-	.keymap			= nuc970_keymap,
-	.keymap_size	= ARRAY_SIZE(nuc970_keymap),
-};
-
-static struct nuc970_keypad_platform_data nuc970_keypad_info = {
-		.keymap_data	= &nuc970_map_data,
-        .prescale		= 0x80,
-        .debounce		= 0x8,
-};
-#endif
-
-
-struct nuc970_keypad {
-	const struct nuc970_keypad_platform_data *pdata;
-	struct clk *clk;
-	struct input_dev *input_dev;
-	void __iomem *mmio_base;
-	int irq;
-	unsigned short keymap[NUC970_NUM_ROWS * NUC970_NUM_COLS];
-};
-
-#ifdef CONFIG_OF
-u32 kpi_row = 0;
-u32 kpi_col = 0;
-u32 kpi_port = 0;
-
-static const struct of_device_id nuc970_kpi_of_match[] = {
-	{ .compatible = "nuvoton,nuc970-kpi", .data = &nuc970_keypad_info},
-	{},
-};
-MODULE_DEVICE_TABLE(of, nuc970_kpi_of_match);
-#else
-#define nuc970_kpi_of_match NULL
-#endif
-
-
-void nuc970_keypad_mfp_set(struct platform_device *pdev)
+#if 0
+// arg = 0, from isr, 1 from timer.
+static void nuc970_check_ghost_state(void)
 {
-	struct pinctrl *p = NULL;
-	int retval = 0; 
+	int i,j;
+	u32 check = 0;
+	u32 col, check_col, cmp_col;			
 
-#ifdef CONFIG_OF
-	p = devm_pinctrl_get_select_default(&pdev->dev);
-#else
-    #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-    p = devm_pinctrl_get_select(&pdev->dev, "kpi_3x2-PA");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x2-PA");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x4-PA");
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x8)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x8-PA");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x2)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x2-PH");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x4)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x4-PH");
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
-	p = devm_pinctrl_get_select(&pdev->dev, "kpi_4x8-PH");
-	#endif
-#endif
-
-	if (IS_ERR(p))
+	for (i = 0; i < ROW_CNT; i++) 
 	{
-		dev_err(&pdev->dev, "unable to reserve pin\n");
-		retval = PTR_ERR(p);
-	}
+		col = (new_key >> (i*COL_CNT)) & COL_MASK;
 
-}
-
-static void nuc970_keypad_scan_matrix(struct nuc970_keypad *keypad,
-							unsigned int status)
-{
-	struct input_dev *input_dev = keypad->input_dev;
-	unsigned int i;
-	unsigned int row = 0;
-	unsigned int col = 0;
-	unsigned int code;
-	unsigned int key;
-	unsigned long u32KeyEvent = 0;
-
-	if(status & PKEY_INT)
-		u32KeyEvent = __raw_readl(keypad->mmio_base + KPI_KPE);
-	else if(status & RKEY_INT)
-		u32KeyEvent = __raw_readl(keypad->mmio_base + KPI_KRE);
-
-	for (i=0; i<32; i++)
-	{
-		if(u32KeyEvent & 1<<i)
+		if ((col & check) && hweight8(col) > 1)
 		{
-			row = i/8;
-			col = i%8;
+			for(j=0; j<ROW_CNT; j++)
+			{
+				check_col = (new_key >> (j*COL_CNT)) & COL_MASK;
+				if((col & check_col) != 0)
+				{
+					cmp_col = (old_key >> (j*COL_CNT)) & COL_MASK;
+					new_key = new_key & ~((cmp_col ^ check_col) << (j*COL_CNT));
+				}
+			}
 		}
+
+		check |= col;
+	}
+		
+}
+#endif
+
+static void read_key(unsigned long arg)
+{
+	u32 i;
+
+	#if 1
+	// ISR detect key press, disable irq, use timer to read following key press until released
+	if (!timer_active) {
+		nuc970_key_pressing = 1;
+
+		#if defined CONFIG_NUC970_KEYPAD_PH
+		for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+		{
+			disable_irq_nosync(gpio_to_irq(NUC970_PH8+i));
+		}
+		#endif
+        }
+	#else
+	nuc970_key_pressing = 1;
+	#endif
+
+	#if defined CONFIG_NUC970_KEYPAD_PH
+	new_key = readl(REG_GPIOH_DATAIN) & (((1 << NUC970_KPD_COL_NUMBER) - 1) << 8);
+
+	#endif
+
+	if ((new_key & (((1 << NUC970_KPD_COL_NUMBER) - 1) << 8)) == (((1 << NUC970_KPD_COL_NUMBER) - 1) << 8)) { // all key released
+
+		for (i = 0; i < KEY_COUNT; i++) {
+			if (old_key & (1 << i)) {
+				input_event(nuc970_keypad_input_dev, EV_MSC, MSC_SCAN, i);
+				//printk("=== key up1 code[%d] 0x%x 0x%x \n", i, nuc970_keymap[i], new_key);
+
+				input_report_key(nuc970_keypad_input_dev, nuc970_keymap[i], 0);     //key up
+				input_sync(nuc970_keypad_input_dev);
+			}
+		}
+		old_key = 0;
+		del_timer(&kpd_timer);
+		timer_active = 0;
+
+		#if defined CONFIG_NUC970_KEYPAD_PH
+		for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+		{
+			enable_irq(gpio_to_irq(NUC970_PH8+i));
+		}
+
+		#endif
+
+		nuc970_key_pressing = 0;
+		return;
 	}
 
-	code = MATRIX_SCAN_CODE(row, col, NUC970_ROW_SHIFT);
-	
-	key = keypad->keymap[code];
-
-	if(status & PKEY_INT)
+	#if defined CONFIG_NUC970_KEYPAD_PH
+	// scan key
+	new_key = 0;
+	for(i = 0; i < NUC970_KPD_ROW_NUMBER; i++)
 	{
-		__raw_writel(__raw_readl(keypad->mmio_base + KPI_KPE), (keypad->mmio_base + KPI_KPE));
-
-		input_event(input_dev, EV_MSC, MSC_SCAN, code);
-		input_report_key(input_dev, key, 1);
-		input_sync(input_dev);
-	}
-	else if(status & RKEY_INT)
-	{
-		__raw_writel(__raw_readl(keypad->mmio_base + KPI_KRE), (keypad->mmio_base + KPI_KRE));
-
-		input_event(input_dev, EV_MSC, MSC_SCAN, code);
-		input_report_key(input_dev, key, 0);
-		input_sync(input_dev);
+		writel((readl(REG_GPIOH_DIR) & ~( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4 ) ), REG_GPIOH_DIR);
+		writel((readl(REG_GPIOH_DIR) | (1 << (4+i))), REG_GPIOH_DIR);
+		udelay(100);
+		new_key |= ( (~(readl(REG_GPIOH_DATAIN) >> 8) & ((1 << NUC970_KPD_COL_NUMBER)- 1)) << (8*i) );
 	}
 
-	
+	writel( ( readl(REG_GPIOH_DIR) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4 ) ), REG_GPIOH_DIR);
+
+	#endif
+
+	for (i = 0; i < KEY_COUNT; i++) {
+
+		if ((new_key ^ old_key) & (1 << i)) {// key state change
+			if (new_key & (1 << i)) {
+				//key down
+				//printk("=== key down code[%d], 0x%x, 0x%x \n", i, new_key, nuc970_keymap[i]);
+
+				input_event(nuc970_keypad_input_dev, EV_MSC, MSC_SCAN, i);
+				input_report_key(nuc970_keypad_input_dev, nuc970_keymap[i], 1);
+				input_sync(nuc970_keypad_input_dev);
+
+			} else {
+				//key up
+				//printk("=== key up code[%d] 0x%x, 0x%x \n", i, nuc970_keymap[i], new_key);
+
+				input_event(nuc970_keypad_input_dev, EV_MSC, MSC_SCAN, i);
+				input_report_key(nuc970_keypad_input_dev, nuc970_keymap[i], 0);
+				input_sync(nuc970_keypad_input_dev);
+			}
+
+		}
+
+	}
+
+	old_key = new_key;
+
+
+	timer_active = 1;
+	if ( arg == 0 )
+		mod_timer(&kpd_timer, jiffies + DEF_KPD_DELAY*1); //### to avoid key too sensitive
+	else
+		mod_timer(&kpd_timer, jiffies + DEF_KPD_DELAY);
+
+	return;
+
 }
 
-static irqreturn_t nuc970_keypad_irq_handler(int irq, void *dev_id)
+
+static irqreturn_t nuc970_kpd_irq(int irq, void *dev_id) 
 {
-	struct nuc970_keypad *keypad = dev_id;
-	unsigned int  kstatus;
-
-	kstatus = __raw_readl(keypad->mmio_base + KPI_STATUS);
-
-    printk("\n KPI irq status: 0x%x \n", kstatus);
-
-	if (kstatus & (PKEY_INT|RKEY_INT))
-	{
-		nuc970_keypad_scan_matrix(keypad, kstatus);
-	}
-	else
-	{
-		if(kstatus & PDWAKE)
-            __raw_writel(PDWAKE, (keypad->mmio_base + KPI_STATUS));
-	}
+	read_key(0);
 
 	return IRQ_HANDLED;
 }
 
-static int nuc970_keypad_open(struct input_dev *dev)
+static irqreturn_t kpi_interrupr_handle__(int irq, void *dev_id)
 {
-	struct nuc970_keypad *keypad = input_get_drvdata(dev);
-	//const struct nuc970_keypad_platform_data *pdata = keypad->pdata;
-	unsigned int val, config;
-   
-	val = INPU | RKINTEN | PKINTEN | INTEN | ENKP;
+	// clear ISR
+	writel(readl(REG_GPIOH_ISR) | ( ((1 << 12) - 1) << 4), REG_GPIOH_ISR);
+    
+	return IRQ_HANDLED;
+}
 
-#ifdef CONFIG_OF
-    val |= ((kpi_row - 1) << 28) | ((kpi_col - 1) << 24);
-#else
-    #if defined (CONFIG_NUC970_KEYPAD_PA_3x2)
-    val |= ((3 - 1) << 28) | ((2 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x2)
-	val |= ((4 - 1) << 28) | ((2 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x4)
-	val |= ((4 - 1) << 28) | ((4 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PA_4x8)
-	val |= ((4 - 1) << 28) | ((8 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x2)
-	val |= ((4 - 1) << 28) | ((2 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x4)
-	val |= ((4 - 1) << 28) | ((4 - 1) << 24);
-	#elif defined (CONFIG_NUC970_KEYPAD_PH_4x8)
-	val |= ((4 - 1) << 28) | ((8 - 1) << 24);
+
+int nuc970_kpd_open(struct input_dev *dev)
+{
+	u32 i;
+	int error = 0;
+
+	if (open_cnt > 0) {
+		goto exit;
+	}
+
+	new_key = old_key = 0;
+
+	// init timer
+	init_timer(&kpd_timer);
+	kpd_timer.function = read_key;	/* timer handler */
+	kpd_timer.data = 1;
+
+	#if defined CONFIG_NUC970_KEYPAD_PH
+	writel(readl(REG_GPIOH_ISR), REG_GPIOH_ISR); // clear source
+
+	for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+	{
+		error =  request_irq((IRQ_GPIO_START+NUC970_PH8+i), nuc970_kpd_irq, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_SUSPEND, "Keypad",NULL);
+		if (error) {
+			printk("register the PH%d keypad_irq failed!  0x%x  0x%x \n", (8+i), (IRQ_GPIO_START+NUC970_PH8+i), NUC970_PH8);
+			return -EAGAIN;
+		}
+	}
+
+	for(i = 0; i < NUC970_KPD_ROW_NUMBER; i++)
+	{
+		if(request_irq((IRQ_GPIO_START+NUC970_PH4+i),kpi_interrupr_handle__, IRQF_TRIGGER_FALLING | IRQF_NO_SUSPEND, "Keypad",NULL) != 0){
+		printk("register the PH%d keypad_irq failed!  0x%x \n", (4+i), (IRQ_GPIO_START+NUC970_PH4+i) );
+		return -1;
+		}
+
+		enable_irq_wake((IRQ_GPIO_START+NUC970_PH4+i));
+		disable_irq_nosync((IRQ_GPIO_START+NUC970_PH4+i));
+	}
+
 	#endif
-#endif
 
-	//config = (pdata->prescale << KPI_PRESCALE) | (pdata->debounce << DEBOUNCE_BIT) | DB_EN;
-	config = (0xff << KPI_PRESCALE) | (0xd << DEBOUNCE_BIT) | DB_EN;
-
-	val |= config;
-
-	__raw_writel(val, keypad->mmio_base + KPI_CONF);
-	//__raw_writel(0x1f, keypad->mmio_base + KPI_PRESCALDIV);
-	__raw_writel(0xff, keypad->mmio_base + KPI_PRESCALDIV);
-
+exit:
+	open_cnt++;
 	return 0;
 }
 
-static void nuc970_keypad_close(struct input_dev *dev)
-{
-	struct nuc970_keypad *keypad = input_get_drvdata(dev);
 
-	/* Disable clock unit */
-	clk_disable(keypad->clk);
+
+void nuc970_kpd_close(struct input_dev *dev)
+{
+	u32 i;
+
+	open_cnt--;
+	if (open_cnt == 0)
+	{
+		//disable interrupt
+		#if defined CONFIG_NUC970_KEYPAD_PH
+		for(i = 0; i < CONFIG_COL_NUMBER; i++)
+		{
+			free_irq(gpio_to_irq(NUC970_PH8+i),NULL);
+		}
+
+		#endif
+	}
+	return;
 }
+
 
 static int nuc970_keypad_probe(struct platform_device *pdev)
 {
-	//const struct nuc970_keypad_platform_data *pdata =
-	//					pdev->dev.platform_data;
-	const struct nuc970_keypad_platform_data *pdata;
-	const struct matrix_keymap_data *keymap_data;
-	struct nuc970_keypad *keypad;
-	const struct of_device_id *match;
-	struct input_dev *input_dev;
-	struct resource *res;
-	int irq;
-	int error = 0;
+	int i, err;
 
-    if (pdev->dev.of_node) {
-		match = of_match_device(nuc970_kpi_of_match, &pdev->dev);
-		if (!match) {
-			dev_err(&pdev->dev, "Failed to find matching dt id\n");
-			goto exit;
-		}
-		pdata = match->data;
-	} else {
-		pdata = pdev->dev.platform_data;
-		
-		if (!pdata) {
-		dev_err(&pdev->dev, "no platform data defined\n");
-		return -EINVAL;
-		}
+	#ifdef CONFIG_OF
+	if (pdev->dev.of_node) {
+		of_property_read_u32_array(pdev->dev.of_node, "row", &NUC970_KPD_ROW_NUMBER, 1);
+		of_property_read_u32_array(pdev->dev.of_node, "col", &NUC970_KPD_COL_NUMBER, 1);
 	}
-
-	keymap_data = pdata->keymap_data;
-
-	irq = platform_get_irq(pdev, 0);
-	
-	if (irq < 0) {
-		dev_err(&pdev->dev, "failed to get keypad irq\n");
-		return -ENXIO;
-	}
-
-	keypad = kzalloc(sizeof(struct nuc970_keypad), GFP_KERNEL);
-	input_dev = input_allocate_device();
-	if (!keypad || !input_dev) {
-		dev_err(&pdev->dev, "failed to allocate driver data\n");
-		error = -ENOMEM;
-		goto failed_free;
-	}
-
-	keypad->pdata = pdata;
-	keypad->input_dev = input_dev;
-	keypad->irq = irq;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (res == NULL) {
-		dev_err(&pdev->dev, "failed to get I/O memory\n");
-		error = -ENXIO;
-		goto failed_free;
-	}
-
-	res = request_mem_region(res->start, resource_size(res), pdev->name);
-	if (res == NULL) {
-		dev_err(&pdev->dev, "failed to request I/O memory\n");
-		error = -EBUSY;
-		goto failed_free;
-	}
-
-	keypad->mmio_base = ioremap(res->start, resource_size(res));
-	if (keypad->mmio_base == NULL) {
-		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-		error = -ENXIO;
-		goto failed_free_res;
-	}
-
-	keypad->clk = clk_get(NULL, "kpi");	
-	clk_prepare(keypad->clk);
-	clk_enable(keypad->clk);
-	keypad->clk = clk_get(NULL, "kpi_eclk");	
-	clk_prepare(keypad->clk);
-	clk_enable(keypad->clk);
-	if (IS_ERR(keypad->clk)) {
-		dev_err(&pdev->dev, "failed to get keypad clock\n");
-		error = PTR_ERR(keypad->clk);
-		goto failed_free_io;
-	}
-
-
-	/* set multi-function pin for nuc970 kpi. */
-	nuc970_keypad_mfp_set(pdev);
-
-    #ifdef CONFIG_OF
-    of_property_read_u32_array(pdev->dev.of_node, "row", &kpi_row, 1);
-	of_property_read_u32_array(pdev->dev.of_node, "col", &kpi_col, 1); 
-
-    if(kpi_row > NUC970_NUM_ROWS){
-	    dev_err(&pdev->dev, "failed to set kpi row number \n");
-	    goto failed_put_clk;
-	}
-
-	if(kpi_col > NUC970_NUM_COLS){
-		dev_err(&pdev->dev, "failed to set kpi col number \n");
-	    goto failed_put_clk;
-	}
-
-	if((kpi_port != 0) && (kpi_port != 1))
-	{
-        dev_err(&pdev->dev, "failed to set kpi port \n");
-	    goto failed_put_clk;
-	}
+	#else
+	NUC970_KPD_COL_NUMBER = CONFIG_COL_NUMBER;
+	NUC970_KPD_ROW_NUMBER = CONFIG_ROW_NUMBER;
 	#endif
 
-	input_dev->name = pdev->name;
-	input_dev->id.bustype = BUS_HOST;
-	input_dev->open = nuc970_keypad_open;
-	input_dev->close = nuc970_keypad_close;
-	input_dev->dev.parent = &pdev->dev;
+	if(NUC970_KPD_COL_NUMBER > 8)  NUC970_KPD_COL_NUMBER = 8;
+	if(NUC970_KPD_COL_NUMBER > 4)  NUC970_KPD_ROW_NUMBER = 4;
 
-	error = matrix_keypad_build_keymap(keymap_data, NULL,
-					   NUC970_NUM_ROWS, NUC970_NUM_COLS,
-					   keypad->keymap, input_dev);
-	
-	if (error) {
-		dev_err(&pdev->dev, "failed to build keymap\n");
-		goto failed_put_clk;
+	// init GPIO
+	#if defined CONFIG_NUC970_KEYPAD_PH
+	// Set Column
+	writel(readl(REG_GPIOH_DIR) & ~( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 8), REG_GPIOH_DIR); // input
+	writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 8), REG_GPIOH_PUEN); // pull-up
+
+	// Set Row
+	writel(readl(REG_GPIOH_DIR) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_DIR);  // output
+	writel(readl(REG_GPIOH_PUEN) | ( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_PUEN); // pull up
+	writel(readl(REG_GPIOH_DATAOUT) & ~( ((1 << NUC970_KPD_ROW_NUMBER) - 1) << 4), REG_GPIOH_DATAOUT); // low
+
+	writel(readl(REG_GPIOH_DBEN) | ( ((1 << NUC970_KPD_COL_NUMBER) - 1) << 8), REG_GPIOH_DBEN);
+	#endif
+
+	writel(0x2f, REG_GPIO_DBNCECON); // De-bounce sampling cycle select 32768 clock
+
+	if (!(nuc970_keypad_input_dev = input_allocate_device())) {
+		printk("NUC970 Keypad Drvier Allocate Memory Failed!\n");
+		err = -ENOMEM;
+		goto fail;
 	}
 
-	error = request_irq(keypad->irq, nuc970_keypad_irq_handler,
-			    IRQF_NO_SUSPEND, pdev->name, keypad);
-	if (error) {
-		dev_err(&pdev->dev, "failed to request IRQ\n");
-		goto failed_put_clk;
+	nuc970_keypad_input_dev->name = "nuc970-kpi"; //"NUC970_Keypad";
+	nuc970_keypad_input_dev->phys = "input/event1";
+	nuc970_keypad_input_dev->id.bustype = BUS_HOST;
+	nuc970_keypad_input_dev->id.vendor  = 0x0005;
+	nuc970_keypad_input_dev->id.product = 0x0001;
+	nuc970_keypad_input_dev->id.version = 0x0100;
+
+	nuc970_keypad_input_dev->open    = nuc970_kpd_open;
+	nuc970_keypad_input_dev->close   = nuc970_kpd_close;
+
+	nuc970_keypad_input_dev->evbit[0] = BIT(EV_KEY) | BIT(EV_SYN) |  BIT(EV_REP);
+
+	for (i = 0; i < KEY_MAX; i++)
+		set_bit(i+1, nuc970_keypad_input_dev->keybit);
+
+	err = input_register_device(nuc970_keypad_input_dev);
+	if (err) {
+		input_free_device(nuc970_keypad_input_dev);
+		return err;
 	}
 
-	__set_bit(EV_REP, input_dev->evbit);
-	input_set_capability(input_dev, EV_MSC, MSC_SCAN);
-	input_set_drvdata(input_dev, keypad);
+	// must set after input device register!!!
+	nuc970_keypad_input_dev->rep[REP_DELAY] = 1000; //1000ms
+	nuc970_keypad_input_dev->rep[REP_PERIOD] = 100; //ms
 
-	/* Register the input device */
-	error = input_register_device(input_dev);
-	if (error) {
-		dev_err(&pdev->dev, "failed to register input device\n");
-		goto failed_free_irq;
-	}
-
-	platform_set_drvdata(pdev, keypad);
 	return 0;
 
-failed_free_irq:
-	free_irq(irq, pdev);
-failed_put_clk:
-	clk_put(keypad->clk);
-failed_free_io:
-	iounmap(keypad->mmio_base);
-failed_free_res:
-	release_mem_region(res->start, resource_size(res));
-failed_free:
-	input_free_device(input_dev);
-	kfree(keypad);
-exit:
-	dev_err(&pdev->dev, "probe failed\n");
-
-	return error;
+fail:
+	input_free_device(nuc970_keypad_input_dev);
+	return err;
 }
 
 static int nuc970_keypad_remove(struct platform_device *pdev)
 {
-	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);
-	struct resource *res;
+	u32 i;
 
-	free_irq(keypad->irq, pdev);
+	#if defined CONFIG_NUC970_KEYPAD_PH
+	for(i = 0; i < NUC970_KPD_COL_NUMBER; i++)
+	{
+		free_irq(gpio_to_irq(NUC970_PH8+i),NULL);
+	}
 
-	clk_put(keypad->clk);
-
-	input_unregister_device(keypad->input_dev);
-
-	iounmap(keypad->mmio_base);
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	release_mem_region(res->start, resource_size(res));
+	#endif
 
 	platform_set_drvdata(pdev, NULL);
-	kfree(keypad);
+	input_free_device(nuc970_keypad_input_dev);
 
 	return 0;
 }
 
-#ifdef CONFIG_NUC970_KEYPAD_WKUP
-static int nuc970_keypad_suspend(struct platform_device *pdev, pm_message_t state)
-{
-	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);
-	   
-    __raw_writel(__raw_readl(REG_WKUPSER)| (1 << 27),REG_WKUPSER);
-    __raw_writel(__raw_readl(keypad->mmio_base + KPI_CONF) | WAKEUP, keypad->mmio_base + KPI_CONF);
-    enable_irq_wake(keypad->irq);
-        
-    return 0;
-}
-
-static int nuc970_keypad_resume(struct platform_device *pdev)
-{
-	struct nuc970_keypad *keypad = platform_get_drvdata(pdev);	
-
-    __raw_writel(__raw_readl(REG_WKUPSER)& ~(1 << 27),REG_WKUPSER);
-    __raw_writel(__raw_readl(keypad->mmio_base + KPI_CONF) & ~(WAKEUP), keypad->mmio_base + KPI_CONF);
-    disable_irq_wake(keypad->irq);
-    
-    return 0;
-}
-#else
-
 #define nuc970_keypad_suspend 	NULL
 #define nuc970_keypad_resume	NULL
-#endif
 
+static const struct of_device_id nuc970_kpi_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-kpi" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_kpi_of_match);
 
 static struct platform_driver nuc970_keypad_driver = {
 	.probe		= nuc970_keypad_probe,
 	.remove		= nuc970_keypad_remove,
-    .suspend	= nuc970_keypad_suspend,
+	.suspend	= nuc970_keypad_suspend,
 	.resume		= nuc970_keypad_resume,
 	.driver		= {
 		.name	= "nuc970-kpi",

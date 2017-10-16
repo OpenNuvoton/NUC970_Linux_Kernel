@@ -22,4 +22,8 @@ struct nuc970_keypad_platform_data {
 	unsigned int	debounce;
 };
 
+__attribute__ ((unused)) static u32 NUC970_KPD_ROW_NUMBER = 4;
+__attribute__ ((unused)) static u32 NUC970_KPD_COL_NUMBER = 8;
+
+
 #endif /* __ASM_ARCH_W90P910_KEYPAD_H */

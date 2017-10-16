@@ -345,89 +345,32 @@
 			};
 
 			kpi {
-				pinctrl_kpi_PA_3x2: kpi-PA-3x2 {
-					nuvoton,pins =
-						<0 4 4 0
-						 0 5 4 0
-						 0 6 4 0
-						 0 8 4 0
-						 0 9 4 0>;
-				};
-
-				pinctrl_kpi_PA_4x2: kpi-PA-4x2 {
-					nuvoton,pins =
-						<0 4 4 0
-						 0 5 4 0
-						 0 6 4 0
-						 0 7 4 0
-						 0 8 4 0
-						 0 9 4 0>;
-				};
-
-				pinctrl_kpi_PA_4x4: kpi-PA-4x4 {
-					nuvoton,pins =
-						<0 4 4 0
-						 0 5 4 0
-						 0 6 4 0
-						 0 7 4 0
-						 0 8 4 0
-						 0 9 4 0
-						 0 0xa 4 0
-						 0 0xb 4 0>;
-				};
-
-				pinctrl_kpi_PA_4x8: kpi-PA-4x8 {
-					nuvoton,pins =
-						<0 4 4 0
-						 0 5 4 0
-						 0 6 4 0
-						 0 7 4 0
-						 0 8 4 0
-						 0 9 4 0
-						 0 0xa 4 0
-						 0 0xb 4 0
-						 0 0xc 4 0
-						 0 0xd 4 0
-						 0 0xe 4 0
-						 0 0xf 4 0>;
-				};
-
-				pinctrl_kpi_PH_4x2: kpi-PH-4x2 {
-					nuvoton,pins =
-						<7 4 4 0
-						 7 5 4 0
-						 7 6 4 0
-						 7 7 4 0
-						 7 8 4 0
-						 7 9 4 0>;
-				};
-
 				pinctrl_kpi_PH_4x4: kpi-PH-4x4 {
 					nuvoton,pins =
-						<7 4 4 0
-						 7 5 4 0
-						 7 6 4 0
-						 7 7 4 0
-						 7 8 4 0
-						 7 9 4 0
-						 7 0xa 4 0
-						 7 0xb 4 0>;
+						<7 4 0 0
+						 7 5 0 0
+						 7 6 0 0
+						 7 7 0 0
+						 7 8 0 0
+						 7 9 0 0
+						 7 0xa 0 0
+						 7 0xb 0 0>;
 				};
 
 				pinctrl_kpi_PH_4x8: kpi-PH-4x8 {
 					nuvoton,pins =
-						<7 4 4 0
-						 7 5 4 0
-						 7 6 4 0
-						 7 7 4 0
-						 7 8 4 0
-						 7 9 4 0
-						 7 0xa 4 0
-						 7 0xb 4 0
-						 7 0xc 4 0
-						 7 0xd 4 0
-						 7 0xe 4 0
-						 7 0xf 4 0>;
+						<7 4 0 0
+						 7 5 0 0
+						 7 6 0 0
+						 7 7 0 0
+						 7 8 0 0
+						 7 9 0 0
+						 7 0xa 0 0
+						 7 0xb 0 0
+						 7 0xc 0 0
+						 7 0xd 0 0
+						 7 0xe 0 0
+						 7 0xf 0 0>;
 				};
 			};
 
@@ -1269,11 +1212,6 @@
 
 		kpi: kpi@b8008000 {
 			compatible = "nuvoton,nuc970-kpi";
-			reg = <0xb8008000 0x1000>;
-			interrupts = <61 4 1>;
-			map-addr = <0xf8008000>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_kpi_PH_4x4>;
 			row = <4>; // <row number>
 			col = <4>; // <col number>
 			status = "disabled";
