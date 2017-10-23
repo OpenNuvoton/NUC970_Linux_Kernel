@@ -991,9 +991,9 @@ static int nuc970fb_probe(struct platform_device *pdev)
 #if defined(CONFIG_OF)
 	p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
- #if defined(CONFIG_FB_NUC970_16BIT_PIN)
+ #if defined(CONFIG_FB_LCD_16BIT_PIN)
 	p = devm_pinctrl_get_select(&pdev->dev, "lcd-16bit");
- #elif defined(CONFIG_FB_NUC970_18BIT_PIN)
+ #elif defined(CONFIG_FB_LCD_18BIT_PIN)
 	p = devm_pinctrl_get_select(&pdev->dev, "lcd-18bit");	
  #else
 	p = devm_pinctrl_get_select(&pdev->dev, "lcd-24bit");

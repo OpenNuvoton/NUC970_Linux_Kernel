@@ -351,6 +351,8 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 #endif
 #ifdef CONFIG_FB_LCD_16BIT_PIN
         .devctl		= 0x050000c0,
+#elif defined(CONFIG_FB_LCD_18BIT_PIN)
+        .devctl		= 0x060000c0,
 #elif defined(CONFIG_FB_LCD_24BIT_PIN)
         .devctl		= 0x070000c0,
 #endif
