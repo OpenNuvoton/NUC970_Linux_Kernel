@@ -736,7 +736,7 @@ static long sc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				mutex_unlock(&sc->lock);
 				return -EFAULT;
 			}
-			if(unlikely(sc_t->tx_len == 0 || sc_t->rx_len == 0)) {
+			if(unlikely(sc_t->tx_len == 0)) {
 				mutex_unlock(&sc->lock);
 				return -EFAULT;
 			}
