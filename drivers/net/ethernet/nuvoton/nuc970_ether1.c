@@ -1228,7 +1228,7 @@ static int nuc970_ether_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "nuc970_mii_setup err\n");
 		goto err2;
 	}
-
+	netif_carrier_off(dev);
 	error = register_netdev(dev);
 	if (error != 0) {
 		dev_err(&pdev->dev, "register_netdev() failed\n");
