@@ -180,7 +180,7 @@ static void __init nuc970_clockevents_init(void)
 
 	rate = clk_get_rate(clk) / (PRESCALE + 1);
 
-	timer0_load = (rate / TICKS_PER_SEC);
+	timer0_load = (rate / TICKS_PER_SEC) - 1;
 
 	__raw_writel(RESETINT, REG_TMR_TISR);
 	setup_irq(IRQ_TMR0, &nuc970_timer0_irq);
