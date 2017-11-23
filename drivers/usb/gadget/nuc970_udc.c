@@ -214,8 +214,10 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 			while ((__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000) != 0x1000)
 			{
 				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-				printk("unplug!\n");
-				return 0;
+				{
+					printk("unplug!\n");
+					return 0;
+				}
 			}
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
@@ -560,8 +562,10 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 			while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS)&0x20) //wait DMA complete
 			{
 				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-				printk("unplug!\n");
-				break;
+				{
+					printk("unplug!\n");
+					break;
+				}
 			}
 			if (dev->usb_dma_trigger)
 			{
@@ -569,8 +573,10 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 				while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0)
 				{
 					if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-					printk("unplug!\n");
-					break;
+					{
+						printk("unplug!\n");
+						break;
+					}
 				}
 				__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -646,8 +652,10 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 			while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20)	//wait DMA complete
 			{
 				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-				printk("unplug!\n");
-				break;
+				{
+					printk("unplug!\n");
+					break;
+				}
 			}
 			fifo_count = __raw_readl(controller.reg + datacnt_reg);
 
@@ -657,8 +665,10 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 				while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0)
 				{
 					if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-					printk("unplug!\n");
-					break;
+					{
+						printk("unplug!\n");
+						break;
+					}
 				}
 				__raw_writel(0x02, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -698,8 +708,10 @@ void paser_irq_nepint(int irq, struct nuc970_ep *ep, u32 IrqSt)
 			while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS)&0x20)	//wait DMA complete
 			{
 				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-				printk("unplug!\n");
-				break;
+				{
+					printk("unplug!\n");
+					break;
+				}
 			}
 			if (dev->usb_dma_trigger)
 			{
@@ -707,8 +719,10 @@ void paser_irq_nepint(int irq, struct nuc970_ep *ep, u32 IrqSt)
 				while ((__raw_readl(controller.reg + REG_USBD_IRQ_STAT) & 0x20) == 0)
 				{
 					if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-					printk("unplug!\n");
-					break;
+					{
+						printk("unplug!\n");
+						break;
+					}
 				}
 				__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -1715,8 +1729,10 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 		while (__raw_readl(controller.reg + REG_USBD_DMA_CTRL_STS) & 0x20)	//wait DMA complete
 		{
 			if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-			printk("unplug!\n");
-			return 0;
+			{
+				printk("unplug!\n");
+				return 0;
+			}
 		}
 		{
 			dev->usb_dma_dir = Ep_In;
@@ -1732,7 +1748,6 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 				if (loop > 0)
 					dev->usb_dma_trigger_next = 1;
 				start_write(ep, buf, USBD_DMA_LEN);
-				len = USBD_DMA_LEN;
 			}
 			else
 			{
@@ -1744,14 +1759,12 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 					if (count < size)
 						dev->usb_dma_trigger_next = 1;
 					start_write(ep, buf, count);
-					len = count;
 				}
 				else
 				{
 					if ((ep->ep_type == EP_TYPE_BLK) || (ep->ep_type == EP_TYPE_ISO))
 						dev->usb_less_mps = 1;
 					start_write(ep, buf, size);
-					len = size;
 				}
 			}
 		}
@@ -1773,7 +1786,6 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 			if (loop > 0)
 				dev->usb_dma_trigger_next = 1;
 			start_read(ep, buf, USBD_DMA_LEN);
-			len = USBD_DMA_LEN;
 		}
 		else
 		{
@@ -1784,13 +1796,11 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 				if (count < size)
 					dev->usb_dma_trigger_next = 1;
 				start_read(ep, buf, count);
-				len = count;
 			}
 			else
 			{
 				//using short packet intr to deal with
 				start_read(ep, buf, size);
-				len = size;
 			}
 		}
 	}
