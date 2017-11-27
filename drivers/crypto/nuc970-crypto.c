@@ -36,7 +36,7 @@
 #define DMA_BUFSZ			(4096)
 
 struct nuc970_crypto_dev {
-	
+	struct device  *dev;  
 	struct nuc970_crypto_regs  *regs;
 	spinlock_t 	 aes_lock;
 	spinlock_t 	 des_lock;
@@ -277,7 +277,8 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 	struct nuc970_aes_regs *aes_regs = ctx->aes_regs;
 	struct scatterlist   *in_sg, *out_sg;
-	int  i, req_len, dma_len, count;
+	int  i, req_len, dma_len, copy_len, offset;
+	int  in_sg_off, out_sg_off;
 	int  timeout = 100000;
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
@@ -298,23 +299,6 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	crpt_regs->CRPT_AES_CTL = ctx->keysize | ctx->mode | AES_INSWAP | AES_OUTSWAP |
 	                          AES_DMAEN | (ctx->channel << 24);
 
-	if (ctx->use_mtp_key)
-	{
-		//printk("AES using MTP key.\n");
-
-    	if (IS_ERR(clk_get(NULL, "mtpc"))) {
-        	printk("clk_get mtpc error!!\n");
-        	return -1;
-    	}
-		/* Enable MTP clock */
-    	clk_prepare(clk_get(NULL, "mtpc"));	
-    	clk_enable(clk_get(NULL, "mtpc"));
-		
-		MTP_Enable();
-
-		crpt_regs->CRPT_AES_CTL |= AES_EXTERNAL_KEY;
-	}
-
 	if (ctx->is_first_block)
 		ctx->is_first_block = 0;
 	else
@@ -323,48 +307,86 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	if (encrypt)
 		crpt_regs->CRPT_AES_CTL |= AES_ENCRYPT;
 	
+	req_len = areq->nbytes;
 	in_sg = areq->src;
 	out_sg = areq->dst;
-	req_len = areq->nbytes;
+	in_sg_off = 0;
+	out_sg_off = 0;
 	
-	while ((req_len > 0) && in_sg)
+	
+	while (req_len > 0)
 	{
-		dma_len = min((int)in_sg->length, req_len);
+		if ((in_sg == NULL) || (out_sg == NULL))
+		{
+			printk("[%s] - NULL sg!\n", __func__);
+			return 1;
+		}
 		
+		/*
+		 *  Fill DMA source buffer
+		 */
+		dma_len = 0;
+		while ((req_len > 0) && (dma_len < DMA_BUFSZ))
+		{
+			copy_len = min((int)in_sg->length - in_sg_off, req_len);
+			if (DMA_BUFSZ - dma_len < copy_len)
+			    copy_len = DMA_BUFSZ - dma_len;
+		    
+		    memcpy((char *)nuc970_crdev.aes_inbuf + dma_len, (char *)sg_virt(in_sg) + in_sg_off, copy_len);
+		    
+		    dma_len += copy_len;
+		    req_len -= copy_len;
+		    in_sg_off += copy_len;
+		    
+		    if (in_sg_off >= in_sg->length)
+		    {
+		    	in_sg = sg_next(in_sg);
+		    	in_sg_off = 0;
+			}
+		}
+
+		/* 
+		 *  Execute AES encrypt/decrypt
+		 */
+	    //printk("dma_len = %d\n", dma_len);
 		aes_regs->count = dma_len;
 		aes_regs->src_addr = nuc970_crdev.aes_inbuf_dma_addr;
 		aes_regs->dst_addr = nuc970_crdev.aes_outbuf_dma_addr;
 
-		count = sg_copy_to_buffer(in_sg, 1, nuc970_crdev.aes_inbuf, dma_len);
-		if (count != dma_len)
-		{
-			printk("sg in buffer error!\n");
-			break;
-		}	
-		
-		in_sg = sg_next(in_sg);
-		
 		crpt_regs->CRPT_AES_CTL |= AES_START;
 		
-		while ((crpt_regs->CRPT_AES_CTL & AES_START) && timeout--)
+		while (((crpt_regs->CRPT_INTSTS & (AESIF|AESERRIF)) == 0) && (timeout-- > 0))
 		{
 			cpu_relax();
 		}
-		
 		if (timeout == 0)
 		{
 			printk("Crypto AES engine failed!\n");
 			spin_unlock(&nuc970_crdev.aes_lock);
 			return 1;
 		}
-
-		count = sg_copy_from_buffer(out_sg, 1, nuc970_crdev.aes_outbuf, dma_len);
-		if (count != dma_len)
+		crpt_regs->CRPT_INTSTS = (AESIF|AESERRIF);
+		
+		//dma_sync_single_for_cpu(&nuc970_crdev.dev, nuc970_crdev.aes_outbuf, DMA_BUFSZ, DMA_FROM_DEVICE);
+		
+		/*
+		 *  Copy output data from DMA destination buffer
+		 */
+		offset = 0;
+		while ((dma_len > 0) && (out_sg != NULL))
 		{
-			printk("sg out buffer error!\n");
-			break;
+			copy_len = min((int)out_sg->length - out_sg_off, dma_len);
+		    memcpy((char *)sg_virt(out_sg) + out_sg_off, (char *)((u32)nuc970_crdev.aes_outbuf + offset), copy_len);
+		    dma_len -= copy_len;
+		    offset += copy_len;
+		    out_sg_off += copy_len;
+		    
+		    if (out_sg_off >= out_sg->length)
+		    {
+		    	out_sg = sg_next(out_sg);
+		    	out_sg_off = 0;
+			}
 		}	
-		req_len -= 	count;			
 	}
 
 	spin_unlock(&nuc970_crdev.aes_lock);
@@ -481,7 +503,8 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	struct nuc970_crypto_regs  *crpt_regs = nuc970_crdev.regs;
 	struct nuc970_tdes_regs *tdes_regs = ctx->tdes_regs;
 	struct scatterlist   *in_sg, *out_sg;
-	int  i, req_len, dma_len, count;
+	int  i, req_len, dma_len, copy_len, offset;
+	int  in_sg_off, out_sg_off;
 	int  timeout = 100000;
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
@@ -511,49 +534,85 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 									
 	if (encrypt)
 		crpt_regs->CRPT_TDES_CTL |= TDES_ENCRYPT;
-	
+
+
+	req_len = areq->nbytes;
 	in_sg = areq->src;
 	out_sg = areq->dst;
-	req_len = areq->nbytes;
+	in_sg_off = 0;
+	out_sg_off = 0;
 	
-	while ((req_len > 0) && in_sg)
+	while (req_len > 0)
 	{
-		dma_len = min((int)in_sg->length, req_len);
+		if ((in_sg == NULL) || (out_sg == NULL))
+		{
+			printk("[%s] - NULL sg!\n", __func__);
+			return 1;
+		}
 		
+		/*
+		 *  Fill DMA source buffer
+		 */
+		dma_len = 0;
+		while ((req_len > 0) && (dma_len < DMA_BUFSZ))
+		{
+			copy_len = min((int)in_sg->length - in_sg_off, req_len);
+			if (DMA_BUFSZ - dma_len < copy_len)
+			    copy_len = DMA_BUFSZ - dma_len;
+		    
+		    memcpy((char *)nuc970_crdev.des_inbuf + dma_len, (char *)sg_virt(in_sg) + in_sg_off, copy_len);
+		    
+		    dma_len += copy_len;
+		    req_len -= copy_len;
+		    in_sg_off += copy_len;
+		    
+		    if (in_sg_off >= in_sg->length)
+		    {
+		    	in_sg = sg_next(in_sg);
+		    	in_sg_off = 0;
+			}
+		}
+
+		/* 
+		 *  Execute AES encrypt/decrypt
+		 */
+	    //printk("dma_len = %d\n", dma_len);
 		tdes_regs->count = dma_len;
 		tdes_regs->src_addr = nuc970_crdev.des_inbuf_dma_addr;
 		tdes_regs->dst_addr = nuc970_crdev.des_outbuf_dma_addr;
 
-		count = sg_copy_to_buffer(in_sg, 1, nuc970_crdev.des_inbuf, dma_len);
-		if (count != dma_len)
-		{
-			printk("sg in buffer error!\n");
-			break;
-		}	
-		
-		in_sg = sg_next(in_sg);
-		
 		crpt_regs->CRPT_TDES_CTL |= TDES_START;
 		
-		while ((crpt_regs->CRPT_TDES_CTL & TDES_START) && timeout--)
+		while (((crpt_regs->CRPT_INTSTS & (TDESIF|TDESERRIF)) == 0) && (timeout-- > 0))
 		{
 			cpu_relax();
 		}
-		
 		if (timeout == 0)
 		{
 			printk("Crypto DES/TDES engine failed!\n");
-			spin_unlock(&nuc970_crdev.des_lock);
+			spin_unlock(&nuc970_crdev.aes_lock);
 			return 1;
 		}
-
-		count = sg_copy_from_buffer(out_sg, 1, nuc970_crdev.des_outbuf, dma_len);
-		if (count != dma_len)
+		crpt_regs->CRPT_INTSTS = (TDESIF|TDESERRIF);
+		
+		/*
+		 *  Copy output data from DMA destination buffer
+		 */
+		offset = 0;
+		while ((dma_len > 0) && (out_sg != NULL))
 		{
-			printk("sg out buffer error!\n");
-			break;
+			copy_len = min((int)out_sg->length - out_sg_off, dma_len);
+		    memcpy((char *)sg_virt(out_sg) + out_sg_off, (char *)((u32)nuc970_crdev.des_outbuf + offset), copy_len);
+		    dma_len -= copy_len;
+		    offset += copy_len;
+		    out_sg_off += copy_len;
+		    
+		    if (out_sg_off >= out_sg->length)
+		    {
+		    	out_sg = sg_next(out_sg);
+		    	out_sg_off = 0;
+			}
 		}	
-		req_len -= 	count;			
 	}
 
 	spin_unlock(&nuc970_crdev.des_lock);
@@ -1643,6 +1702,8 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
     clk_enable(clk_get(NULL, "crypto_hclk"));
 	
 	memset((u8 *)&nuc970_crdev, 0, sizeof(nuc970_crdev));
+
+	nuc970_crdev.dev = &pdev->dev;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
