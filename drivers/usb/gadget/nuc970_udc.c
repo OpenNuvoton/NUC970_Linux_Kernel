@@ -86,9 +86,9 @@ static void nuke (struct nuc970_udc *udc, struct nuc970_ep *ep)
 		req = list_entry (ep->queue.next, struct nuc970_request, queue);
 		list_del_init (&req->queue);
 		req->req.status = -ESHUTDOWN;
-		spin_unlock (&udc->lock);
+		//spin_unlock (&udc->lock);
 		req->req.complete (&ep->ep, &req->req);
-		spin_lock (&udc->lock);
+		//spin_lock (&udc->lock);
 	}
 }
 
