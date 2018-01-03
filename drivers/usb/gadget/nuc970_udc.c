@@ -194,6 +194,7 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 	u32 data, i;
 	u32 max;
 
+	__raw_writel(0x1000, controller.reg + REG_USBD_CEP_IRQ_STAT);
 	buf = req->req.buf + req->req.actual;
 //	prefetch(buf);
 //	if (udc->gadget.speed == USB_SPEED_FULL)
@@ -1152,6 +1153,7 @@ static int nuc970_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
 			__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
 			__raw_writel(0x402, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
 			done(ep, req, 0);
+			__raw_writel(CEP_FLUSH, controller.reg + REG_USBD_CEP_CTRL_STAT);
 		}
 	}
 	else if (ep->index > 0)
