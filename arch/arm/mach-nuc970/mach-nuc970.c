@@ -16,6 +16,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/clk.h>
+#include <linux/memblock.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <asm/mach-types.h>
@@ -82,6 +83,12 @@ static void __init nuc970_init_late(void)
 	nuc970_init_suspend();
 }
 
+static void __init nuc970_reserve_memoey(void)
+{
+	if(memblock_reserve(0, 1024) < 0)
+		printk("Failed to reserve memory 0x0~0x400\n");
+}
+
 MACHINE_START(NUC970, "NUC970")
 	.atag_offset	= 0x100,
 	.map_io		= nuc970_map_io,
@@ -89,6 +96,7 @@ MACHINE_START(NUC970, "NUC970")
 	.init_machine	= nuc970_init,
 	.init_time	= nuc970_timer_init,
 	.init_late	= nuc970_init_late,
+	.reserve	= nuc970_reserve_memoey,
 	.restart	= nuc970_restart,
 MACHINE_END
 
