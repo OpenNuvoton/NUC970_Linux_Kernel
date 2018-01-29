@@ -139,22 +139,14 @@ static void nuc970_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num,
 	    nuc970_gpio_cla_port(gpio_num, &port_num);
 	spin_lock(&gpio_lock);
 
-	if ((__raw_readl(port->dir) & (1 << port_num))) {	//GPIO OUT
-		value = __raw_readl(port->out);
-		if (val)
-			value |= (1 << port_num);
-		else
-			value &= ~(1 << port_num);
-		__raw_writel(value, port->out);
 
-	} else {		//GPIO IN
-		value = __raw_readl(port->in);
-		if (val)
-			value |= (1 << port_num);
-		else
-			value &= ~(1 << port_num);
-		__raw_writel(value, port->in);;
-	}
+	value = __raw_readl(port->out);
+	if (val)
+		value |= (1 << port_num);
+	else
+		value &= ~(1 << port_num);
+	__raw_writel(value, port->out);
+
 
 	spin_unlock(&gpio_lock);
 }
