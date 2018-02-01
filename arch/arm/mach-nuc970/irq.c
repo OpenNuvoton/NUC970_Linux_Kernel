@@ -180,6 +180,7 @@ static void nuc970_irq_demux_intgroup(unsigned int irq,
 			struct irq_desc *desc)
 {
 	unsigned int i,j,isr,sub_isr;
+	unsigned int flag=0;
 	isr=__raw_readl(REG_GPIO_ISR);
 	for(i=0;i<10;i++)
 	{
@@ -190,6 +191,7 @@ static void nuc970_irq_demux_intgroup(unsigned int irq,
 			{
 				if(sub_isr & 0x1)
 				{
+					flag = 1;
 					generic_handle_irq(IRQ_GPIO_START+i*0x20+j);
                                         __raw_writel((1<<j),(volatile unsigned int *)(Port[i]+0x18));
 				}
@@ -198,6 +200,9 @@ static void nuc970_irq_demux_intgroup(unsigned int irq,
 		}
 		isr=isr>>1;
 	}
+
+	if(flag==0)
+		__raw_writel(0x01, REG_AIC_EOSCR);
 }
 //------------------------------------------------------------------------------
 
@@ -321,7 +326,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT0_F11);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+				__raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT1:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -333,7 +339,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT1_F12);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT2:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -345,7 +352,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT2_F13);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT3:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -357,7 +365,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT3_F14);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT4:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -369,7 +378,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT4_F15);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT5:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -381,7 +391,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT5_G15);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT6:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -393,7 +404,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT6_I1);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 		case IRQ_EXT7:
 			if(__raw_readl((volatile unsigned int *)(Port[port0]+0x18)) & (1<<num0))
@@ -405,7 +417,8 @@ static void nuc970_irq_demux_intgroup2(unsigned int irq,
 			{
 				generic_handle_irq(IRQ_EXT7_I2);
 				__raw_writel(0x1<<num1,(volatile unsigned int *)(Port[port1]+0x18));
-			}
+			}else
+                                __raw_writel(0x01, REG_AIC_EOSCR);
 			break;
 	}
 }
