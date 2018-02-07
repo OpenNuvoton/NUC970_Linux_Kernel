@@ -1414,17 +1414,26 @@ static int nuvoton_vdi_mmap(struct file* filp, struct vm_area_struct *vma)
 /* ISR for buffer handling                   *
  * for nuvoton sensor interface              *
  *                                           */
+static int cap_cnt=0;
 static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 {
    int i;
    struct nuvoton_vin_device* cam=priv;	
    struct nuvoton_vin_frame_t** f=NULL;	
-   ENTRY();	
+   ENTRY();
+   if(cap_cnt==1)
+   {
+	cap_cnt=0;
+	__raw_writel(__raw_readl(REG_CAP_INT),REG_CAP_INT);
+	LEAVE();
+	return IRQ_HANDLED;
+   }
   for(i=0;i<NUVOTON_MAX_DEVICES;i++)
   {
 			cam=nuvoton_cam[i];
 			f  = &cam->frame_current;
-		if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue)) {
+//		if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue)) {
+			if (cam->stream == STREAM_OFF || list_is_last(&(*f)->frame,&cam->inqueue)){
 			if(cam->stream == STREAM_ON && cam->type==V4L2_BUF_TYPE_VIDEO_OVERLAY) {
 				__raw_writel(cam->frame[0].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
 				__raw_writel(cam->frame[0].pbuf,REG_CAP_PKTBA0);
@@ -1435,20 +1444,13 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 			}
 			continue;
 		}
-			if (!(*f))
-			{
-				wake_up_interruptible(&cam->wait_frame);	
-				continue;
-			}
 			spin_lock(&cam->queue_lock);
 			if((*f)->state == F_QUEUED)
 				list_move_tail(&(*f)->frame, &cam->outqueue);
 			if (!list_empty(&cam->inqueue))
 			{
 				(*f) = list_entry(cam->inqueue.next,struct nuvoton_vin_frame_t,frame);
-				
-				/* Update New frame */
-				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
+
 				if(cam->vpe.PacketEnable==1)
 				{				
 					/* Setting packet buffer start address */
@@ -1460,13 +1462,16 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 							__raw_writel(__raw_readl(REG_CAP_YBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight),REG_CAP_UBA);
 							__raw_writel(__raw_readl(REG_CAP_UBA)+(cam->vpe.PlanarWidth*cam->vpe.PlanarHeight)/2,REG_CAP_VBA);
 					}
+				/* Update New frame */
+				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
+                                cap_cnt++;
 		  }	
 	  spin_unlock(&cam->queue_lock);
 	  wake_up_interruptible(&cam->wait_frame);	
   }
   __raw_writel(__raw_readl(REG_CAP_INT),REG_CAP_INT);	
 	LEAVE();
-	return IRQ_NONE;
+	return IRQ_HANDLED;
 }
 
 
