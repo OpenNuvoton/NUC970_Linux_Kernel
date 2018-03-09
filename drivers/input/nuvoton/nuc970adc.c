@@ -177,6 +177,10 @@ struct nuc970_adc {
     struct iio_dev	*indio_dev;
     struct iio_trigger	*trig;
     struct completion   completion;
+
+    int old_using;
+    int old_x;
+    int old_y;
 };
 
 static void enable_menu(void)
@@ -284,6 +288,7 @@ __attribute__ ((unused)) static void ts_wait_conversion(unsigned long param)
     enable_menu();
 }
 
+
 __attribute__ ((unused)) static int nuc970_ts_conversion(struct nuc970_adc *nuc970_adc)
 {
     u32 x,y,z,z2,pressure;
@@ -308,6 +313,7 @@ __attribute__ ((unused)) static int nuc970_ts_conversion(struct nuc970_adc *nuc9
                (__raw_readl(REG_ADC_ZSORT3)&0xfff)<=z_th ) /* threshold value */
             #endif
             {
+              nuc970_adc->old_using=0;
               input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 0);
               if(nuc970_adc->ts_num++>penup_delay_time)
               {
@@ -325,11 +331,19 @@ __attribute__ ((unused)) static int nuc970_ts_conversion(struct nuc970_adc *nuc9
                   ydata = (__raw_readl(REG_ADC_XYSORT0+i)>>16 & 0xfff);
                   if(xdata==0 || xdata==0xFFF || ydata==0 || ydata==0xfff ||abs(xdata-x)>50 || abs(ydata-y)>50)
                   {
+		    nuc970_adc->old_using=0;
 		    ADEBUG("conversion data is failed\n");
                     enable_menu();
                     return true;
                   }
                 }
+                if( (nuc970_adc->old_using==1) && (abs(nuc970_adc->old_x-x)>0x200 || abs(nuc970_adc->old_y-y)>0x200)){
+                   enable_menu();
+                   return true;
+                }
+                nuc970_adc->old_using=1;
+                nuc970_adc->old_x=x;
+                nuc970_adc->old_y=y;
                 input_report_key(nuc970_adc->input_ts, BTN_TOUCH, 1);
                 input_report_abs(nuc970_adc->input_ts, ABS_X,x);
                 input_report_abs(nuc970_adc->input_ts, ABS_Y,y);
@@ -907,7 +921,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
     clk_prepare(nuc970_adc->clk);
     clk_enable(nuc970_adc->clk);
 
-    clk_set_rate(nuc970_adc->eclk, 2000000);
+    clk_set_rate(nuc970_adc->eclk, 1000000);
     nuc970_adc->kp_state = KP_IDLE;
     nuc970_adc->ts_state = TS_IDLE;
 
@@ -919,7 +933,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
         goto fail1;
     }
     nuc970_adc->input_ts = input_ts_dev;
-
+    nuc970_adc->old_using = 0;
     input_ts_dev->name = "NUC970 TouchScreen(ADC)";
     input_ts_dev->phys = "nuc970ts/event0";
     input_ts_dev->id.bustype = BUS_HOST;
