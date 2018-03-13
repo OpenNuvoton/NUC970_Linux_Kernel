@@ -270,7 +270,7 @@ choice
 	config NUC970_UART10_PB1
 		bool "Tx:PB12, Rx:PB13"
 	config NUC970_UART10_FC_PB1
-		bool "Tx:PB12, Rx:PB13, CTS:PB14, RTS:PB15"
+		bool "Tx:PB12, Rx:PB13, CTS:PB15, RTS:PB14"
 	config NUC970_UART10_PC
 		bool "Tx:PC6, Rx:PC7"
 	config NUC970_UART10_FC_PC
