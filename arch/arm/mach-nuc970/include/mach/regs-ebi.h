@@ -14,16 +14,10 @@
 #ifndef __ASM_ARCH_REGS_EBI_H
 #define __ASM_ARCH_REGS_EBI_H
 
+#include "mach/nuc970-ebi.h"
+
 #define REG_EBI_CTL		(NUC970_VA_EBI + 0x00)
 #define REG_EBI_BNKCTL(x)	(NUC970_VA_EBI + 0x18 + (x) * 0x4)
-
-#define NUC970_EBI_8BIT		0x00000001
-#define NUC970_EBI_16BIT	0x00000002
-
-#define NUC970_EBI_80TYPE_nBE_WRITE	0x00000000
-#define NUC970_EBI_80TYPE_nWE_WRITE	0x01000000
-#define NUC970_EBI_68TYPE		0x00080000
-
 
 #define NUC970_EBI_TYPE_MASK 0x01080000
 static inline void nuc970_set_ebi_mode(unsigned int bank, unsigned int mode)

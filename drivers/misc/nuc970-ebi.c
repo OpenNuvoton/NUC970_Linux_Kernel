@@ -59,17 +59,32 @@ struct ebi_dev {
 	struct pinctrl *pinctrl;
 	struct clk *clk;
 	struct clk *hclk;
-	unsigned long base_addr;
+	unsigned long base_addr[4];
 	int bank;
 };
 
 static struct ebi_dev *ebi;
 
-static long ebi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){return 0;}
+static long ebi_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){
+	struct nuc970_set_ebi *pebi,sebi;
+	struct ebi_dev *nuc970_ebi = (struct ebi_dev *)filp->private_data;
+	pebi=&sebi;
+	switch(cmd) {
+		case EBI_IOC_SET:
+			if(copy_from_user((void *)&sebi, (const void *)arg, sizeof(struct nuc970_set_ebi)))
+				return -EFAULT;
+			DEBUG("set bank=%d\n",pebi->bank);
+			pebi=(struct nuc970_set_ebi *)(arg);
+			nuc970_set_ebi_mode(pebi->bank,pebi->mode);
+			nuc970_set_ebi_attrib(pebi->bank,pebi->base,pebi->size,pebi->width);
+			nuc970_set_ebi_timing(pebi->bank,pebi->tACC,pebi->tCOH,pebi->tACS,pebi->tCOS);
+			nuc970_ebi->bank = pebi->bank;
+			nuc970_ebi->base_addr[nuc970_ebi->bank] = pebi->base;
+		break;
+	}
+	return 0;
+}
 static int ebi_open(struct inode *inode, struct file *filp){
-	
-	struct ebi_dev *nuc970_ebi = ebi;
-	
 	#ifndef CONFIG_OF
 	struct pinctrl_state *s=NULL;
 	int ret;
@@ -85,32 +100,8 @@ static int ebi_open(struct inode *inode, struct file *filp){
 	clk_prepare(ebi->hclk);
 	clk_enable(ebi->hclk);
 	
-	nuc970_ebi->base_addr=0x20000000;
-	
 	#ifndef CONFIG_OF
-	switch(nuc970_ebi->bank)
-	{
-		case 0:
-			s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-0");  //ebi 16bit cs0
-			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-0");  //ebi  8bit cs0
-		break;		
-		case 1:
-			s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-1");  //ebi 16bit cs1
-			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-1");  //ebi  8bit cs1
-		break;
-		case 2:
-			s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-2");  //ebi 16bit cs2
-			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-2");  //ebi  8bit cs2
-		break;
-		case 3:
-			s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-3");  //ebi 16bit cs3
-			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-3");  //ebi  8bit cs3
-		break;
-		case 4:
-			s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-4");  //ebi 16bit cs4
-			//s = pinctrl_lookup_state(ebi->pinctrl, "ebi-8bit-4");  //ebi  8bit cs4
-		break;
-	};
+	s = pinctrl_lookup_state(ebi->pinctrl, "ebi-16bit-0");	//ebi 16bit cs0
        if (IS_ERR(s)) {
                 printk("pinctrl_lookup_state err\n");
                 return -EPERM;
@@ -121,9 +112,6 @@ static int ebi_open(struct inode *inode, struct file *filp){
 		return ret;
 	}
 	#endif
-	nuc970_set_ebi_mode(nuc970_ebi->bank,NUC970_EBI_80TYPE_nWE_WRITE);
-	nuc970_set_ebi_attrib(nuc970_ebi->bank,nuc970_ebi->base_addr,0,NUC970_EBI_16BIT);
-	nuc970_set_ebi_timing(nuc970_ebi->bank,8/*tACC*/,1/*tCOH*/,0/*tACS*/,7/*tCOS*/);
 	LEAVE();
 	return 0;
 }
@@ -176,8 +164,9 @@ static int ebi_mmap(struct file *filp, struct vm_area_struct * vma){
 	}
 	DEBUG("MMAP_KMALLOC : virt addr = 0x%08x, size = %d, %d\n",virt_addr, size, __LINE__);
 #else
-	DEBUG("nuc970_ebi->base_add=0x%08x\n",(unsigned int)nuc970_ebi->base_addr);
-	pageFrameNo = __phys_to_pfn(nuc970_ebi->base_addr);
+	DEBUG("mmap: nuc970_ebi->bank=0x%08x\n",nuc970_ebi->bank);
+	DEBUG("nuc970_ebi->base_addr=0x%08x\n",(unsigned int)nuc970_ebi->base_addr[nuc970_ebi->bank]);
+	pageFrameNo = __phys_to_pfn(nuc970_ebi->base_addr[nuc970_ebi->bank]);
 	ENTRY();
 #endif
 
@@ -191,6 +180,9 @@ static int ebi_mmap(struct file *filp, struct vm_area_struct * vma){
 
   DEBUG("REG_EBI_CTL=0x%08x\n",__raw_readl(REG_EBI_CTL));
   DEBUG("REG_EBI_BNKCTL0=0x%08x\n",__raw_readl(REG_EBI_BNKCTL(0)));
+  DEBUG("REG_EBI_BNKCTL1=0x%08x\n",__raw_readl(REG_EBI_BNKCTL(1)));
+  DEBUG("REG_EBI_BNKCTL2=0x%08x\n",__raw_readl(REG_EBI_BNKCTL(2)));
+  DEBUG("REG_EBI_BNKCTL3=0x%08x\n",__raw_readl(REG_EBI_BNKCTL(3)));
   DEBUG("REG_MFP_GPD_H=0x%08x\n",__raw_readl(REG_MFP_GPD_H));
   DEBUG("REG_MFP_GPH_L=0x%08x\n",__raw_readl(REG_MFP_GPH_L));
   DEBUG("REG_MFP_GPH_H=0x%08x\n",__raw_readl(REG_MFP_GPH_H));

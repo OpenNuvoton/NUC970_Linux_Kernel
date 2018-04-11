@@ -754,6 +754,38 @@ config NUC970_EBI
         tree is used. This bus supports external ethernet controller,
         SRAMs etc.
 
+config NUC970_EBI_CS0
+	bool "Using EBI CS0"
+	depends on NUC970_EBI
+	default y
+	help
+	 Select EBI chip select 0.
+config NUC970_EBI_CS1
+        bool "Using EBI CS1"
+        depends on NUC970_EBI
+	default n
+        help
+         Select EBI chip select 1.
+config NUC970_EBI_CS2
+        bool "Using EBI CS2"
+        depends on NUC970_EBI
+	default n
+        help
+         Select EBI chip select 2.
+config NUC970_EBI_CS3
+        bool "Using EBI CS3"
+        depends on NUC970_EBI
+	default n
+        help
+         Select EBI chip select 3.
+config NUC970_EBI_CS4
+        bool "Using EBI CS4"
+        depends on NUC970_EBI
+        default n
+        help
+         Select EBI chip select 4.
+
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

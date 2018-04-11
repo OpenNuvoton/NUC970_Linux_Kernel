@@ -354,7 +354,22 @@ static const unsigned eint6_1_pin[] = {0x81};
 static const unsigned eint7_0_pin[] = {0x77};
 static const unsigned eint7_1_pin[] = {0x82};
 
-static const unsigned ebi8_0_pin[] = {0x38,  // nCS0
+static const unsigned ebi8_0_pin[] = {
+#ifdef CONFIG_NUC970_EBI_CS0
+					0x38, //nCS0
+#endif
+#ifdef CONFIG_NUC970_EBI_CS1
+					0x39, //nCS1
+#endif
+#ifdef CONFIG_NUC970_EBI_CS2
+					0x3A, //nCS2
+#endif
+#ifdef CONFIG_NUC970_EBI_CS3
+					0x3B, //nCS3
+#endif
+#ifdef CONFIG_NUC970_EBI_CS4
+					0x3C, //nCS4
+#endif
 				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
 				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
@@ -374,7 +389,23 @@ static const unsigned ebi8_4_pin[] = {0x3C,  // nCS4
 				      0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
 				      0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
                                       0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87};  // data0~7
-static const unsigned ebi16_0_pin[] = {0x38,  // nCS0
+static const unsigned ebi16_0_pin[] = {
+#ifdef CONFIG_NUC970_EBI_CS0
+                                        0x38, //nCS0
+#endif
+#ifdef CONFIG_NUC970_EBI_CS1
+                                        0x39, //nCS1
+#endif
+#ifdef CONFIG_NUC970_EBI_CS2
+                                        0x3A, //nCS2
+#endif
+#ifdef CONFIG_NUC970_EBI_CS3
+                                        0x3B, //nCS3
+#endif
+#ifdef CONFIG_NUC970_EBI_CS4
+                                        0x3C, //nCS4
+#endif
+
 				       0x3D, 0x3E, 0x3F, //nWAIT, nOE, nWE,
 				       0x7E, 0x7F, //nBE0,nBE1
 				       0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, //address0~10
