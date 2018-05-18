@@ -584,7 +584,7 @@ static int nuc970adc_battery_read_adc(struct nuc970_adc *nuc970_adc)
             nuc970_touch2detect();
         else{
             nuc970_detect2touch();
-	    nuc970_ts_conversion(nuc970_adc);
+            enable_menu();
 	}
     }
     if(nuc970_adc->used_state & KP_USED)
@@ -792,7 +792,7 @@ static int nuc970adc_read_raw(struct iio_dev *indio_dev,
 
     *val = __raw_readl(REG_ADC_DATA);
 
-    __raw_writel(__raw_readl(REG_ADC_CTL) & ~(ADC_CONF_NACEN),REG_ADC_CTL);
+    __raw_writel(__raw_readl(REG_ADC_CONF) & ~(ADC_CONF_NACEN),REG_ADC_CONF);
 
 		if(nuc970_adc->used_state & TS_USED)
     {
@@ -800,7 +800,7 @@ static int nuc970adc_read_raw(struct iio_dev *indio_dev,
             nuc970_touch2detect();
         else{
             nuc970_detect2touch();
-            nuc970_ts_conversion(nuc970_adc);
+            enable_menu();
             }
     }
     if(nuc970_adc->used_state & KP_USED)
