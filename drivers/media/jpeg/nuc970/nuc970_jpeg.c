@@ -236,7 +236,8 @@ int  nuc970_jpeg_CalScalingFactor(
             h = 8192;       
 
             *pu16RatioW = (__u32)w;
-            *pu16RatioH = (__u32)h;                
+            *pu16RatioH = (__u32)h;
+                
     }
     else if (u8Mode == DRVJPEG_DEC_PLANAR_DOWNSCALE_MODE || u8Mode == DRVJPEG_ENC_PLANAR_DOWNSCALE_MODE) 
     {
@@ -461,6 +462,7 @@ static int jpegcodec_open(struct file *file)
     /* Enable JPEG engine clock */
     clk_prepare(clk_get(NULL, "jpeg_hclk"));    
     clk_enable(clk_get(NULL, "jpeg_hclk"));
+    clk_set_rate(clk_get(NULL, "jpeg_hclk"), 75000000);
 
     // 3.Reset IP (check RSTCON)
     writel((1 << 22), REG_AHBIPRST);
