@@ -462,7 +462,10 @@ static int jpegcodec_open(struct file *file)
     /* Enable JPEG engine clock */
     clk_prepare(clk_get(NULL, "jpeg_hclk"));    
     clk_enable(clk_get(NULL, "jpeg_hclk"));
-    clk_set_rate(clk_get(NULL, "jpeg_hclk"), 75000000);
+
+    clk_prepare(clk_get(NULL, "jpeg_eclk"));
+    clk_enable(clk_get(NULL, "jpeg_eclk"));
+    clk_set_rate(clk_get(NULL, "jpeg_eclk"), 75000000);
 
     // 3.Reset IP (check RSTCON)
     writel((1 << 22), REG_AHBIPRST);
