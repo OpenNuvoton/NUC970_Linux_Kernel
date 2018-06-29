@@ -210,7 +210,6 @@ receive_chars(struct uart_nuc970_port *up)
                 if(serial_in(up, UART_REG_FSR) & (1 << 14)) break;
 
 		fsr = serial_in(up, UART_REG_FSR);
-                ch = (unsigned char)serial_in(up, UART_REG_RBR);
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
 
@@ -244,6 +243,8 @@ receive_chars(struct uart_nuc970_port *up)
 			if (fsr & FEF)
 				flag = TTY_FRAME;
 		}
+
+		ch = (unsigned char)serial_in(up, UART_REG_RBR);
 
 		if (uart_handle_sysrq_char(&up->port, ch))
 			continue;
