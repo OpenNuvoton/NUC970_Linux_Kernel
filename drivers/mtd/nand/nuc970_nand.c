@@ -555,7 +555,8 @@ static void nuc970_nand_dmac_init( void )
 	writel( readl(REG_NAND_DMACCSR) & (~0x2), REG_NAND_DMACCSR);
 
 	// Clear DMA finished flag
-	writel( readl(REG_SMISR) | 0x1, REG_SMISR);
+	//writel( readl(REG_SMISR) | 0x1, REG_SMISR);
+	writel( 0x1, REG_SMISR);
 
 	// Disable Interrupt
 	writel(readl(REG_SMIER) & ~(0x1), REG_SMIER);
@@ -567,7 +568,8 @@ static void nuc970_nand_dmac_init( void )
 static void nuc970_nand_dmac_fini(void)
 {
 	// Clear DMA finished flag
-	writel(readl(REG_SMISR) | 0x1, REG_SMISR);
+	//writel(readl(REG_SMISR) | 0x1, REG_SMISR);
+	writel(0x1, REG_SMISR);
 }
 
 /*
@@ -865,6 +867,7 @@ static void nuc970_nand_command_lp(struct mtd_info *mtd, unsigned int command, i
 	case NAND_CMD_SEQIN:
 	case NAND_CMD_RNDIN:
 	case NAND_CMD_STATUS:
+	case NAND_CMD_READID:
 		LEAVE();
 		return;
 
@@ -900,7 +903,16 @@ static void nuc970_nand_command_lp(struct mtd_info *mtd, unsigned int command, i
 		}
 	}
 
-	while (!nuc970_check_rb(nand)) ;
+	//while (!nuc970_check_rb(nand)) ;
+	//printk("cmd: 0x%x, 0x%x\n", command, readl(REG_SMISR));
+	while(1)
+	{
+		if (readl(REG_SMISR) & 0x400)
+		{
+			writel(0x400, REG_SMISR);
+			break;
+		}
+	}
 
 	LEAVE();
 }
@@ -1025,6 +1037,7 @@ static int nuc970_nand_read_oob_hwecc(struct mtd_info *mtd, struct nand_chip *ch
 	// Second, copy OOB data to SMRA for page read
 	memcpy ( (void*)ptr, (void*)chip->oob_poi, mtd->oobsize );
 
+#if 0
 	if ((*(ptr+2) == 0) && (*(ptr+3) == 0))
 	{
 		// Third, read data from nand
@@ -1034,7 +1047,7 @@ static int nuc970_nand_read_oob_hwecc(struct mtd_info *mtd, struct nand_chip *ch
 		// Fouth, recovery OOB data for SMRA
 		memcpy ( (void*)chip->oob_poi, (void*)ptr, mtd->oobsize );
 	}
-
+#endif
 	return 0;
 }
 
