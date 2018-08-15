@@ -362,13 +362,13 @@ static int ohci_nuc970_pm_suspend(struct device *dev)
 		if (of_mfp_setting == 1)
 		{
 	        __raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
-	        __raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
+	        __raw_writel(__raw_readl(REG_GPIOE_DIR) | 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
 	        __raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
 		}
 		else if (of_mfp_setting == 2)
 		{
 	        __raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
-	        __raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
+	        __raw_writel(__raw_readl(REG_GPIOF_DIR) | 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
 	        __raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
 	    }
 	}
@@ -379,11 +379,11 @@ static int ohci_nuc970_pm_suspend(struct device *dev)
     /* turn off port power */
 	#if defined (CONFIG_NUC970_USBH_PWR_PE_2)
 		__raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
-		__raw_writel(__raw_readl(REG_GPIOE_DIR) & 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
+		__raw_writel(__raw_readl(REG_GPIOE_DIR) | 0xC000, REG_GPIOE_DIR);           // PE.14 & PE.15 output mode
 		__raw_writel(__raw_readl(REG_MFP_GPE_H) & 0x00FFFFFF, REG_MFP_GPE_H);       // PE.14 & PE.15 GPIO mode
 	#elif defined (CONFIG_NUC970_USBH_PWR_PF_2)
 		__raw_writel(__raw_readl(REG_GPIOF_DATAOUT) & 0xFBFF, REG_GPIOF_DATAOUT);   // PF.10 output low
-		__raw_writel(__raw_readl(REG_GPIOF_DIR) & 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
+		__raw_writel(__raw_readl(REG_GPIOF_DIR) | 0x0400, REG_GPIOF_DIR);           // PF.10 output mode
 		__raw_writel(__raw_readl(REG_MFP_GPF_H) & 0xFFFFF0FF, REG_MFP_GPF_H);       // PF.10 GPIO mode
 	#endif
 #endif
