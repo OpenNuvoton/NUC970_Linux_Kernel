@@ -312,7 +312,6 @@ __attribute__ ((unused)) static int nuc970_ts_conversion(struct nuc970_adc *nuc9
 						del_timer(&nuc970_adc->timer);
 						nuc970_touch2detect();
 					}
-					return true;
 				}
 				mod_timer(&nuc970_adc->timer, jiffies + msecs_to_jiffies(20));
 			} else {
