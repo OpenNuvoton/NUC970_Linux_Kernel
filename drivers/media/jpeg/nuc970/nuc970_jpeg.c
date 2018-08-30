@@ -1811,7 +1811,7 @@ fill_again:
         }           
     }
     /* It's Decode Complete Interrupt */
-    else if (u32interruptStatus & DEC_INTS) 
+    if (u32interruptStatus & DEC_INTS) 
     {
         //printk("<Decode Complete> JINTCR 0x%X JITCR 0x%X JDOWFBS 0x%X\n", readl(REG_JINTCR), readl(REG_JITCR),readl(REG_JDOWFBS));
         /* Get the image dimension */
