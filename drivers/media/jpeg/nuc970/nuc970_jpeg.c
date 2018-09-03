@@ -453,6 +453,20 @@ int  nuc970_jpeg_SetQTAB(
             
 }
 
+static void jpegcodec_release_priv (jpeg_priv_t *priv)
+{	
+    if (priv->pages) {
+        __u32 i;
+						
+        for (i = 0; i < priv->nr_pages; i ++) {
+            page_cache_release (priv->pages[i]);
+        }
+        priv->nr_pages = 0;
+		
+        kfree(priv->pages);
+        priv->pages = NULL;
+    }
+}
 
 static int jpegcodec_open(struct file *file)
 {
@@ -494,10 +508,14 @@ static int jpegcodec_open(struct file *file)
     nuc970_jpeg_SetQTAB(g_au8QTable0,g_au8QTable1, 0, 2);
     //for Encode end
     
+    priv->nr_pages = 0;
+
     return 0;
 }
 static int jpegcodec_close(struct file *file)
 {
+    jpeg_priv_t *priv = (jpeg_priv_t *)video_drvdata(file);
+
     mutex_unlock(&jpeg_lock);     
     
     jpeg_priv.state = JPEG_CLOSED;
@@ -510,6 +528,9 @@ static int jpegcodec_close(struct file *file)
     /* Disable JPEG engine clock */
     clk_prepare(clk_get(NULL, "jpeg_hclk"));    
     clk_disable(clk_get(NULL, "jpeg_hclk"));
+
+    if(priv)
+        jpegcodec_release_priv (priv);
 
     return 0;
 }
@@ -743,7 +764,6 @@ static int jpegcodec_mmap (struct file *file, struct vm_area_struct *vma)
     return 0;
     
 }
-
 
 static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -1130,6 +1150,8 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                     TotalBufferSize = priv->decopw_TargetBuffersize;
                     //printk("TargetBuffersize 0x%X\n",TotalBufferSize);
                     
+                    jpegcodec_release_priv (priv);
+
                     /* GET PAGES */
                     if (priv->pages)
                     {   
@@ -1167,6 +1189,8 @@ static long jpegcodec_ioctl(struct file *file, unsigned int cmd, unsigned long a
                         priv->decopw_end = 0;
                             return -ENOMEM;
                     }
+
+                    priv->nr_pages = ret1;
                 }
                 else
                 {
