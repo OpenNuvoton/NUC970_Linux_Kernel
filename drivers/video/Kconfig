@@ -2169,6 +2169,12 @@ choice
         depends on BOARD_NUC972
 endchoice	
 
+config NUC970_DUAL_FB
+        bool "Enable NUC970 dual frame buffer"
+        depends on FB_NUC970
+        ---help---
+          Support pan_display by NUC970 LCD controller dual frame buffer function. 
+
 config FB_SM501
 	tristate "Silicon Motion SM501 framebuffer support"
 	depends on FB && MFD_SM501

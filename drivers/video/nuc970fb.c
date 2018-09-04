@@ -45,6 +45,7 @@
 
 #include "nuc970fb.h"
 
+
 #ifdef CONFIG_ILI9431_MPU80_240x320
 void nuc970_mpu_write_cmd(struct fb_info *info, unsigned short uscmd)
 {
@@ -227,7 +228,7 @@ static void nuc970fb_set_lcdaddr(struct fb_info *info)
  *	Check the video params of 'var'.
  */
 static int nuc970fb_check_var(struct fb_var_screeninfo *var,
-			       struct fb_info *info)
+				   struct fb_info *info)
 {
 	struct nuc970fb_info *fbi = info->par;
 	struct nuc970fb_mach_info *mach_info = fbi->mach_info;
@@ -241,14 +242,14 @@ static int nuc970fb_check_var(struct fb_var_screeninfo *var,
 	/* validate x/y resolution */
 	/* choose default mode if possible */
 	if (var->xres == default_display->xres &&
-	    var->yres == default_display->yres &&
-	    var->bits_per_pixel == default_display->bpp)
+		var->yres == default_display->yres &&
+		var->bits_per_pixel == default_display->bpp)
 		display = default_display;
 	else
 		for (i = 0; i < mach_info->num_displays; i++)
 			if (var->xres == mach_info->displays[i].xres &&
-			    var->yres == mach_info->displays[i].yres &&
-			    var->bits_per_pixel == mach_info->displays[i].bpp) {
+				var->yres == mach_info->displays[i].yres &&
+				var->bits_per_pixel == mach_info->displays[i].bpp) {
 				display = mach_info->displays + i;
 				break;
 			}
@@ -261,7 +262,11 @@ static int nuc970fb_check_var(struct fb_var_screeninfo *var,
 
 	/* it should be the same size as the display */
 	var->xres_virtual	= display->xres;
+#ifdef CONFIG_NUC970_DUAL_FB
+	var->yres_virtual	= display->yres * 2;
+#else
 	var->yres_virtual	= display->yres;
+#endif
 	var->height		= display->height;
 	var->width		= display->width;
 
@@ -344,15 +349,15 @@ static void nuc970fb_calculate_lcd_regs(const struct fb_info *info,
 	int vsync = var->height + var->lower_margin;
 
 	regs->lcd_crtc_size = LCM_CRTC_SIZE_VTTVAL(vtt) |
-			      LCM_CRTC_SIZE_HTTVAL(htt);
+				  LCM_CRTC_SIZE_HTTVAL(htt);
 	regs->lcd_crtc_dend = LCM_CRTC_DEND_VDENDVAL(var->height) |
-			      LCM_CRTC_DEND_HDENDVAL(var->width);
+				  LCM_CRTC_DEND_HDENDVAL(var->width);
 	regs->lcd_crtc_hr = LCM_CRTC_HR_EVAL(var->width + 5) |
-			    LCM_CRTC_HR_SVAL(var->width + 1);
+				LCM_CRTC_HR_SVAL(var->width + 1);
 	regs->lcd_crtc_hsync = LCM_CRTC_HSYNC_EVAL(hsync + var->hsync_len) |
-			       LCM_CRTC_HSYNC_SVAL(hsync);
+				   LCM_CRTC_HSYNC_SVAL(hsync);
 	regs->lcd_crtc_vr = LCM_CRTC_VR_EVAL(vsync + var->vsync_len) |
-			    LCM_CRTC_VR_SVAL(vsync);
+				LCM_CRTC_VR_SVAL(vsync);
 }
 
 /*
@@ -430,8 +435,8 @@ static inline unsigned int chan_to_field(unsigned int chan,
 }
 
 static int nuc970fb_setcolreg(unsigned regno,
-			       unsigned red, unsigned green, unsigned blue,
-			       unsigned transp, struct fb_info *info)
+				   unsigned red, unsigned green, unsigned blue,
+				   unsigned transp, struct fb_info *info)
 {
 	unsigned int val;
 
@@ -464,20 +469,42 @@ static int nuc970fb_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 
+
+#ifdef CONFIG_NUC970_DUAL_FB
+static int nuc970fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
+{
+	struct nuc970fb_info *fbi = info->par;
+	unsigned long flags;
+
+	spin_lock_irqsave(&fbi->lock, flags);
+
+	fbi->dual_fb_base = var->yoffset * info->fix.line_length;
+	
+	spin_unlock_irqrestore(&fbi->lock, flags);
+
+	// printk("pan_display: [0x%x],  %d, %d - %d, %d\n", fbi->dual_fb_base, var->xoffset, var->yoffset, info->var.xoffset, info->var.yoffset);
+	return 0;
+}
+#endif  /* CONFIG_NUC970_DUAL_FB */
+
+
 static struct fb_ops nuc970fb_ops = {
 	.owner			= THIS_MODULE,
-	.fb_check_var		= nuc970fb_check_var,
+	.fb_check_var	= nuc970fb_check_var,
 	.fb_set_par		= nuc970fb_set_par,
 	.fb_blank		= nuc970fb_blank,
-	.fb_setcolreg		= nuc970fb_setcolreg,
-	.fb_fillrect		= cfb_fillrect,
-	.fb_copyarea		= cfb_copyarea,
-	.fb_imageblit		= cfb_imageblit,
+#ifdef CONFIG_NUC970_DUAL_FB
+	.fb_pan_display = nuc970fb_pan_display,
+#endif
+	.fb_setcolreg	= nuc970fb_setcolreg,
+	.fb_fillrect	= cfb_fillrect,
+	.fb_copyarea	= cfb_copyarea,
+	.fb_imageblit	= cfb_imageblit,
 };
 
 
 static inline void modify_gpio(void __iomem *reg,
-			       unsigned long set, unsigned long mask)
+				   unsigned long set, unsigned long mask)
 {
 	unsigned long tmp;
 	tmp = readl(reg) & ~mask;
@@ -495,10 +522,10 @@ static int nuc970fb_init_registers(struct fb_info *info)
 	/*reset the display engine*/
 	writel(0, regs + REG_LCM_DCCS);
 	writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_ENG_RST,
-	       regs + REG_LCM_DCCS);
+		   regs + REG_LCM_DCCS);
 	ndelay(100);
 	writel(readl(regs + REG_LCM_DCCS) & (~LCM_DCCS_ENG_RST),
-	       regs + REG_LCM_DCCS);
+		   regs + REG_LCM_DCCS);
 	ndelay(100);
 
 	writel(0, regs + REG_LCM_DEV_CTRL);
@@ -549,7 +576,7 @@ static inline void nuc970fb_unmap_video_memory(struct fb_info *info)
 {
 	struct nuc970fb_info *fbi = info->par;
 	dma_free_writecombine(fbi->dev, PAGE_ALIGN(info->fix.smem_len),
-			      info->screen_base, info->fix.smem_start);
+				  info->screen_base, info->fix.smem_start);
 }
 
 static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
@@ -559,7 +586,8 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 	void __iomem *irq_base = fbi->irq_base;
 	unsigned long lcdirq = readl(regs + REG_LCM_INT_CS);
 
-	if (lcdirq & LCM_INT_CS_DISP_F_STATUS) {
+	if (lcdirq & LCM_INT_CS_DISP_F_STATUS) 
+	{
 		writel(readl(irq_base) | 1<<30, irq_base);
 #ifdef CONFIG_PM        
 		if(fbi->powerdown) {
@@ -568,9 +596,9 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 #endif        
 		/* wait VA_EN low */
 		if ((readl(regs + REG_LCM_DCCS) &
-		    LCM_DCCS_SINGLE) == LCM_DCCS_SINGLE)
+			LCM_DCCS_SINGLE) == LCM_DCCS_SINGLE)
 			while ((readl(regs + REG_LCM_DCCS) &
-			       LCM_DCCS_VA_EN) == LCM_DCCS_VA_EN)
+				   LCM_DCCS_VA_EN) == LCM_DCCS_VA_EN)
 				;
 		/* display_out-enable */
 		writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_DISP_OUT_EN,
@@ -578,9 +606,28 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 		/* va-enable*/
 		writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_VA_EN,
 			regs + REG_LCM_DCCS);
-	} else if (lcdirq & LCM_INT_CS_UNDERRUN_INT) {
+
+#ifdef CONFIG_NUC970_DUAL_FB
+		if (fbi->dual_fb_base == 0) 
+		{
+			/* Starting fetch data from VA_BADDR0 */
+			writel(readl(regs + REG_LCM_VA_FBCTRL) & ~LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);		
+		}
+		else
+		{
+			/* Starting fetch data from VA_BADDR1 */
+			writel(readl(regs + REG_LCM_VA_BADDR0) + fbi->dual_fb_base, regs + REG_LCM_VA_BADDR1);
+			writel(readl(regs + REG_LCM_VA_FBCTRL) | LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);		
+		}
+#endif
+
+	} 
+	else if (lcdirq & LCM_INT_CS_UNDERRUN_INT) 
+	{
 		writel(readl(irq_base) | LCM_INT_CS_UNDERRUN_INT, irq_base);
-	} else if (lcdirq & LCM_INT_CS_BUS_ERROR_INT) {
+	} 
+	else if (lcdirq & LCM_INT_CS_BUS_ERROR_INT) 
+	{
 		writel(readl(irq_base) | LCM_INT_CS_BUS_ERROR_INT, irq_base);
 	}
 
@@ -590,7 +637,7 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 #ifdef CONFIG_CPU_FREQ
 
 static int nuc970fb_cpufreq_transition(struct notifier_block *nb,
-				       unsigned long val, void *data)
+					   unsigned long val, void *data)
 {
 	struct nuc970fb_info *info;
 	struct fb_info *fbinfo;
@@ -619,11 +666,11 @@ static inline int nuc970fb_cpufreq_register(struct nuc970fb_info *fbi)
 static inline void nuc970fb_cpufreq_deregister(struct nuc970fb_info *fbi)
 {
 	cpufreq_unregister_notifier(&fbi->freq_transition,
-				    CPUFREQ_TRANSITION_NOTIFIER);
+					CPUFREQ_TRANSITION_NOTIFIER);
 }
 #else
 static inline int nuc970fb_cpufreq_transition(struct notifier_block *nb,
-				       unsigned long val, void *data)
+					   unsigned long val, void *data)
 {
 	return 0;
 }
@@ -881,6 +928,9 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	}
 
 	fbi->irq_base = fbi->io + REG_LCM_INT_CS;
+	
+	spin_lock_init(&fbi->lock);
+	fbi->dual_fb_base        = 0;
 
 	/* Stop the LCD */
 	writel(0, fbi->io + REG_LCM_DCCS);
@@ -890,7 +940,11 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	fbinfo->fix.type		= FB_TYPE_PACKED_PIXELS;
 	fbinfo->fix.type_aux		= 0;
 	fbinfo->fix.xpanstep		= 0;
+#ifdef CONFIG_NUC970_DUAL_FB
+	fbinfo->fix.ypanstep		= 1;
+#else
 	fbinfo->fix.ypanstep		= 0;
+#endif
 	fbinfo->fix.ywrapstep		= 0;
 	fbinfo->fix.accel		= FB_ACCEL_NONE;
 	fbinfo->var.nonstd		= 0;
@@ -957,6 +1011,10 @@ static int nuc970fb_probe(struct platform_device *pdev)
 		if (fbinfo->fix.smem_len < smem_len)
 			fbinfo->fix.smem_len = smem_len;
 	}
+
+#ifdef CONFIG_NUC970_DUAL_FB
+	fbinfo->fix.smem_len *= 2;
+#endif
 
 	/* Initialize Video Memory */
 	ret = nuc970fb_map_video_memory(fbinfo);
