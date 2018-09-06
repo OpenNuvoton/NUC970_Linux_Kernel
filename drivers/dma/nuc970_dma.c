@@ -1,12 +1,7 @@
 /*
- * Driver for the NUC970 DMA Controller
+ * Driver for the NUC970/N9H30 DMA Controller
  *
- * Copyright (C) 2011 Mika Westerberg
- *
- * DMA M2M implementation is based on the original
- * arch/arm/nuc970/dma.c which has following copyrights:
- *
- * This driver is based on xxx and xxx drivers.
+ * Copyright (C) 2018 Nuvoton Technology Corp.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,7 +52,7 @@ extern struct nuc970_dma_platform_data nuc970_dma_m2m_data;
 struct nuc970_dma_engine;
 
 /**
- * struct ep93xx_dma_desc - EP93xx specific transaction descriptor
+ * struct nuc970_dma_desc - NUC970/N9H30 specific transaction descriptor
  * @src_addr: source address of the transaction
  * @dst_addr: destination address of the transaction
  * @size: size of the transaction (in bytes)
@@ -77,7 +72,7 @@ struct nuc970_dma_desc {
 };
 
 /**
- * struct nuc970_dma_chan - an NUC970 DMA M2M channel
+ * struct nuc970_dma_chan - an NUC970/N9H30 DMA M2M channel
  * @chan: dmaengine API channel
  * @edma: pointer to to the engine device
  * @regs: memory mapped registers
@@ -95,7 +90,7 @@ struct nuc970_dma_desc {
  *                prepared
  * @runtime_ctrl: M2M runtime values for the control register.
  *
- * As NUC970 DMA controller doesn't support real chained DMA descriptors we
+ * As NUC970/N9H30 DMA controller doesn't support real chained DMA descriptors we
  * will have slightly different scheme here: @active points to a head of
  * flattened DMA descriptor chain.
  *
@@ -129,7 +124,7 @@ struct nuc970_dma_chan {
 };
 
 /**
- * struct nuc970_dma_engine - the NUC970 DMA engine instance
+ * struct nuc970_dma_engine - the NUC970/N9H30 DMA engine instance
  * @dma_dev: holds the dmaengine device
  * @hw_setup: method which sets the channel up for operation
  * @hw_shutdown: shuts the channel down and flushes whatever is left
@@ -138,7 +133,7 @@ struct nuc970_dma_chan {
  * @num_channels: number of channels for this instance
  * @channels: array of channels
  *
- * There is one instance of this struct for the M2M channels. 
+ * There is one instance of this struct for the M2M channels.
  * hw_xxx() methods are used to perform operations which are
  * different on M2M and M2P channels. These methods are called with channel
  * lock held and interrupts disabled so they cannot sleep.
@@ -230,7 +225,7 @@ nuc970_dma_get_active(struct nuc970_dma_chan *edmac)
  * Called with @edmac->lock held and interrupts disabled.
  */
 static bool nuc970_dma_advance_active(struct nuc970_dma_chan *edmac)
-{	
+{
 	struct nuc970_dma_desc *desc;
 	DMA_DEBUG("NUC970 GDMA %s\n", __FUNCTION__ );
 	list_rotate_left(&edmac->active);
@@ -254,7 +249,7 @@ static bool nuc970_dma_advance_active(struct nuc970_dma_chan *edmac)
  */
 
 static int m2m_hw_setup(struct nuc970_dma_chan *edmac)
-{	
+{
 	const struct nuc970_dma_data *data = edmac->chan.private;
 	//u32 control = 0;
 	DMA_DEBUG("NUC970 GDMA %s\n", __FUNCTION__ );
@@ -285,32 +280,32 @@ static void m2m_fill_desc(struct nuc970_dma_chan *edmac)
 {
 	struct nuc970_dma_desc *desc;
 	u32 tcnt,config;
-	
-	ENTRY();	
+
+	ENTRY();
 	desc = nuc970_dma_get_active(edmac);
 	if (!desc) {
 		dev_warn(chan2dev(edmac), "M2M: empty descriptor list\n");
 		return;
 	}
 	__raw_writel(desc->src_addr, edmac->regs + GDMA_SRCB);
-	__raw_writel(desc->dst_addr, edmac->regs + GDMA_DSTB);	
-	
+	__raw_writel(desc->dst_addr, edmac->regs + GDMA_DSTB);
+
 	//Transfer Width Select for GDMA
 	config = __raw_readl(edmac->regs+GDMA_CTL);
-    config = (config & ~TWS_Msk) | edmac->runtime_ctrl;	
+    config = (config & ~TWS_Msk) | edmac->runtime_ctrl;
 	__raw_writel(config,edmac->regs + GDMA_CTL);
 
 	switch((__raw_readl(edmac->regs + GDMA_CTL) & TWS_Msk)>>12)
 	{
-		case 0:		tcnt=(desc->size)>>0; break;			
+		case 0:		tcnt=(desc->size)>>0; break;
 		case 1:		tcnt=(desc->size)>>1; break;
 		case 2:		tcnt=(desc->size)>>2; break;
 		default:	tcnt=(desc->size)>>0; break;
-	}		
+	}
 	if( __raw_readl(edmac->regs + GDMA_CTL) & BME)
 		tcnt=tcnt>>3;
-		
-	__raw_writel(tcnt,edmac->regs + GDMA_TCNT);		
+
+	__raw_writel(tcnt,edmac->regs + GDMA_TCNT);
 	DMA_DEBUG("%s GDMA_CTL  0x%08x=0x%08x\n", __FUNCTION__,edmac->regs,__raw_readl(edmac->regs));
 	DMA_DEBUG("%s GDMA_SRCB 0x%08x=0x%08x\n", __FUNCTION__,edmac->regs+ GDMA_SRCB,__raw_readl(edmac->regs+ GDMA_SRCB));
 	DMA_DEBUG("%s GDMA_DSTB 0x%08x=0x%08x\n", __FUNCTION__,edmac->regs+ GDMA_DSTB,__raw_readl(edmac->regs+ GDMA_DSTB));
@@ -332,14 +327,14 @@ static void m2m_hw_submit(struct nuc970_dma_chan *edmac)
 	m2m_fill_desc(edmac);
 	if (nuc970_dma_advance_active(edmac)) {
 		DMA_DEBUG("%s nuc970_dma_advance_active(edmac) OK\n", __FUNCTION__);
-		m2m_fill_desc(edmac);		
+		m2m_fill_desc(edmac);
 	}
 
 	intctrl = __raw_readl(REG_GDMA_INTCS);
 	intctrl |= (TC0EN | TC1EN);
 	__raw_writel(intctrl,REG_GDMA_INTCS);
 	DMA_DEBUG("%s GDMA_INTCS  0x%08x=0x%08x\n", __FUNCTION__,REG_GDMA_INTCS,__raw_readl(REG_GDMA_INTCS));
-		
+
 	control = __raw_readl(edmac->regs + GDMA_CTL);
 	control |= (1 | SOFTREQ);
 
@@ -349,28 +344,19 @@ static void m2m_hw_submit(struct nuc970_dma_chan *edmac)
 	LEAVE();
 }
 
-/*
- * According to NUC970 User's Guide, we should receive DONE interrupt when all
- * M2M DMA controller transactions complete normally. This is not always the
- * case - sometimes NUC970 M2M DMA asserts DONE interrupt when the DMA channel
- * is still running (channel Buffer FSM in DMA_BUF_ON state, and channel
- * Control FSM in DMA_MEM_RD state, observed at least in IDE-DMA operation).
- * In effect, disabling the channel when only DONE bit is set could stop
- * currently running DMA transfer. To avoid this, we use Buffer FSM and
- * Control FSM to check current state of DMA channel.
- */
+
 static int m2m_hw_interrupt(struct nuc970_dma_chan *edmac)
 {
-	u32 status = __raw_readl(REG_GDMA_INTCS);		
-	ENTRY();	
+	u32 status = __raw_readl(REG_GDMA_INTCS);
+	ENTRY();
 	DMA_DEBUG("REG_GDMA_INTCS=0x%08x\n",status);
 	status &= 0x0F;
 	if(status & 1<<(9+(edmac->irq-25)*2))  // test TERR0F/TERR0F
 	{
 		printk("GDMA :Channel %d Transfer Error\n",(edmac->irq-25));
 		__raw_writel((1<<(9+(edmac->irq-25)*2))|status, REG_GDMA_INTCS);
-	}	
-	__raw_writel((1<<(8+(edmac->irq-25)*2))|status, REG_GDMA_INTCS);	
+	}
+	__raw_writel((1<<(8+(edmac->irq-25)*2))|status, REG_GDMA_INTCS);
 	LEAVE();
 	return INTERRUPT_DONE;
 }
@@ -405,7 +391,7 @@ nuc970_dma_desc_get(struct nuc970_dma_chan *edmac)
 		}
 	}
 	spin_unlock_irqrestore(&edmac->lock, flags);
-	LEAVE();	
+	LEAVE();
 	return ret;
 }
 
@@ -415,7 +401,7 @@ static void nuc970_dma_desc_put(struct nuc970_dma_chan *edmac,
 	ENTRY();
 	if (desc) {
 		unsigned long flags;
-	
+
 		spin_lock_irqsave(&edmac->lock, flags);
 		list_splice_init(&desc->tx_list, &edmac->free_list);
 		list_add(&desc->node, &edmac->free_list);
@@ -451,7 +437,7 @@ static void nuc970_dma_advance_work(struct nuc970_dma_chan *edmac)
 	/* Push it to the hardware */
 	edmac->edma->hw_submit(edmac);
 	spin_unlock_irqrestore(&edmac->lock, flags);
-	LEAVE();	
+	LEAVE();
 }
 
 static void nuc970_dma_unmap_buffers(struct nuc970_dma_desc *desc)
@@ -474,7 +460,7 @@ static void nuc970_dma_unmap_buffers(struct nuc970_dma_desc *desc)
 			dma_unmap_page(dev, desc->dst_addr, desc->size,
 				       DMA_FROM_DEVICE);
 	}
-	LEAVE();	
+	LEAVE();
 }
 
 static void nuc970_dma_tasklet(unsigned long data)
@@ -524,7 +510,7 @@ static void nuc970_dma_tasklet(unsigned long data)
 	if (callback)
 		callback(callback_param);
 
-	LEAVE();	
+	LEAVE();
 }
 
 static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
@@ -532,7 +518,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 	struct nuc970_dma_chan *edmac = dev_id;
 	struct nuc970_dma_desc *desc;
 	irqreturn_t ret = IRQ_HANDLED;
-	ENTRY();	
+	ENTRY();
 	spin_lock(&edmac->lock);
 
 	desc = nuc970_dma_get_active(edmac);
@@ -563,7 +549,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 
 	spin_unlock(&edmac->lock);
 
-	LEAVE();	
+	LEAVE();
 	return ret;
 }
 
@@ -619,7 +605,7 @@ static int nuc970_dma_alloc_chan_resources(struct dma_chan *chan)
 	const char *name = dma_chan_name(chan);
 	int ret, i;
 	ENTRY();
-    DMA_DEBUG("name =%s\n", name);	
+
 	/* Sanity check the channel parameters */
 	if (data) {
 		switch (data->port) {
@@ -631,15 +617,9 @@ static int nuc970_dma_alloc_chan_resources(struct dma_chan *chan)
 				return -EINVAL;
 			}
 		}
-	
+
 	if (data && data->name)
 		name = data->name;
-
-	#if 0
-	ret = clk_enable(edmac->clk);
-	if (ret)
-		return ret;
-	#endif
 
 	ret = request_irq(edmac->irq, nuc970_dma_interrupt, IRQF_DISABLED | IRQF_SHARED, name, edmac);
 	if (ret)
@@ -710,9 +690,9 @@ static void nuc970_dma_free_chan_resources(struct dma_chan *chan)
 	list_for_each_entry_safe(desc, d, &list, node)
 		kfree(desc);
 
-	//clk_disable(edmac->clk);	
+	//clk_disable(edmac->clk);
 	free_irq(edmac->irq, edmac);
-	LEAVE();	
+	LEAVE();
 }
 
 /**
@@ -766,7 +746,7 @@ nuc970_dma_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest,
 fail:
 	DMA_DEBUG("%s fail =>\n", __FUNCTION__);
 	nuc970_dma_desc_put(edmac, first);
-	LEAVE();	
+	LEAVE();
 	return NULL;
 }
 
@@ -791,13 +771,6 @@ nuc970_dma_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 	struct scatterlist *sg;
 	int i;
 	ENTRY();
-#if 0
-	if (!edmac->edma->m2m && dir != nuc970_dma_chan_direction(chan)) {
-		dev_warn(chan2dev(edmac),
-			 "channel was configured with different direction\n");
-		return NULL;
-	}
-#endif
 
 	if (test_bit(NUC970_DMA_IS_CYCLIC, &edmac->flags)) {
 		dev_warn(chan2dev(edmac),
@@ -843,7 +816,7 @@ nuc970_dma_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 
 fail:
 	nuc970_dma_desc_put(edmac, first);
-	LEAVE();	
+	LEAVE();
 	return NULL;
 }
 
@@ -875,13 +848,7 @@ nuc970_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
 	struct nuc970_dma_desc *desc, *first;
 	size_t offset = 0;
 	ENTRY();
-	#if 0
-	if (dir != nuc970_dma_chan_direction(chan)) {
-		dev_warn(chan2dev(edmac),
-			 "channel was configured with different direction\n");
-		return NULL;
-	}
-	#endif
+
 	if (test_and_set_bit(NUC970_DMA_IS_CYCLIC, &edmac->flags)) {
 		dev_warn(chan2dev(edmac),
 			 "channel is already used for cyclic transfers\n");
@@ -922,7 +889,7 @@ nuc970_dma_prep_dma_cyclic(struct dma_chan *chan, dma_addr_t dma_addr,
 
 fail:
 	nuc970_dma_desc_put(edmac, first);
-	LEAVE();	
+	LEAVE();
 	return NULL;
 }
 
@@ -965,7 +932,7 @@ static int nuc970_dma_slave_config(struct nuc970_dma_chan *edmac,
 		unsigned long flags;
 		//u32 addr;
 		u32 ctrl;
-      
+
 	ENTRY();
 	width = config->src_addr_width;
 	switch (width) {
@@ -984,8 +951,8 @@ static int nuc970_dma_slave_config(struct nuc970_dma_chan *edmac,
 
 	spin_lock_irqsave(&edmac->lock, flags);
 	edmac->runtime_ctrl = ctrl;
-	spin_unlock_irqrestore(&edmac->lock, flags);	
-	LEAVE();	
+	spin_unlock_irqrestore(&edmac->lock, flags);
+	LEAVE();
 	return 0;
 }
 
@@ -1051,7 +1018,7 @@ static void nuc970_dma_issue_pending(struct dma_chan *chan)
 {
 	ENTRY();
 	nuc970_dma_advance_work(to_nuc970_dma_chan(chan));
-	LEAVE();	
+	LEAVE();
 }
 
 #define CLK_HCLKEN_GDMA (1<<12)
@@ -1065,34 +1032,32 @@ static int nuc970_dma_probe(struct platform_device *pdev)
 	struct clk *clk;
 	int ret, i;
 	ENTRY();
-	#ifdef CONFIG_OF	
+	#ifdef CONFIG_OF
 	platform_device_add_data(pdev, &nuc970_dma_m2m_data,sizeof(nuc970_dma_m2m_data));
 	#endif
-	printk("%s - pdev = %s\n", __func__, pdev->name);
-	pdata = dev_get_platdata(&pdev->dev);	
+
+	pdata = dev_get_platdata(&pdev->dev);
 	edma_size = pdata->num_channels * sizeof(struct nuc970_dma_chan);
 	edma = kzalloc(sizeof(*edma) + edma_size, GFP_KERNEL);
 
 	if (!edma)
 	{
-		DMA_DEBUG("NUC970 GDMA -ENOMEM\n");
+		DMA_DEBUG("NUC970/N9H30 GDMA -ENOMEM\n");
 		return -ENOMEM;
 	}
-	DMA_DEBUG("NUC970 GDMA !!!\n");
-	
-  	/* enable gdma clock */ 
-	#if 0
-	__raw_writel(__raw_readl(REG_CLK_HCLKEN)| CLK_HCLKEN_GDMA ,REG_CLK_HCLKEN);
-	#else
+
+
+  	/* enable gdma clock */
+
 	clk = clk_get(NULL, "gdma_hclk");
 	if (IS_ERR(clk)) {
-		dev_err(&pdev->dev, "cannot get clock\n");		
+		dev_err(&pdev->dev, "cannot get clock\n");
 		return -ENOENT;
 	}
-	dev_dbg(&pdev->dev, "clock source %p\n", clk);	
+
 	clk_prepare(clk);
 	clk_enable(clk);
-	#endif	
+
 	dma_dev = &edma->dma_dev;
 	edma->num_channels = pdata->num_channels;
 
@@ -1146,18 +1111,12 @@ static int nuc970_dma_probe(struct platform_device *pdev)
 
 	ret = dma_async_device_register(dma_dev);
 	if (unlikely(ret)) {
-		#if 0
-		for (i = 0; i < edma->num_channels; i++) {
-			struct nuc970_dma_chan *edmac = &edma->channels[i];
-			if (!IS_ERR_OR_NULL(edmac->clk))
-				clk_put(edmac->clk);
-		}
-		#endif
+
 		kfree(edma);
 	} else {
-		dev_info(dma_dev->dev, "NUC970 M2M DMA ready\n");
+		dev_info(dma_dev->dev, "NUC970/N9H30 M2M DMA ready\n");
 	}
-	LEAVE();	
+	LEAVE();
 	return ret;
 }
 
@@ -1177,7 +1136,7 @@ static int nuc970_dma_resume(struct platform_device *pdev){
 	return 0;
 }
 
-static struct platform_device_id nuc970_dma_driver_ids[] = {	
+static struct platform_device_id nuc970_dma_driver_ids[] = {
 	{ "nuc970-dma-m2m", 0 },
 	{ },
 };
@@ -1202,5 +1161,5 @@ module_platform_driver(nuc970_dma_driver);
 
 
 MODULE_AUTHOR("SChung <schung@nuvoton.com>");
-MODULE_DESCRIPTION("NUC970 DMA driver");
+MODULE_DESCRIPTION("NUC970/N9H30 DMA driver");
 MODULE_LICENSE("GPL");

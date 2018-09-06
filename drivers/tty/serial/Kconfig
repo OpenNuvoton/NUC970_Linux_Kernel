@@ -12,27 +12,27 @@ source "drivers/tty/serial/8250/Kconfig"
 comment "Non-8250 serial port support"
 
 config SERIAL_NUC970
-	bool "NUC970 serial support"
+	bool "NUC970/N9H30 serial support"
 	select SERIAL_CORE
 	---help---
-	  This selects NUC970 serial driver.
+	  This selects NUC970/N9H30 serial driver.
 
 config NUC970_UART1
-	bool "NUC970 UART1 support"
+	bool "NUC970/N9H30 UART1 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart1 driver
+	  This selects NUC970/N9H30 uart1 driver
 
 config ENABLE_UART1_CTS_WAKEUP
 	bool "Enable UART1 CTS wake-up function"
 	depends on NUC970_UART1
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart1 CTS wake-up function
+	  This selects NUC970/N9H30 uart1 CTS wake-up function
 
 choice
-	prompt "NUC970 UART1 pin selection"
+	prompt "NUC970/N9H30 UART1 pin selection"
 	default NUC970_UART1_PE
 	depends on NUC970_UART1
 	depends on !USE_OF
@@ -56,21 +56,21 @@ choice
 endchoice
 
 config NUC970_UART2
-	bool "NUC970 UART2 support"
+	bool "NUC970/N9H30 UART2 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart2 driver
+	  This selects NUC970/N9H30 uart2 driver
 
 config ENABLE_UART2_CTS_WAKEUP
 	bool "Enable UART2 CTS wake-up function"
 	depends on NUC970_UART2
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart2 CTS wake-up function
+	  This selects NUC970/N9H30 uart2 CTS wake-up function
 
 choice
-	prompt "NUC970 UART2 pin selection"
+	prompt "NUC970/N9H30 UART2 pin selection"
 	default NUC970_UART2_PF
 	depends on NUC970_UART2
 	depends on !USE_OF
@@ -84,28 +84,28 @@ choice
 endchoice
 
 config NUC970_UART3
-	bool "NUC970 UART3 support"
+	bool "NUC970/N9H30 UART3 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart3 driver
+	  This selects NUC970/N9H30 uart3 driver
 
 config NUC970_UART4
-	bool "NUC970 UART4 support"
+	bool "NUC970/N9H30 UART4 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart4 driver
+	  This selects NUC970/N9H30 uart4 driver
 
 config ENABLE_UART4_CTS_WAKEUP
 	bool "Enable UART4 CTS wake-up function"
 	depends on NUC970_UART4
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart4 CTS wake-up function
+	  This selects NUC970/N9H30 uart4 CTS wake-up function
 
 choice
-	prompt "NUC970 UART4 pin selection"
+	prompt "NUC970/N9H30 UART4 pin selection"
 	default NUC970_UART4_PC
 	depends on NUC970_UART4
 	depends on !USE_OF
@@ -125,28 +125,28 @@ choice
 endchoice
 
 config NUC970_UART5
-	bool "NUC970 UART5 support"
+	bool "NUC970/N9H30 UART5 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart5 driver
+	  This selects NUC970/N9H30 uart5 driver
 
 config NUC970_UART6
-	bool "NUC970 UART6 support"
+	bool "NUC970/N9H30 UART6 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart6 driver
+	  This selects NUC970/N9H30 uart6 driver
 
 config ENABLE_UART6_CTS_WAKEUP
 	bool "Enable UART6 CTS wake-up function"
 	depends on NUC970_UART6
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart6 CTS wake-up function
+	  This selects NUC970/N9H30 uart6 CTS wake-up function
 
 choice
-	prompt "NUC970 UART6 pin selection"
+	prompt "NUC970/N9H30 UART6 pin selection"
 	default NUC970_UART6_PB
 	depends on NUC970_UART6
 	depends on !USE_OF
@@ -164,14 +164,14 @@ choice
 endchoice
 
 config NUC970_UART7
-	bool "NUC970 UART7 support"
+	bool "NUC970/N9H30 UART7 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart7 driver
+	  This selects NUC970/N9H30 uart7 driver
 
 choice
-	prompt "NUC970 UART7 pin selection"
+	prompt "NUC970/N9H30 UART7 pin selection"
 	default NUC970_UART7_PG
 	depends on NUC970_UART7
 	depends on !USE_OF
@@ -185,21 +185,21 @@ choice
 endchoice
 
 config NUC970_UART8
-	bool "NUC970 UART8 support"
+	bool "NUC970/N9H30 UART8 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart8 driver
+	  This selects NUC970/N9H30 uart8 driver
 
 config ENABLE_UART8_CTS_WAKEUP
 	bool "Enable UART8 CTS wake-up function"
 	depends on NUC970_UART8
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart8 CTS wake-up function
+	  This selects NUC970/N9H30 uart8 CTS wake-up function
 
 choice
-	prompt "NUC970 UART8 pin selection"
+	prompt "NUC970/N9H30 UART8 pin selection"
 	default NUC970_UART8_PE
 	depends on NUC970_UART8
 	depends on !USE_OF
@@ -221,14 +221,14 @@ choice
 endchoice
 
 config NUC970_UART9
-	bool "NUC970 UART9 support"
+	bool "NUC970/N9H30 UART9 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart9 driver
+	  This selects NUC970/N9H30 uart9 driver
 
 choice
-	prompt "NUC970 UART9 pin selection"
+	prompt "NUC970/N9H30 UART9 pin selection"
 	default NUC970_UART9_PD0
 	depends on NUC970_UART9
 	depends on !USE_OF
@@ -244,21 +244,21 @@ choice
 endchoice
 
 config NUC970_UART10
-	bool "NUC970 UART10 support"
+	bool "NUC970/N9H30 UART10 support"
 	depends on SERIAL_NUC970=y
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart10 driver
+	  This selects NUC970/N9H30 uart10 driver
 
 config ENABLE_UART10_CTS_WAKEUP
 	bool "Enable UART10 CTS wake-up function"
 	depends on NUC970_UART10
 	depends on !USE_OF
 	help
-	  This selects NUC970 uart10 CTS wake-up function
+	  This selects NUC970/N9H30 uart10 CTS wake-up function
 
 choice
-	prompt "NUC970 UART10 pin selection"
+	prompt "NUC970/N9H30 UART10 pin selection"
 	default NUC970_UART10_PB0
 	depends on NUC970_UART10
 	depends on !USE_OF
@@ -278,7 +278,7 @@ choice
 endchoice
 
 config SERIAL_NUC970_CONSOLE
-	bool "Console on NUC970 serial port"
+	bool "Console on NUC970/N9H30 serial port"
 	depends on SERIAL_NUC970=y
 	select SERIAL_CORE_CONSOLE
 	---help---
@@ -287,18 +287,18 @@ config SERIAL_NUC970_CONSOLE
 
 
 config SCUART_NUC970
-	bool "NUC970 Smartcard UART Mode support"
+	bool "NUC970/N9H30 Smartcard UART Mode support"
 	select SERIAL_CORE
 	---help---
-	  This selects NUC970 smartcard uart mode driver.
+	  This selects NUC970/N9H30 smartcard uart mode driver.
 
 config NUC970_SCUART0
-	bool "NUC970 SCUART0 support"
+	bool "NUC970/N9H30 SCUART0 support"
 	depends on SCUART_NUC970=y && !USE_OF
 	help
-	  This selects NUC970 scuart0 driver
+	  This selects NUC970/N9H30 scuart0 driver
 choice
-	prompt "NUC970 SCUART0 pin selection"
+	prompt "NUC970/N9H30 SCUART0 pin selection"
 	default NUC970_SCUART0_PG
 	depends on NUC970_SCUART0
 	help
@@ -311,10 +311,10 @@ choice
 endchoice
 
 config NUC970_SCUART1
-	bool "NUC970 SCUART1 support"
+	bool "NUC970/N9H30 SCUART1 support"
 	depends on SCUART_NUC970=y && !USE_OF
 	help
-	  This selects NUC970 scuart1 driver
+	  This selects NUC970/N9H30 scuart1 driver
 
 config SERIAL_AMBA_PL010
 	tristate "ARM AMBA PL010 serial port support"

@@ -80,7 +80,7 @@ struct nuc970_i2c {
 	unsigned int        msg_ptr;
 	unsigned int        irq;
 	unsigned int        arblost;
-	
+
 	enum nuc970_i2c_state   state;
 
 	void __iomem        *regs;
@@ -392,7 +392,7 @@ static void nuc970_i2c0_hangup(struct nuc970_i2c *i2c)
 {
 	int i;
 
-	for(i=0;i<2;i++) {        
+	for(i=0;i<2;i++) {
 		writel(0x6, i2c->regs + SWR);       //CLK Low
 		ndelay(2);
 		writel(0x7, i2c->regs + SWR);       //CLK High
@@ -479,7 +479,7 @@ static int nuc970_i2c0_doxfer(struct nuc970_i2c *i2c,
 
 	if (iicstat & I2CBUSY)
 		dev_warn(i2c->dev, "timeout waiting for bus idle\n");
-	
+
 	if(i2c->arblost) {
 		dev_dbg(i2c->dev, "arb lost, stop\n");
 		i2c->arblost = 0;
@@ -561,7 +561,7 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 	}
-	
+
 	i2c = kzalloc(sizeof(struct nuc970_i2c), GFP_KERNEL);
 	if (!i2c) {
 		dev_err(&pdev->dev, "no memory for state\n");
@@ -573,12 +573,12 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 	i2c->adap.algo    = &nuc970_i2c0_algorithm;
 	i2c->adap.retries = 2;
 	i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD;
-	   
+
 	spin_lock_init(&i2c->lock);
 	init_waitqueue_head(&i2c->wait);
 
 	/* find the clock and enable it */
-	
+
 	i2c->dev = &pdev->dev;
 	i2c->clk = clk_get(NULL, "i2c0");
 	if (IS_ERR(i2c->clk)) {
@@ -588,7 +588,7 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 	}
 
 	dev_dbg(&pdev->dev, "clock source %p\n", i2c->clk);
-	
+
 	clk_prepare(i2c->clk);
 	clk_enable(i2c->clk);
 
@@ -625,7 +625,7 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 
 	i2c->adap.algo_data = i2c;
 	i2c->adap.dev.parent = &pdev->dev;
-	
+
 	if (pdata) {
 		busfreq = pdata->bus_freq;
 		busnum = pdata->bus_num;
@@ -633,7 +633,7 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 		of_property_read_u32(pdev->dev.of_node, "bus_freq", &busfreq);
 		of_property_read_u32(pdev->dev.of_node, "bus_num", &busnum);
 	}
-	
+
 	ret = clk_get_rate(i2c->clk)/(busfreq * 5) - 1;
 	writel(ret & 0xffff, i2c->regs + DIVIDER);
 
@@ -646,7 +646,7 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "cannot find IRQ\n");
 		goto err_iomap;
 	}
-	
+
 	ret = request_irq(i2c->irq, nuc970_i2c_irq, IRQF_SHARED,
 			  dev_name(&pdev->dev), i2c);
 
@@ -663,26 +663,26 @@ static int nuc970_i2c0_probe(struct platform_device *pdev)
 
 	i2c->adap.nr = busnum;
 	i2c->adap.dev.of_node = pdev->dev.of_node;
-	 
+
 	ret = i2c_add_numbered_adapter(&i2c->adap);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to add bus to i2c core\n");
 		goto err_irq;
 	}
-	of_i2c_register_devices(&i2c->adap); 
-	
+	of_i2c_register_devices(&i2c->adap);
+
 	platform_set_drvdata(pdev, i2c);
 
 	dev_info(&pdev->dev, "%s: nuc970 I2C adapter\n",
 						dev_name(&i2c->adap.dev));
-	
-#if defined(CONFIG_OF)   
+
+#if defined(CONFIG_OF)
 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
 	if (IS_ERR(pinctrl)) {
 		return PTR_ERR(pinctrl);
 	}
 #endif
-	
+
 	return 0;
 
  err_irq:
@@ -734,23 +734,23 @@ static int nuc970_i2c0_remove(struct platform_device *pdev)
 static int nuc970_i2c0_suspend(struct device *dev)
 {
 	struct nuc970_i2c *i2c = dev_get_drvdata(dev);
-	
+
 	while(i2c->state != STATE_IDLE)
 		msleep(1);
-	
+
 	//disable i2c
 	writel(0x0, i2c->regs + CSR);
-	
+
 	//free SCL,SDA
 	writel(0x1, i2c->regs + SWR);
 	writel(0x7, i2c->regs + SWR);
-	
+
 	return 0;
 }
 
 static int nuc970_i2c0_resume(struct device *dev)
 {
-		
+
 	return 0;
 }
 
@@ -787,7 +787,7 @@ static struct platform_driver nuc970_i2c0_driver = {
 };
 module_platform_driver(nuc970_i2c0_driver);
 
-MODULE_DESCRIPTION("nuc970 I2C Bus driver");
+MODULE_DESCRIPTION("NUC970/N9H30 I2C0 Bus driver");
 MODULE_AUTHOR("Wan ZongShun, <mcuos.com-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-i2c0");

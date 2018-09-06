@@ -1907,13 +1907,13 @@ static const struct nuc970_pmx_func nuc970_functions[] = {
 		.name = "ebi_16_3",
 		.groups = ebi16_3_groups,
 		.num_groups = ARRAY_SIZE(ebi16_3_groups),
-	},	
+	},
 	{
 		.name = "ebi_16_4",
 		.groups = ebi16_4_groups,
 		.num_groups = ARRAY_SIZE(ebi16_4_groups),
 	},
-	
+
 };
 
 
@@ -3651,7 +3651,7 @@ static int nuc970_pinctrl_probe(struct platform_device *pdev)
 
 	pctl = pinctrl_register(&nuc970_pinctrl_desc, &pdev->dev, NULL);
 	if (IS_ERR(pctl))
-		pr_err("could not register NUC970 pin driver\n");
+		pr_err("could not register NUC970/N9H30 pin driver\n");
 
 	platform_set_drvdata(pdev, pctl);
 

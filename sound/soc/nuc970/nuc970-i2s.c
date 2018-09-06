@@ -60,7 +60,7 @@ static int nuc970_i2s_set_fmt(struct snd_soc_dai *cpu_dai,
 		default:
 			return -EINVAL;
 		}
-			
+
 		AUDIO_WRITE(nuc970_audio->mmio + ACTL_I2SCON, val);
 
 		return 0;
@@ -74,67 +74,67 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 		struct clk *clkmux, *clkaplldiv, *clkapll, *clkaudio;
 		int ret;
 		unsigned int mclkdiv, bclkdiv, mclk;
-		
+
 		clkmux = clk_get(NULL, "audio_eclk_mux");
 		if (IS_ERR(clkmux)) {
 			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
 			ret = PTR_ERR(clkmux);
 			return ret;
 		}
-		
+
 		clkaplldiv = clk_get(NULL, "audio_aplldiv");
 		if (IS_ERR(clkaplldiv)) {
 			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
 			ret = PTR_ERR(clkaplldiv);
 			return ret;
 		}
-		
+
 		clkapll = clk_get(NULL, "apll");
 		if (IS_ERR(clkapll)) {
 			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
 			ret = PTR_ERR(clkapll);
 			return ret;
 		}
-		
+
 		clkaudio = clk_get(NULL, "audio_eclk");
 		if (IS_ERR(clkaudio)) {
 			printk(KERN_ERR "nuc970-audio:failed to get audio clock source\n");
 			ret = PTR_ERR(clkaudio);
 			return ret;
 		}
-				
+
 		if (clk_id == NUC970_AUDIO_SAMPLECLK) {
 				val = AUDIO_READ(nuc970_audio->mmio + ACTL_I2SCON);
-		
+
 				mclk = (freq*256);      // 256fs
 				mclkdiv = clk_get_rate(clkaudio) / mclk;
 				val &= ~0x000F0000;
 				val |= (mclkdiv-1) << 16;
-				
+
 				bclkdiv = mclk / (freq*16*2);
 				bclkdiv = bclkdiv/2 - 1;
 				val &= ~0xf0;
 				val |= (bclkdiv << 5);
- 
+
 				AUDIO_WRITE(nuc970_audio->mmio + ACTL_I2SCON, val);
 		}
 
 		if (clk_id == NUC970_AUDIO_CLKDIV) {
 				//use APLL to generate 12.288MHz ,16.934MHz or 11.285Mhz for I2S
-				//input source clock is XIN=12Mhz             
-				
+				//input source clock is XIN=12Mhz
+
 				clk_set_parent(clkmux, clkaplldiv);
-				
+
 				if ((freq % 8000 == 0)  && (freq != 32000)) {
 					//12.288MHz ==> APLL=98.4MHz / 8 = 12.3MHz
 					clk_set_rate(clkapll, 98400000);
 					clk_set_rate(clkaudio, 12300000);
 				} else if(freq == 44100) {
-					//16.934MHz ==> APLL=169.5MHz / 15 = 11.30MHz                   
+					//16.934MHz ==> APLL=169.5MHz / 15 = 11.30MHz
 					clk_set_rate(clkapll, 169500000);
 					clk_set_rate(clkaudio, 11300000);
 				} else {
-					//16.934MHz ==> APLL=169.5MHz / 10 = 16.95MHz                   
+					//16.934MHz ==> APLL=169.5MHz / 10 = 16.95MHz
 					clk_set_rate(clkapll, 169500000);
 					clk_set_rate(clkaudio, 16950000);
 				}
@@ -160,12 +160,12 @@ static int nuc970_i2s_trigger(struct snd_pcm_substream *substream,
 				if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 						con |= P_DMA_IRQ_EN;
 						AUDIO_WRITE(nuc970_audio->mmio + ACTL_PSR, P_DMA_RIA_IRQ);
-						
-						val |= AUDIO_PLAY;                        
+
+						val |= AUDIO_PLAY;
 				} else {
 						con |= R_DMA_IRQ_EN;
 						AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, R_DMA_RIA_IRQ);
-						
+
 						val |= AUDIO_RECORD;
 				}
 				AUDIO_WRITE(nuc970_audio->mmio + ACTL_RESET, val);
@@ -206,7 +206,7 @@ static int nuc970_i2s_probe(struct snd_soc_dai *dai)
 
 		clk_prepare(clk_get(NULL, "audio_hclk"));
 		clk_enable(clk_get(NULL, "audio_hclk"));
-	
+
 		/* enable unit clock */
 		clk_prepare(nuc970_audio->clk);
 		clk_enable(nuc970_audio->clk);
@@ -215,7 +215,7 @@ static int nuc970_i2s_probe(struct snd_soc_dai *dai)
 		val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 		val = (val & ~0x300) | BITS_SELECT_16;          //set default data bit to 16-bit
 		AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val);
-				
+
 		mutex_unlock(&i2s_mutex);
 
 		return 0;
@@ -225,7 +225,7 @@ static int nuc970_i2s_remove(struct snd_soc_dai *dai)
 {
 		struct nuc970_audio *nuc970_audio = nuc970_i2s_data;
 		clk_disable(nuc970_audio->clk);
-		
+
 		return 0;
 }
 
@@ -303,7 +303,7 @@ static int nuc970_i2s_drvprobe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto out3;
 	}
-	
+
 	ret = nuc970_dma_create(nuc970_audio);
 	if (ret != 0)
 		return ret;
@@ -315,13 +315,13 @@ static int nuc970_i2s_drvprobe(struct platform_device *pdev)
 	if (ret)
 		goto out3;
 
-#if defined(CONFIG_OF)   
+#if defined(CONFIG_OF)
 	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
 	if (IS_ERR(pinctrl)) {
 		return PTR_ERR(pinctrl);
 	}
 #endif
-		
+
 	return 0;
 
 out3:
@@ -375,6 +375,6 @@ static struct platform_driver nuc970_i2s_driver = {
 
 module_platform_driver(nuc970_i2s_driver);
 
-MODULE_DESCRIPTION("NUC970 IIS SoC driver!");
+MODULE_DESCRIPTION("NUC970/N9H30 IIS SoC driver!");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-i2s");

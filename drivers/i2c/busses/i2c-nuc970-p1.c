@@ -80,7 +80,7 @@ struct nuc970_i2c {
 	unsigned int        msg_ptr;
 	unsigned int        irq;
 	unsigned int        arblost;
-	
+
 	enum nuc970_i2c_state   state;
 
 	void __iomem        *regs;
@@ -392,7 +392,7 @@ static void nuc970_i2c1_hangup(struct nuc970_i2c *i2c)
 {
 	int i;
 
-	for(i=0;i<2;i++) {        
+	for(i=0;i<2;i++) {
 		writel(0x6, i2c->regs + SWR);       //CLK Low
 		ndelay(2);
 		writel(0x7, i2c->regs + SWR);       //CLK High
@@ -479,7 +479,7 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 
 	if (iicstat & I2CBUSY)
 		dev_warn(i2c->dev, "timeout waiting for bus idle\n");
-	
+
 	if(i2c->arblost) {
 		dev_dbg(i2c->dev, "arb lost, stop\n");
 		i2c->arblost = 0;
@@ -489,7 +489,7 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 		nuc970_i2c1_hangup(i2c);
 		ret = -EAGAIN;
 	}
-	
+
  out:
 	return ret;
 }
@@ -559,7 +559,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 	}
-	
+
 	i2c = kzalloc(sizeof(struct nuc970_i2c), GFP_KERNEL);
 	if (!i2c) {
 		dev_err(&pdev->dev, "no memory for state\n");
@@ -576,7 +576,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 	init_waitqueue_head(&i2c->wait);
 
 	/* find the clock and enable it */
-	
+
 	i2c->dev = &pdev->dev;
 	i2c->clk = clk_get(NULL, "i2c1");
 	if (IS_ERR(i2c->clk)) {
@@ -586,7 +586,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 	}
 
 	dev_dbg(&pdev->dev, "clock source %p\n", i2c->clk);
-	
+
 	clk_prepare(i2c->clk);
 	clk_enable(i2c->clk);
 
@@ -637,7 +637,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 	pinctrl = devm_pinctrl_get_select(&pdev->dev, "i2c1-PI");
  #endif
 #endif
-	if(IS_ERR(pinctrl)) { 
+	if(IS_ERR(pinctrl)) {
 		dev_err(&pdev->dev, "unable to reserve pin\n");
 		ret = PTR_ERR(pinctrl);
 	}
@@ -649,7 +649,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 		of_property_read_u32(pdev->dev.of_node, "bus_freq", &busfreq);
 		of_property_read_u32(pdev->dev.of_node, "bus_num", &busnum);
 	}
-	
+
 	ret = clk_get_rate(i2c->clk)/(busfreq * 5) - 1;
 	writel(ret & 0xffff, i2c->regs + DIVIDER);
 
@@ -685,7 +685,7 @@ static int nuc970_i2c1_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to add bus to i2c core\n");
 		goto err_irq;
 	}
-	of_i2c_register_devices(&i2c->adap); 
+	of_i2c_register_devices(&i2c->adap);
 
 	platform_set_drvdata(pdev, i2c);
 
@@ -743,23 +743,23 @@ static int nuc970_i2c1_remove(struct platform_device *pdev)
 static int nuc970_i2c1_suspend(struct device *dev)
 {
 	struct nuc970_i2c *i2c = dev_get_drvdata(dev);
-	
+
 	while(i2c->state != STATE_IDLE)
 		msleep(1);
-	
+
 	//disable i2c
 	writel(0x0, i2c->regs + CSR);
-	
+
 	//free SCL,SDA
 	writel(0x1, i2c->regs + SWR);
 	writel(0x7, i2c->regs + SWR);
-	
+
 	return 0;
 }
 
 static int nuc970_i2c1_resume(struct device *dev)
 {
-		
+
 	return 0;
 }
 
@@ -796,7 +796,7 @@ static struct platform_driver nuc970_i2c1_driver = {
 };
 module_platform_driver(nuc970_i2c1_driver);
 
-MODULE_DESCRIPTION("nuc970 I2C Bus driver");
+MODULE_DESCRIPTION("NUC970/N9H30 I2C1 Bus driver");
 MODULE_AUTHOR("Wan ZongShun, <mcuos.com-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-i2c1");

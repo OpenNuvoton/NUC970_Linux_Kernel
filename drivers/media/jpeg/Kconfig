@@ -3,11 +3,11 @@
 #
 
 
-menu "NUC970 JPEG CODEC"
+menu "NUC970/N9H30 JPEG CODEC"
 	depends on VIDEO_DEV
 
-comment "NUC970 JPEG codec"
+comment "NUC970/N9H30 JPEG codec"
 
 source "drivers/media/jpeg/nuc970/Kconfig"
 
-endmenu # NUC970 JPEG CODEC
+endmenu # NUC970/N9H30 JPEG CODEC

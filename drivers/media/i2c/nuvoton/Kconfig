@@ -1,10 +1,10 @@
 config VIDEO_NUC970
-	tristate "Nuvoton NUC970 Video-In Support"
-	depends on I2C && VIDEO_DEV 
+	tristate "Nuvoton NUC970/N9H30 Video-In Support"
+	depends on I2C && VIDEO_DEV
 	select VIDEO_BUF
-	select VIDEOBUF_DMA_CONTIG 
+	select VIDEOBUF_DMA_CONTIG
 	---help---
-	Support for built-in video-in interface for NUC970.
+	Support for built-in video-in interface for NUC970/N9H30.
 config MAX_DEVICES
 	int "Max video device"
 	depends on VIDEO_NUC970
@@ -12,7 +12,7 @@ config MAX_DEVICES
 	---help---
 	MAX_DEVICES set to 1, /dev/video0 support packet
 	or planar.
-	MAX_DEVICES set to 2, /dev/video0 support packet 
+	MAX_DEVICES set to 2, /dev/video0 support packet
 	and /dev/video1 support planar at same time.
 
 config MAX_FRAME_BUFFER
@@ -25,7 +25,7 @@ config VIDOE_FREQ
 	default "24000000"
 
 choice
-	prompt "Nuvoton NUC970 Sensor Power Down Pin Selection"
+	prompt "Nuvoton NUC970/N9H30 Sensor Power Down Pin Selection"
 	depends on VIDEO_NUC970
 	default SENSOR_PD_PI0
         ---help---
@@ -48,7 +48,7 @@ endchoice
 
 if !OF
 choice
-	prompt "Nuvoton NUC970 Image Sensor Selection"
+	prompt "Nuvoton NUC970/N9H30 Image Sensor Selection"
 	depends on VIDEO_NUC970
 	default SENSOR_NT99141
 

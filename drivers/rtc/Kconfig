@@ -842,16 +842,16 @@ config RTC_DRV_NUC900
 	  NUC910/NUC920 used in embedded systems.
 
 config RTC_DRV_NUC970
-	tristate "NUC970 RTC driver"
+	tristate "NUC970/N9H30 RTC driver"
 	help
 	  If you say yes here you get support for the RTC subsystem of the
-	  NUC970 used in embedded systems.
+	  NUC970/N9H30 used in embedded systems.
 
 config ENABLE_RTC_WAKEUP
 	bool "Enable RTC wake-up function"
 	depends on RTC_DRV_NUC970
 	help
-	  This selects NUC970 RTC wake-up function
+	  This selects NUC970/N9H30 RTC wake-up function
 
 config ENABLE_RTC_TICK_WAKEUP
 	bool "Enable RTC tick wake-up function"

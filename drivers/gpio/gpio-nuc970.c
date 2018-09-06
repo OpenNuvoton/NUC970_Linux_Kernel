@@ -726,8 +726,8 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 	int err;
 	u32	val32[3];
 	u32 irqnum,irqflag;
-	
-	//eint 0 
+
+	//eint 0
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint0-config", val32, 3) != 0){
 		printk("%s - eint0 can not get port-number!\n", __func__);
 		return -EINVAL;
@@ -745,8 +745,8 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 1 
+
+	//eint 1
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint1-config", val32, 3) != 0){
 		printk("%s - eint1 can not get port-number!\n", __func__);
 		return -EINVAL;
@@ -764,8 +764,8 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 2 
+
+	//eint 2
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint2-config", val32, 3) != 0){
 		printk("%s - eint2 can not get port-number!\n", __func__);
 		return -EINVAL;
@@ -783,8 +783,8 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 3 
+
+	//eint 3
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint3-config", val32, 3) != 0){
 		printk("%s - eint3 can not get port-number!\n", __func__);
 		return -EINVAL;
@@ -802,14 +802,14 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 4 
+
+	//eint 4
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint4-config", val32, 3) != 0){
 		printk("%s - eint4 can not get port-number!\n", __func__);
 		return -EINVAL;
 	}
 	if(val32[0]==1)
-	{	 	
+	{
 		irqnum=(val32[1]==0)?(IRQ_EXT4_H4):(IRQ_EXT4_F15);
 		irqflag=trigger_type[val32[2]]|IRQF_NO_SUSPEND;
 		if(flag==1){
@@ -825,12 +825,12 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 5 
+
+	//eint 5
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint5-config", val32, 3) != 0){
 		printk("%s - eint5 can not get port-number!\n", __func__);
 		return -EINVAL;
-	} 	
+	}
 	if(val32[0]==1)
 	{
 		irqnum=(val32[1]==0)?(IRQ_EXT5_H5):(IRQ_EXT5_G15);
@@ -844,12 +844,12 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 6 
+
+	//eint 6
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint6-config", val32, 3) != 0){
 		printk("%s - eint6 can not get port-number!\n", __func__);
 		return -EINVAL;
-	} 	
+	}
 	if(val32[0]==1)
 	{
 		irqnum=(val32[1]==0)?(IRQ_EXT6_H6):(IRQ_EXT6_I1);
@@ -863,12 +863,12 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 			return -EINVAL;
 		}
 	}
-	
-	//eint 7 	
+
+	//eint 7
 	if (of_property_read_u32_array(pdev->dev.of_node, "eint7-config", val32, 3) != 0){
 		printk("%s - eint7 can not get port-number!\n", __func__);
 		return -EINVAL;
-	} 	
+	}
 	if(val32[0]==1)
 	{
 		irqnum=(val32[1]==0)?(IRQ_EXT7_H7):(IRQ_EXT7_I2);
@@ -889,8 +889,8 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 static int nuc970_gpio_probe(struct platform_device *pdev)
 {
 	int err;
-	struct clk *clk;	
-	
+	struct clk *clk;
+
 	//printk("%s - pdev = %s\n", __func__, pdev->name);
 #ifndef CONFIG_OF
 	if(pdev->id == 0)
@@ -1021,7 +1021,7 @@ static int nuc970_gpio_resume(struct platform_device *pdev){
 		kpi_suspend_flag = 0;
 		kpi_resume_flag = 1;
 	}
-    
+
 #endif
 	LEAVE();
 	return 0;
@@ -1087,6 +1087,6 @@ static struct platform_driver nuc970_gpio_driver = {
 module_platform_driver(nuc970_gpio_driver);
 
 MODULE_AUTHOR("shan chun <SCChung@nuvoton.com>");
-MODULE_DESCRIPTION("GPIO interface for Nuvoton NUC970 GPIO Drive");
+MODULE_DESCRIPTION("GPIO interface for Nuvoton NUC970/N9H30 GPIO Drive");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970_gpio");

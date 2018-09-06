@@ -810,7 +810,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	struct input_dev *input_ts_dev=NULL;
 	struct input_dev *input_kp_dev=NULL;
 	int err;
-	printk("==================================1\n");
+
 #ifndef CONFIG_OF
 #ifdef CONFIG_KEYBOARD_NUC970ADC
 	IsEnableKP = 1;
@@ -898,7 +898,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 		}
 		nuc970_adc->input_ts = input_ts_dev;
 		nuc970_adc->old_using = 0;
-		input_ts_dev->name = "NUC970 TouchScreen(ADC)";
+		input_ts_dev->name = "NUC970/N9H30 TouchScreen(ADC)";
 		input_ts_dev->phys = "nuc970ts/event0";
 		input_ts_dev->id.bustype = BUS_HOST;
 		input_ts_dev->id.vendor  = 0x0005;
@@ -926,7 +926,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 		}
 		nuc970_adc->input_kp = input_kp_dev;
 		nuc970_adc->kp_num = -1;
-		input_kp_dev->name = "NUC970 Keypad(ADC)";
+		input_kp_dev->name = "NUC970/N9H30 Keypad(ADC)";
 		input_kp_dev->id.bustype = BUS_HOST;
 		input_kp_dev->id.vendor  = 0x0005;
 		input_kp_dev->id.product = 0x0002;
@@ -976,7 +976,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 
 		ret = iio_device_register(nuc970_adc->indio_dev);
 		if (ret < 0) {
-			printk("Couldn't register NC970 ADC..\n");
+			printk("Couldn't register NC970/N9H30 ADC..\n");
 			nuc970adc_channels_remove(nuc970_adc->indio_dev);
 			iio_device_free(nuc970_adc->indio_dev);
 			return ret;
@@ -998,7 +998,7 @@ static int nuc970adc_probe(struct platform_device *pdev)
 	if(IsEnableBT==1) {
 #ifdef CONFIG_BATTREY_NUC970ADC
 		nuc970_adc->used_state |= BT_USED;
-		nuc970_adc->bat.name = "NUC970 Battery(ADC)";
+		nuc970_adc->bat.name = "NUC970/N9H30 Battery(ADC)";
 		nuc970_adc->bat.type = POWER_SUPPLY_TYPE_BATTERY;
 		nuc970_adc->bat.properties = nuc970adc_battery_props;
 		nuc970_adc->bat.num_properties = ARRAY_SIZE(nuc970adc_battery_props);
@@ -1161,6 +1161,6 @@ static struct platform_driver nuc970adc_driver = {
 module_platform_driver(nuc970adc_driver);
 
 MODULE_AUTHOR("schung <schung@nuvoton.com>");
-MODULE_DESCRIPTION("nuc970 adc touch/keypad driver!");
+MODULE_DESCRIPTION("NUC970/N9H30 adc touch/keypad driver!");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-adc");

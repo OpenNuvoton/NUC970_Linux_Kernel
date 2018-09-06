@@ -4,24 +4,36 @@ config CPU_NUC970
 	bool
 	select HAVE_CLK_PREPARE
 	select HAVE_MACH_CLKDEV
-    select COMMON_CLK
-	default y
+	select COMMON_CLK
 	help
-	  Support for NUC970 of Nuvoton MCU
+	  Support for NUC970 of Nuvoton microprocessor
+config CPU_N9H30
+	bool
+	select HAVE_CLK_PREPARE
+	select HAVE_MACH_CLKDEV
+	select COMMON_CLK
+	help
+		Support for N9H30 of Nuvoton microprocessor
 
-menu "NUC970 Machines"
 
 config MACH_NUC970
-	bool "Nuvoton NUC970 Evaluation Board"
+	bool
 	default y
-	select CPU_NUC970
-	help
-	   Say Y here if you are using the Nuvoton NUC970
-endmenu
 
-choice 
-    prompt "Nuvoton NUC970 Series Development Board"
-    
+choice
+	prompt "Select NUC970/N9H30 processor"
+
+config CPU_NUC970
+	bool "NUC970 Series Microprocessor"
+
+config CPU_N9H30
+	bool "N9H30 Series Microprocessor"
+
+endchoice
+
+choice
+    prompt "Nuvoton NUC970/N9H30 Series Development Board"
+
 config BOARD_NUC977
 	depends on !USE_OF
     bool "NUC977 Development Board"
@@ -29,7 +41,7 @@ config BOARD_NUC977
 config BOARD_NUC972
 	depends on !USE_OF
     bool "NUC972 Development Board"
-    
+
 config BOARD_TOMATO
 	depends on !USE_OF
     bool "NUC976 Tomato Board"
@@ -37,6 +49,10 @@ config BOARD_TOMATO
 config BOARD_ETH2UART
 	depends on !USE_OF
     bool "NUC972 Ethernet To UART Board"
+
+config BOARD_HMI
+	depends on !USE_OF
+   bool "N9H30 HMI Demo Board"
 
 config MACH_NUC972_EVB_DT
 	bool "Nuvoton NUC972 evaluation board using device tree"
@@ -49,20 +65,21 @@ config MACH_NUC972_EVB_DT
 endchoice
 
 config NUC970_FIQ
-    bool "Nuvoton NUC970 FIQ support"
+    bool "Nuvoton NUC970/N9H30 FIQ support"
     select FIQ
     ---help---
-	  Support FIQ in NUC970. For more information, please refer to NUC970 BSP user's manual.
-      
+	  Support FIQ in NUC970/N9H30. For more information, please refer to NUC970/N9H30
+	  BSP user's manual.
+
 endif
 
-choice 
-    prompt "Nuvoton NUC970 System Clock Selection"
+choice
+    prompt "Nuvoton NUC970/N9H30 System Clock Selection"
 	help
 	  To support NO_HZ or HRTIMER, ETIMER must be used as system clock source.
-          NOTE: If ETIMER is selected, ETIMER0/1will be used as system clock souce and 
+          NOTE: If ETIMER is selected, ETIMER0/1will be used as system clock souce and
           clock event and cannot used for capture or toggle out.
-    
+
 config NUC970_CLK_TIMER
     bool "TIMER as system clock source"
     select ARCH_USES_GETTIMEOFFSET
@@ -71,4 +88,3 @@ config NUC970_CLK_ETIMER
     bool "ETIMER as system clock source"
 
 endchoice
-

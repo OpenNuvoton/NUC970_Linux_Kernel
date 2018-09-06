@@ -702,7 +702,7 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 		} else
 			break;
 		ether->finish_tx = (ether->finish_tx + 1) % TX_DESC_SIZE;
-		txbd = ether->tdesc + ether->finish_tx;	
+		txbd = ether->tdesc + ether->finish_tx;
 	}
 
 	if (status & MISTA_EXDEF) {
@@ -1349,7 +1349,7 @@ static struct platform_driver nuc970_ether_driver = {
 	.resume 	= nuc970_ether_resume,
 	.driver		= {
 		.name	= "nuc970-emac1",
-	    .of_match_table = of_match_ptr(nuc970_emac1_of_match),
+		.of_match_table = of_match_ptr(nuc970_emac1_of_match),
 		.owner	= THIS_MODULE,
 	},
 };
@@ -1369,7 +1369,6 @@ module_init(nuc970_ether_init);
 module_exit(nuc970_ether_exit);
 
 MODULE_AUTHOR("Nuvoton Technology Corp.");
-MODULE_DESCRIPTION("NUC970 MAC1 driver");
+MODULE_DESCRIPTION("NUC970/N9H30 MAC1 driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970-emac1");
-

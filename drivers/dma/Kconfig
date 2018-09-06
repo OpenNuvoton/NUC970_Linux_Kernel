@@ -280,11 +280,11 @@ config EP93XX_DMA
 	  Enable support for the Cirrus Logic EP93xx M2P/M2M DMA controller.
 
 config NUC970_DMA
-        bool "NUC970 DMA support"
+        bool "NUC970/N9H30 DMA support"
         depends on ARCH_NUC970
         select DMA_ENGINE
         help
-          Enable support for the NUC970 M2M DMA controller.
+          Enable support for the NUC970/N9H30 M2M DMA controller.
 
 config DMA_SA11X0
 	tristate "SA-11x0 DMA support"

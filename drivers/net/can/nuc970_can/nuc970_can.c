@@ -1,7 +1,7 @@
 /*
  *  linux/drivers/net/can/nuc970_can/nuc970_can.c
  *
- *  NUC970 CAN driver
+ *  NUC970/N9H30 CAN driver
  *
  *
  *  Copyright (C) 2014 Nuvoton Technology Corp.

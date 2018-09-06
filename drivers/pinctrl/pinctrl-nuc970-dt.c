@@ -305,7 +305,7 @@ static int nuc970_dt_node_to_map(struct pinctrl_dev *pctldev,
 	struct device_node *parent;
 	int map_num = 1;
 	int i;
-	
+
 	/*
 	 * first find the group of this node and check if we need create
 	 * config maps for pins
@@ -366,7 +366,7 @@ static const struct pinctrl_ops nuc970_pctrl_ops = {
 
 static void nuc970_pin_dbg(const struct device *dev, const struct nuc970_pmx_pin *pin)
 {
-	dev_dbg(dev, "P%c.%d: func=%d\n", pin->bank+'A', pin->pin, pin->func); 
+	dev_dbg(dev, "P%c.%d: func=%d\n", pin->bank+'A', pin->pin, pin->func);
 }
 
 static int pin_check_config(struct nuc970_pinctrl *info, const char *name,
@@ -641,7 +641,7 @@ static int nuc970_pinctrl_probe_dt(struct platform_device *pdev,
 
 	dev_dbg(&pdev->dev, "nfunctions = %d\n", info->nfunctions);
 	dev_dbg(&pdev->dev, "ngroups = %d\n", info->ngroups);
-	
+
 	i = 0;
 
 	for_each_child_of_node(np, child) {
@@ -682,12 +682,12 @@ static int nuc970_pinctrl_probe(struct platform_device *pdev)
 	info->pctl = pinctrl_register(&nuc970_pinctrl_desc, &pdev->dev, info);
 
 	if (!info->pctl) {
-		dev_err(&pdev->dev, "could not register NUC970 pinctrl driver\n");
+		dev_err(&pdev->dev, "Could not register NUC970/N9H30 pinctrl driver\n");
 		ret = -EINVAL;
 		goto err;
 	}
 
-	dev_info(&pdev->dev, "initialized NUC970 pinctrl driver\n");
+	dev_info(&pdev->dev, "Initialized NUC970/N9H30 pinctrl driver\n");
 
 	return 0;
 
@@ -729,4 +729,3 @@ module_exit(nuc970_pinctrl_exit);
 MODULE_AUTHOR("Nuvoton Technology Corp.");
 MODULE_DESCRIPTION("Nuvoton NUC970 SOC series pinctrl driver");
 MODULE_LICENSE("GPL");
-

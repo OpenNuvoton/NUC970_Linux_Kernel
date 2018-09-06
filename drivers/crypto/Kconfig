@@ -18,7 +18,7 @@ config CRYPTO_DEV_PADLOCK
 	  (so called VIA PadLock ACE, Advanced Cryptography Engine)
 	  that provides instructions for very fast cryptographic
 	  operations with supported algorithms.
-	  
+
 	  The instructions are used only when the CPU supports them.
 	  Otherwise software encryption is used.
 
@@ -388,7 +388,7 @@ config CRYPTO_DEV_ATMEL_SHA
 
 config CRYPTO_DEV_NUC970
 	tristate "Support for NUC970 Cryptographic Accelerator"
-	depends on ARCH_NUC970
+	depends on CPU_NUC970
 	select CRYPTO_CBC
 	select CRYPTO_ECB
 	select CRYPTO_AES
@@ -400,9 +400,6 @@ config CRYPTO_DEV_NUC970
 	select CRYPTO_SHA256
 	select CRYPTO_SHA384
 	select CRYPTO_SHA512
-	help
-	  To compile this driver as a module, choose M here: the module
-	  will be called atmel-aes.
 
 
 endif # CRYPTO_HW

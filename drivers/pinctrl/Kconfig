@@ -50,12 +50,12 @@ config PINCTRL_AB8505
 	depends on PINCTRL_ABX500 && ARCH_U8500
 
 config PINCTRL_NUC970
-	bool "NUC970 pinctrl driver"
+	bool "NUC970/N9H30 pinctrl driver"
 	depends on ARCH_NUC970
 	select PINMUX
 	select PINCONF
 	help
-	  Say Y here to enable NUC970 pinctrl driver
+	  Say Y here to enable NUC970/N9H30 pinctrl driver
 
 config PINCTRL_AT91
 	bool "AT91 pinctrl driver"

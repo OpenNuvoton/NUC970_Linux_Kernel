@@ -158,12 +158,12 @@ config VIPERBOARD_ADC
 	  Technologies Viperboard.
 
 #config NUC970_NADC
-#	tristate "Nuvoton NUC970 Normal ADC driver"
+#	tristate "Nuvoton NUC970/N9H30 Normal ADC driver"
 #	depends on ARCH_NUC970
 #    	select IIO_BUFFER
 #	select IIO_TRIGGERED_BUFFER
 #	help
-#	  Say yes here to build support for NUC970 normal ADC.
+#	  Say yes here to build support for NUC970/N9H30 normal ADC.
 #choice
 #	prompt "Reference voltage selection"
 #	default NUC970_NADC_BANDGAP
@@ -180,13 +180,13 @@ config VIPERBOARD_ADC
 #endchoice
 
 config IIO_NUC970ADC
-       tristate "Nuvoton NUC970 Normal ADC driver"
+       tristate "Nuvoton NUC970/N9H30 Normal ADC driver"
        depends on ARCH_NUC970
        select IIO_BUFFER
        select IIO_TRIGGERED_BUFFER
        select NUC970_ADC
        help
-         Say yes here to build support for NUC970 normal ADC.
+         Say yes here to build support for NUC970/N9H30 normal ADC.
 choice
         prompt "Reference voltage selection"
         default NUC970ADC_I33V
@@ -202,5 +202,5 @@ choice
                 bool "VREF input"
 endchoice
 
-        
+
 endmenu

@@ -1,21 +1,21 @@
 menuconfig NUC970_CAN
-	tristate "NUC970 CAN0/CAN1 devices"
+	tristate "NUC970/N9H30 CAN0/CAN1 devices"
 	depends on HAS_IOMEM
 
 if NUC970_CAN
 
 config NUC970_CAN0
-	bool "NUC970 CAN0 support"
+	bool "NUC970/N9H30 CAN0 support"
 	help
-	  This selects NUC970 CAN0 driver
+	  This selects NUC970/N9H30 CAN0 driver
 
 config ENABLE_CAN0_RX_WAKEUP
 	bool "Enable CAN0 wake-up function"
 	depends on NUC970_CAN0
 	help
-	  This selects NUC970 CAN0 wake-up function
+	  This selects NUC970/N9H30 CAN0 wake-up function
 choice
-	prompt "NUC970 CAN0 pin selection"
+	prompt "NUC970/N9H30 CAN0 pin selection"
 	default NUC970_CAN0_PB
 	depends on NUC970_CAN0
 	help
@@ -30,18 +30,18 @@ choice
 endchoice
 
 config NUC970_CAN1
-	bool "NUC970 CAN1 support"
+	bool "NUC970/N9H30 CAN1 support"
 	help
-	  This selects NUC971 CAN0 driver
+	  This selects NUC970/N9H30 CAN1 driver
 
 config ENABLE_CAN1_RX_WAKEUP
 	bool "Enable CAN1 wake-up function"
 	depends on NUC970_CAN1
 	help
-	  This selects NUC970 CAN1 wake-up function
+	  This selects NUC970/N9H30 CAN1 wake-up function
 
 choice
-	prompt "NUC970 CAN1 pin selection"
+	prompt "NUC970/N9H30 CAN1 pin selection"
 	default NUC970_CAN1_PH
 	depends on NUC970_CAN1
 	help

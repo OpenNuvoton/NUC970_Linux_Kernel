@@ -76,7 +76,7 @@ static unsigned int nuc970wwdt_get_timeleft(struct watchdog_device *wdd)
 }
 
 static const struct watchdog_info nuc970wwdt_info = {
-	.identity	= "nuc970 window watchdog",
+	.identity	= "nuc970/n9h30 window watchdog",
 	.options	= WDIOF_KEEPALIVEPING,
 };
 
@@ -214,6 +214,5 @@ static struct platform_driver nuc970wwdt_driver = {
 
 module_platform_driver(nuc970wwdt_driver);
 
-MODULE_DESCRIPTION("NUC970 Window Watchdog Timer Driver");
+MODULE_DESCRIPTION("NUC970/N9H30 Window Watchdog Timer Driver");
 MODULE_LICENSE("GPL");
-

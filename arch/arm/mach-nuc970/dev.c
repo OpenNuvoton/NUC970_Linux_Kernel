@@ -321,6 +321,45 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 	},
 #endif
 
+#ifdef CONFIG_FW070TFT_800X480
+	/* FW070TFT 800x480 TFT Panel , 24bits*/
+	[0] = {
+#ifdef CONFIG_FB_SRCFMT_RGB888
+		.type		= LCM_DCCS_VA_SRC_RGB888,
+		.bpp		= 32,
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
+		.type		= LCM_DCCS_VA_SRC_RGB565,
+		.bpp		= 16,
+#endif
+		.width		= 800,
+		.height		= 480,
+		.xres		= 800,
+		.yres		= 480,
+		.pixclock	= 32000000,
+		.left_margin	= 40,
+		.right_margin   = 196,
+		.hsync_len		= 20,
+		.upper_margin	= 23,
+		.lower_margin	= 19,
+		.vsync_len		= 3,
+#ifdef CONFIG_FB_SRCFMT_RGB888
+		.dccs		= 0x0e00020a,
+                .fbctrl		= 0x03200320,
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
+		.dccs		= 0x0e00040a,
+		.fbctrl		= 0x01900190,
+#endif
+#ifdef CONFIG_FB_LCD_16BIT_PIN
+                .devctl		= 0x050000c0,
+#elif defined(CONFIG_FB_LCD_18BIT_PIN)
+                .devctl		= 0x060000c0,
+#elif defined(CONFIG_FB_LCD_24BIT_PIN)
+                .devctl		= 0x070000c0,
+#endif
+		.scale		= 0x04000400,
+	},
+#endif
+
 #ifdef CONFIG_E50A2V1_800X480
 	/* E50A2V1 800x480 TFT Panel , 24bits*/
 	[0] = {
@@ -344,17 +383,17 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.vsync_len		= 3,
 #ifdef CONFIG_FB_SRCFMT_RGB888
 		.dccs		= 0x0e00020a,
-        .fbctrl		= 0x03200320,
+                .fbctrl		= 0x03200320,
 #elif defined(CONFIG_FB_SRCFMT_RGB565)
 		.dccs		= 0x0e00040a,
 		.fbctrl		= 0x01900190,
 #endif
 #ifdef CONFIG_FB_LCD_16BIT_PIN
-        .devctl		= 0x050000c0,
+                .devctl		= 0x050000c0,
 #elif defined(CONFIG_FB_LCD_18BIT_PIN)
-        .devctl		= 0x060000c0,
+                .devctl		= 0x060000c0,
 #elif defined(CONFIG_FB_LCD_24BIT_PIN)
-        .devctl		= 0x070000c0,
+                .devctl		= 0x070000c0,
 #endif
 		.scale		= 0x04000400,
 	},
@@ -362,7 +401,7 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 
 #ifdef CONFIG_ILI9431_MPU80_240x320
 	/* ILI9431 240x320 MPU Panel , 16bits*/
-	[0] = {		
+	[0] = {
 		.type   = LCM_DCCS_VA_SRC_RGB565,
 		.bpp		= 16,
 		.width		= 240,
@@ -375,11 +414,11 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.hsync_len		= 2,
 		.upper_margin	= 27,
 		.lower_margin	= 5,
-		.vsync_len		= 11,	
+		.vsync_len		= 11,
 		.dccs		= 0x0e000400,
 		.fbctrl		= 0x00780078,
-        .devctl		= 0xC50000E0,
-		.scale		= 0x04000400,		
+                .devctl		= 0xC50000E0,
+		.scale		= 0x04000400,
 	},
 #endif
 };
@@ -388,8 +427,8 @@ static struct nuc970fb_mach_info nuc970fb_fb_info = {
 	.displays		= &nuc970fb_lcd_info[0],
 	.num_displays		= ARRAY_SIZE(nuc970fb_lcd_info),
 	.default_display	= 0,
-    .gpio_blen          = NUC970_PG3,
-    .gpio_lcs           = NUC970_PG2,
+        .gpio_blen          = NUC970_PG3,
+        .gpio_lcs           = NUC970_PG2,
 };
 
 static struct resource nuc970fb_lcd_resource[] = {
@@ -827,12 +866,12 @@ static struct flash_platform_data nuc970_spi0_flash_data = {
         .name = "m25p80",
         .parts =  nuc970_spi0_flash_partitions,
         .nr_parts = ARRAY_SIZE(nuc970_spi0_flash_partitions),
-        .type = "w25q128",        
+        .type = "w25q128",
 };
 #endif
 
 static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
-#ifdef CONFIG_MTD_M25P80        
+#ifdef CONFIG_MTD_M25P80
         {
                 .modalias = "m25p80",
                 .max_speed_hz = 15000000,
@@ -841,7 +880,7 @@ static struct spi_board_info nuc970_spi0_board_info[] __initdata = {
                 .platform_data = &nuc970_spi0_flash_data,
  #if defined(CONFIG_SPI_NUC970_P0_NORMAL)
                 .mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL),
- #elif defined(CONFIG_SPI_NUC970_P0_QUAD) 
+ #elif defined(CONFIG_SPI_NUC970_P0_QUAD)
                 .mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD),
  #endif
         },
@@ -942,7 +981,7 @@ static struct spi_board_info nuc970_spi1_board_info[] __initdata = {
                 .mode = SPI_MODE_0,
         },
 #endif
-#ifdef CONFIG_SPI_SPIDEV        
+#ifdef CONFIG_SPI_SPIDEV
         {
                 .modalias = "spidev",
                 .max_speed_hz = 75000000,
@@ -1704,4 +1743,3 @@ void __init nuc970_platform_init(struct platform_device **device, int size)
 	pwm_add_table(board_pwm_lookup, ARRAY_SIZE(board_pwm_lookup));
 #endif
 }
-

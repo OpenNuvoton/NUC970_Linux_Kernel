@@ -1,22 +1,22 @@
 ##
-## NUC970 series I2S API
+## NUC970/N9H30 series I2S API
 ##
 config SND_SOC_NUC970
-	tristate "SoC Audio for NUC970 series"
+	tristate "SoC Audio for NUC970/N9H30 series"
 	depends on ARCH_NUC970
 	help
-	  This option enables support for I2S on the NUC970 SoC.
+	  This option enables support for I2S on the NUC970/N9H30 SoC.
 
 ##
 ## Boards
 ##
 config SND_SOC_NUC970EVB
-	tristate "NUC970 I2S support for demo board"
+	tristate "NUC970/N9H30 I2S support for demo board"
 	depends on SND_SOC_NUC970
 	select SND_SOC_NAU8822
 	help
 	  Select this option to enable audio (I2S) on the
-	  NUC970 demoboard.
+	  NUC970/N9H30 demo board.
 
 choice
 	prompt "I2S Mode Selection"
@@ -30,4 +30,3 @@ config NUC970_I2S_SLAVE_MODE
 	bool "Slave Mode"
 
 endchoice
-	

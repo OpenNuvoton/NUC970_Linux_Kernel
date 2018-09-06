@@ -546,14 +546,14 @@ config I2C_NUC900
 	  Winbond/Nuvoton NUC900 based System-on-Chip devices.
 
 config I2C_BUS_NUC970_P0
-	tristate "NUC970 I2C Driver for Port 0"
+	tristate "NUC970/N9H30 I2C Driver for Port 0"
 	depends on ARCH_NUC970
 	help
 	  Say Y here to include support for I2C controller in the
-	  Nuvoton NUC970 based System-on-Chip devices.
+	  Nuvoton NUC970/N9H30 based System-on-Chip devices.
 
 config I2C_BUS_NUC970_P1
-	tristate "NUC970 I2C Driver for Port 1"
+	tristate "NUC970/N9H30 I2C Driver for Port 1"
 	depends on ARCH_NUC970
 	help
 	  Say Y here to include support for I2C controller in the

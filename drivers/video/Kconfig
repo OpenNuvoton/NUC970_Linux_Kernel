@@ -30,7 +30,7 @@ config VGASTATE
 config VIDEO_OUTPUT_CONTROL
 	tristate "Lowlevel video output switch controls"
 	help
-	  This framework adds support for low-level control of the video 
+	  This framework adds support for low-level control of the video
 	  output switch.
 
 config VIDEOMODE_HELPERS
@@ -689,7 +689,7 @@ config FB_STI
 	  BIOS routines contained in a ROM chip in HP PA-RISC based machines.
 	  Enabling this option will implement the linux framebuffer device
 	  using calls to the STI BIOS routines for initialisation.
-	
+
 	  If you enable this option, you will get a planar framebuffer device
 	  /dev/fb which will work on the most common HP graphic cards of the
 	  NGLE family, including the artist chips (in the 7xx and Bxxx series),
@@ -1130,36 +1130,36 @@ config FB_I810
 	select FB_CFB_IMAGEBLIT
 	select VGASTATE
 	help
-	  This driver supports the on-board graphics built in to the Intel 810 
+	  This driver supports the on-board graphics built in to the Intel 810
           and 815 chipsets.  Say Y if you have and plan to use such a board.
 
           To compile this driver as a module, choose M here: the
 	  module will be called i810fb.
 
-          For more information, please read 
+          For more information, please read
 	  <file:Documentation/fb/intel810.txt>
 
 config FB_I810_GTF
 	bool "use VESA Generalized Timing Formula"
 	depends on FB_I810
 	help
-	  If you say Y, then the VESA standard, Generalized Timing Formula 
+	  If you say Y, then the VESA standard, Generalized Timing Formula
           or GTF, will be used to calculate the required video timing values
-	  per video mode.  Since the GTF allows nondiscrete timings 
+	  per video mode.  Since the GTF allows nondiscrete timings
           (nondiscrete being a range of values as opposed to discrete being a
-          set of values), you'll be able to use any combination of horizontal 
+          set of values), you'll be able to use any combination of horizontal
 	  and vertical resolutions, and vertical refresh rates without having
 	  to specify your own timing parameters.  This is especially useful
-	  to maximize the performance of an aging display, or if you just 
-          have a display with nonstandard dimensions. A VESA compliant 
+	  to maximize the performance of an aging display, or if you just
+          have a display with nonstandard dimensions. A VESA compliant
 	  monitor is recommended, but can still work with non-compliant ones.
-	  If you need or want this, then select this option. The timings may 
-	  not be compliant with Intel's recommended values. Use at your own 
+	  If you need or want this, then select this option. The timings may
+	  not be compliant with Intel's recommended values. Use at your own
 	  risk.
 
-          If you say N, the driver will revert to discrete video timings 
+          If you say N, the driver will revert to discrete video timings
 	  using a set recommended by Intel in their documentation.
-  
+
           If unsure, say N.
 
 config FB_I810_I2C
@@ -1277,10 +1277,10 @@ config FB_MATROX_G
 	  G450/G550 secondary head and digital output are supported without
 	  additional modules.
 
-	  The driver starts in monitor mode. You must use the matroxset tool 
-	  (available at <ftp://platan.vc.cvut.cz/pub/linux/matrox-latest/>) to 
-	  swap primary and secondary head outputs, or to change output mode.  
-	  Secondary head driver always start in 640x480 resolution and you 
+	  The driver starts in monitor mode. You must use the matroxset tool
+	  (available at <ftp://platan.vc.cvut.cz/pub/linux/matrox-latest/>) to
+	  swap primary and secondary head outputs, or to change output mode.
+	  Secondary head driver always start in 640x480 resolution and you
 	  must use fbset to change it.
 
 	  Do not forget that second head supports only 16 and 32 bpp
@@ -1363,7 +1363,7 @@ config FB_RADEON_I2C
 	select FB_DDC
 	default y
 	help
-	  Say Y here if you want DDC/I2C support for your Radeon board. 
+	  Say Y here if you want DDC/I2C support for your Radeon board.
 
 config FB_RADEON_BACKLIGHT
 	bool "Support for backlight control"
@@ -1597,7 +1597,7 @@ config FB_NEOMAGIC
 	select VGASTATE
 	help
 	  This driver supports notebooks with NeoMagic PCI chips.
-	  Say Y if you have such a graphics card. 
+	  Say Y if you have such a graphics card.
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called neofb.
@@ -1652,7 +1652,7 @@ config FB_VOODOO1
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
 	---help---
-	  Say Y here if you have a 3Dfx Voodoo Graphics (Voodoo1/sst1) or 
+	  Say Y here if you have a 3Dfx Voodoo Graphics (Voodoo1/sst1) or
 	  Voodoo2 (cvg) based graphics card.
 
 	  To compile this driver as a module, choose M here: the
@@ -2106,33 +2106,38 @@ config FB_NUC900_DEBUG
           through sysfs
 
 config FB_NUC970
-        bool "NUC970 LCD framebuffer support"
+        bool "NUC970/N9H30 LCD framebuffer support"
         depends on FB && ARCH_NUC970
         select FB_CFB_FILLRECT
         select FB_CFB_COPYAREA
         select FB_CFB_IMAGEBLIT
         ---help---
           Frame buffer driver for the built-in LCD controller in the Nuvoton
-          NUC970 processor
+          NUC970/N9H30 processor
 
 choice
-	prompt "NUC970 LCD panel selection"
+	prompt "NUC970/N9H30 LCD panel selection"
 	default A025DL02_320X240
 	depends on FB_NUC970
 	help
-	  Select LCD panel supported by NUC970.
-	  
+	  Select LCD panel supported by NUC970/N9H30.
+
 	config A025DL02_320X240
         bool "AUO A025DL02 320x240 Color TFT LCD"
         depends on FB_NUC970
         select FB_NUC970_18BIT_PIN
 
 	config E50A2V1_800X480
-        bool "800x480 5-Inch Color TFT LCD"
+        bool "E50A2V1 800x480 5-Inch Color TFT LCD"
         depends on FB_NUC970
         select FB_NUC970_24BIT_PIN
-    
-    config ILI9431_MPU80_240x320
+
+	config FW070TFT_800X480
+        bool "FW070TFT 800x480 5-Inch Color TFT LCD"
+        depends on FB_NUC970
+        select FB_NUC970_24BIT_PIN
+
+	config ILI9431_MPU80_240x320
         bool "ILI9431 240x320 MPU 8080 LCD"
         depends on FB_NUC970
         select FB_NUC970_16BIT_PIN
@@ -2144,11 +2149,11 @@ choice
 	prompt "Framebuffer bitmap source format"
 	default FB_SRCFMT_RGB565
 	depends on FB_NUC970
-	depends on E50A2V1_800X480
-	
+	depends on (E50A2V1_800X480 || FW070TFT_800X480)
+
     config FB_SRCFMT_RGB565
         bool "RGB565 support"
-	
+
     config FB_SRCFMT_RGB888
         bool "RGB888 support"
 endchoice
@@ -2156,24 +2161,24 @@ endchoice
 choice
 	prompt "LCD pin interface selection"
     depends on FB_NUC970
-    
+
     config FB_LCD_16BIT_PIN
 		bool "16 bits interface"
-		
+
     config FB_LCD_18BIT_PIN
         bool "18 bits interface"
         depends on BOARD_NUC972
-	
-    config FB_LCD_24BIT_PIN    
-		bool "24 bits interface"
-        depends on BOARD_NUC972
-endchoice	
+
+    config FB_LCD_24BIT_PIN
+	bool "24 bits interface"
+        depends on BOARD_NUC972 || BOARD_HMI
+endchoice
 
 config NUC970_DUAL_FB
-        bool "Enable NUC970 dual frame buffer"
+        bool "Enable NUC970/N9H30 dual frame buffer"
         depends on FB_NUC970
         ---help---
-          Support pan_display by NUC970 LCD controller dual frame buffer function. 
+          Support pan_display by NUC970/N9H30 LCD controller dual frame buffer function. 
 
 config FB_SM501
 	tristate "Silicon Motion SM501 framebuffer support"

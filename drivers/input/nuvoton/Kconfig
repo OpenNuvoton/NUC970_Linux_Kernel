@@ -2,19 +2,19 @@
 # Input core configuration
 #
 menuconfig NUC970_ADC
-	tristate "Input NUC970 ADC"
+	tristate "Input NUC970/N9H30 ADC"
         help
-          Say Y here, here to enable the nuc970 adc on evaluation board.
+          Say Y here, here to enable the NUC970/N9H30 adc on evaluation board.
           This option doesn't affect the kernel.
 
           If unsure, say Y.
 if NUC970_ADC
 config KEYBOARD_NUC970ADC
         tristate "Keypad support"
-        depends on ARCH_NUC970        
+        depends on ARCH_NUC970
         help
           Say Y here to enable the keypad on evaluation board
-          based on NUC970.
+          based on NUC970/N9H30.
 
 	  To compile this driver as a module, choose M here: the
           module will be called nuc970adc keypad
@@ -24,14 +24,14 @@ config KEYBOARD_NUC970ADC_WKUP
         depends on KEYBOARD_NUC970ADC
         help
           Say Y here to enable the keypad wakeup function on evaluation board
-          based on NUC970.
+          based on NUC970/N9H30.
 
 config TOUCHSCREEN_NUC970ADC
         tristate "Touchscreen support"
         depends on ARCH_NUC970
         help
           Say Y here to enable the touchscreen on evaluation board
-          base on NUC970.
+          base on NUC970/N9H30.
 
           To compile this driver as a module, choose M here: the
           module will be called nuc970adc touchscreen.
@@ -40,14 +40,14 @@ config TOUCHSCREEN_NUC970ADC_WKUP
         depends on TOUCHSCREEN_NUC970ADC
         help
           Say Y here to enable the touchscreen wakeup function on evaluation board
-          base on NUC970.
+          base on NUC970/N9H30.
 
 config SAMPLE_NUC970ADC
         int "ADC Sample Counter"
         depends on NUC970_ADC
         default "200"
         help
-	  Set the counter value to extend the ADC start signal period 
+	  Set the counter value to extend the ADC start signal period
           to get more sampling time for precise conversion.
 	  It should be 0 ~ 255
 

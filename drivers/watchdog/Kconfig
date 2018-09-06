@@ -338,26 +338,26 @@ config NUC900_WATCHDOG
 	  module will be called nuc900_wdt.
 
 config NUC970_WDT
-	tristate "Nuvoton NUC970 Watchdog Timer"
+	tristate "Nuvoton NUC970/N9H30 Watchdog Timer"
 	depends on ARCH_NUC970
 	select WATCHDOG_CORE
 	help
 	  Say Y here if to include support for the watchdog timer
-	  for the Nuvoton NUC970 series MCU.
+	  for the Nuvoton NUC970/N9H30 series microprocessor
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_wdt.
 
 config NUC970_WDT_WKUP
-        tristate "NUC970 WDT wake-up support"
+        tristate "NUC970/N9H30 WDT wake-up support"
         depends on NUC970_WDT
 
 config NUC970_WWDT
-	tristate "Nuvoton NUC970 Window Watchdog Timer"
+	tristate "Nuvoton NUC970/N9H30 Window Watchdog Timer"
 	depends on ARCH_NUC970
 	select WATCHDOG_CORE
 	help
 	  Say Y here if to include support for the window watchdog timer
-	  for the Nuvoton NUC970 series MCU.
+	  for the Nuvoton NUC970/N9H30 series microprocessor
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_wwdt.
 

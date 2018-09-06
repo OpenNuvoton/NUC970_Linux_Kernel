@@ -5,19 +5,19 @@
 menu "Misc devices"
 
 config NUC970_GE2D
-	tristate "NUC970 2D support"
+	tristate "NUC970/N9H30 2D support"
 	depends on ARCH_NUC970
 	help
-	  2D engine for NUC970.
+	  2D engine for NUC970/N9H30.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called nuc970-ge2d.
 
 config NUC970_SC
-	tristate "NUC970 Smartcard Interface support"
+	tristate "NUC970/N9H30 Smartcard Interface support"
 	depends on ARCH_NUC970
 	help
-	 Smartcard card interface support for NUC970 series processor.
+	 Smartcard card interface support for NUC970/N9H30 series processor.
 	 This driver comply with EMV2000 and supports T0 and T1 transfer.
 
 config EMV_CHECK
@@ -25,11 +25,11 @@ config EMV_CHECK
 	depends on NUC970_SC
 
 config	NUC970_SC0
-	bool "NUC970 SC0 support"
+	bool "NUC970/N9H30 SC0 support"
 	depends on NUC970_SC && !USE_OF
 
 choice
-	prompt "NUC970 SC0 pin selection"
+	prompt "NUC970/N9H30 SC0 pin selection"
 	default NUC970_SC_PG
 	depends on NUC970_SC0
 	help
@@ -43,7 +43,7 @@ endchoice
 
 
 choice
-	prompt "NUC970 SC0 CD pin config"
+	prompt "NUC970/N9H30 SC0 CD pin config"
 	default NUC970_SC0_CDLV_H
 	depends on NUC970_SC0
 	help
@@ -63,13 +63,13 @@ config	NUC970_SC0_PWRINV
 
 
 config	NUC970_SC1
-	bool "NUC970 SC1 support"
+	bool "NUC970/N9H30 SC1 support"
 	depends on NUC970_SC && !USE_OF
 	help
 	 Enabe this option will configure SC1 MFP
 
 choice
-	prompt "NUC970 SC1 CD pin config"
+	prompt "NUC970/N9H30 SC1 CD pin config"
 	default NUC970_SC1_CDLV_H
 	depends on NUC970_SC1
 	help
@@ -89,19 +89,20 @@ config	NUC970_SC1_PWRINV
 
 
 config NUC970_ETIMER
-	tristate "NUC970 Enhance Timer (ETIMER) support"
+	tristate "NUC970/N9H30 Enhance Timer (ETIMER) support"
 	depends on ARCH_NUC970 && !NUC970_CLK_ETIMER
 	help
-	  Enhance timer dirver Nuvoton NUC970 Series processor. This timer also supports capture function.
+	  Enhance timer driver Nuvoton NUC970/N9H30 Series processor.
+	  This timer also supports capture function.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called nuc970-etimer.
 
 config NUC970_ETIMER_WKUP
-	tristate "NUC970 Enhance Timer (ETIMER) wake-up support"
+	tristate "NUC970/N9H30 Enhance Timer (ETIMER) wake-up support"
         depends on NUC970_ETIMER
 choice
-	prompt "NUC970 ETIMER channel 0 toggle output pin"
+	prompt "NUC970/N9H30 ETIMER channel 0 toggle output pin"
 	default NUC970_ETIMER0_TGL_NONE
 	depends on NUC970_ETIMER
 	help
@@ -116,7 +117,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 0 capture input pin"
+	prompt "NUC970/N9H30 ETIMER channel 0 capture input pin"
 	default NUC970_ETIMER0_CAP_NONE
 	depends on NUC970_ETIMER
 	help
@@ -131,7 +132,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 1 toggle output pin"
+	prompt "NUC970/N9H30 ETIMER channel 1 toggle output pin"
 	default NUC970_ETIMER1_TGL_NONE
 	depends on NUC970_ETIMER
 	help
@@ -146,7 +147,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 1 capture input pin"
+	prompt "NUC970/N9H30 ETIMER channel 1 capture input pin"
 	default NUC970_ETIMER1_CAP_NONE
 	depends on NUC970_ETIMER
 	help
@@ -161,7 +162,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 2 toggle output pin"
+	prompt "NUC970/N9H30 ETIMER channel 2 toggle output pin"
 	default NUC970_ETIMER2_TGL_NONE
 	depends on NUC970_ETIMER
 	help
@@ -176,7 +177,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 2 capture input pin"
+	prompt "NUC970/N9H30 ETIMER channel 2 capture input pin"
 	default NUC970_ETIMER2_CAP_NONE
 	depends on NUC970_ETIMER
 	help
@@ -191,7 +192,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 3 toggle output pin"
+	prompt "NUC970/N9H30 ETIMER channel 3 toggle output pin"
 	default NUC970_ETIMER3_TGL_NONE
 	depends on NUC970_ETIMER
 	help
@@ -206,7 +207,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 ETIMER channel 3 capture input pin"
+	prompt "NUC970/N9H30 ETIMER channel 3 capture input pin"
 	default NUC970_ETIMER3_CAP_NONE
 	depends on NUC970_ETIMER
 	help
@@ -745,11 +746,11 @@ config SRAM
 	  areas found on many SoCs.
 
 config NUC970_EBI
-        bool "NUC970 EBI driver"
+        bool "NUC970/N9H30 EBI driver"
         depends on ARCH_NUC970
         select GENERIC_ALLOCATOR
         help
-        Driver for NUC970 EBI controller.
+        Driver for NUC970/N9H30 EBI controller.
         Used to configure the EBI (external bus interface) when the device-
         tree is used. This bus supports external ethernet controller,
         SRAMs etc.

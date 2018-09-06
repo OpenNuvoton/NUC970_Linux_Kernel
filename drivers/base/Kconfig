@@ -293,7 +293,7 @@ config CMA_AREAS
 endif
 
 config FMI_NUC970
-	tristate "Nuvoton NUC970 FMI function selection"
+	tristate "Nuvoton NUC970/N9H30 FMI function selection"
 	depends on ARCH_NUC970
 	help
 	  Switch FMI function to support EMMC or MTD NAND function.
@@ -310,7 +310,7 @@ choice
         select MTD
         select MTD_NAND
         select MTD_NAND_NUC970
-        
+
 	config NUC970_FMI_EMMC
 		bool "Support EMMC Device"
         select MMC

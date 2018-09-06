@@ -488,24 +488,24 @@ config SPI_NUC900
 	  SPI driver for Nuvoton NUC900 series ARM SoCs
 
 config SPI_NUC970_P0
-	tristate "Nuvoton NUC970 Series SPI Port 0"
+	tristate "Nuvoton NUC970/N9H30 Series SPI Port 0"
 	depends on ARCH_NUC970
 	select SPI_BITBANG
 	help
-	  SPI driver for Nuvoton NUC970 Series ARM SoCs
+	  SPI driver for Nuvoton NUC970/N9H30 Series ARM SoCs
 
 choice
 	prompt "SPI0 pin selection by transfer mode"
 	default SPI_NUC970_P0_NORMAL
 	depends on SPI_NUC970_P0
 	help
-	  Select SPI0 multi-function pin.	  
+	  Select SPI0 multi-function pin.
 	  Can be PB6 ~ PB9 or additional PB10 and PB11 for quad mode.
 
 	config SPI_NUC970_P0_NORMAL
 		bool "Normal mode"
 	config SPI_NUC970_P0_QUAD
-		bool "Quad mode"	
+		bool "Quad mode"
 endchoice
 
 config SPI_NUC970_P0_SS1
@@ -513,27 +513,27 @@ config SPI_NUC970_P0_SS1
 	depends on SPI_NUC970_P0
 	help
 	  Enable the second chip select pin for SPI0.
-      
+
 choice
 	prompt "Pin selection"
 	default SPI_NUC970_P0_SS1_PB0
 	depends on SPI_NUC970_P0_SS1
 	help
-	  Select SPI0 chipselect pin . Can be PB0 or PH12.
-	
+	  Select SPI0 chip select pin . Can be PB0 or PH12.
+
 	config SPI_NUC970_P0_SS1_PB0
 		bool "Use SS1 (PB0)"
     config SPI_NUC970_P0_SS1_PH12
-		bool "Use SS1 (PH12)"    
-        
+		bool "Use SS1 (PH12)"
+
 endchoice
 
 config SPI_NUC970_P1
-	tristate "Nuvoton NUC970 Series SPI Port 1"
+	tristate "Nuvoton NUC970/N9H30 Series SPI Port 1"
 	depends on ARCH_NUC970
 	select SPI_BITBANG
 	help
-	  SPI driver for Nuvoton NUC970 Series ARM SoCs	  
+	  SPI driver for Nuvoton NUC970/N9H30 Series ARM SoCs
 
 choice
 	prompt "SPI1 transfer mode selection"
@@ -553,11 +553,11 @@ choice
 	prompt "SPI1 IO port selection"
 	default SPI_NUC970_P1_PB
 	depends on SPI_NUC970_P1
-        
+
     config SPI_NUC970_P1_PB
 		bool "Port B"
 	config SPI_NUC970_P1_PI
-		bool "Port I"    
+		bool "Port I"
 endchoice
 
 config SPI_NUC970_P1_SS1
@@ -565,7 +565,7 @@ config SPI_NUC970_P1_SS1
 	depends on SPI_NUC970_P1
     help
 	  Enable the second chip select pin for SPI1.
- 
+
 #
 # Add new SPI master controllers in alphabetical order above this line
 #

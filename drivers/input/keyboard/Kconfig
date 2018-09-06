@@ -631,6 +631,7 @@ config KEYBOARD_W90P910
 
 config KEYBOARD_NUC970
 	tristate "NUC970 Matrix Keypad support"
+	depends on CPU_NUC970
 	select INPUT_MATRIXKMAP
 	select GPIO_NUC970
 	help

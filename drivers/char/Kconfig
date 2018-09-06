@@ -626,4 +626,3 @@ config NUC970_DMA_PROXY
           If unsure, say Y.
 
 endmenu
-

@@ -29,23 +29,23 @@ config W90P910_ETH
 	  on w90p910 processor.
 
 config NUC970_ETH0
-	tristate "Nuvoton NUC970 Ethernet MAC 0"
+	tristate "Nuvoton NUC970/N9H30 Ethernet MAC 0"
 	depends on ARM && ARCH_NUC970
 	select PHYLIB
 	select NET_CORE
 	select MII
 	---help---
 	  Say Y here if you want to use built-in Ethernet MAC 0
-	  on NUC970 MCU.
+	  on NUC970/N9H30 microprocessor
 
 config NUC970_ETH1
-	tristate "Nuvoton NUC970 Ethernet MAC 1"
+	tristate "Nuvoton NUC970/N9H30 Ethernet MAC 1"
 	depends on ARM && ARCH_NUC970
 	select PHYLIB
 	select NET_CORE
 	select MII
 	---help---
 	  Say Y here if you want to use built-in Ethernet MAC 1
-	  on NUC970 MCU.
+	  on NUC970/N9H30 microprocessor.
 
 endif # NET_VENDOR_NUVOTON

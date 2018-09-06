@@ -1,6 +1,12 @@
 /*
- * Blackfin IrDA Driver
+ * linux/drivers/net/irda/nuc970_sir.h
  *
+ * Copyright (c) 2014-2018 Nuvoton technology corporation.
+ *
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation;version 2 of the License.
  *
  */
 
@@ -8,7 +14,7 @@
 #define IRTTYSIR_H
 
 #include <net/irda/irda.h>
-#include <net/irda/irda_device.h>	
+#include <net/irda/irda_device.h>
 
 #define IRTTY_IOC_MAGIC 'e'
 #define IRTTY_IOCTDONGLE  _IO(IRTTY_IOC_MAGIC, 1)
@@ -25,5 +31,3 @@ struct sirtty_cb {
 };
 
 #endif
-
-

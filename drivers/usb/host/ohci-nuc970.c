@@ -41,17 +41,17 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 	    u32   val32[2];
 #endif
 		int ret;
-		
+
         if (IS_ERR(clk_get(NULL, "usbh_hclk"))) {
                 printk("clk_get error!!\n");
                 return -1;
         }
 
-        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_prepare(clk_get(NULL, "usb_eclk"));
         clk_enable(clk_get(NULL, "usb_eclk"));
 
         /* enable USB Host clock */
-        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+        clk_prepare(clk_get(NULL, "usbh_hclk"));
         clk_enable(clk_get(NULL, "usbh_hclk"));
 
 #ifdef CONFIG_OF
@@ -64,10 +64,10 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 			of_mfp_setting = 2;
 		else
 			of_mfp_setting = 0;
-			
+
 		//printk("of_mfp_setting = %d\n", of_mfp_setting);
 
-		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) == 0) 
+		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) == 0)
 		{
 			// printk("Over-current active level %s...\n", val32[0] ? "high" : "low");
 			if (val32[0])
@@ -82,7 +82,7 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         	}
         }
 
-		if (of_property_read_u32_array(pdev->dev.of_node, "pm_vbus_off", val32, 1) == 0) 
+		if (of_property_read_u32_array(pdev->dev.of_node, "pm_vbus_off", val32, 1) == 0)
 		{
 			if (val32[0])
 				of_pm_vbus_off = 1;
@@ -103,7 +103,7 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 		 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 		if (!pdev->dev.coherent_dma_mask)
 			pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-    
+
 #else
 
 #if !defined(CONFIG_USB_NUC970_EHCI)
@@ -155,8 +155,8 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
 			ret = PTR_ERR(clkmux);
 			return ret;
-		}		
-		
+		}
+
 		/* Set APLL output 96 MHz, select 48 MHz for OHCI */
 		clkaplldiv = clk_get(NULL, "usb_aplldiv");
         if (IS_ERR(clkaplldiv)) {
@@ -164,14 +164,14 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 			ret = PTR_ERR(clkaplldiv);
 			return ret;
 		}
-		
+
 		clkapll = clk_get(NULL, "apll");
         if (IS_ERR(clkapll)) {
 			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
 			ret = PTR_ERR(clkapll);
 			return ret;
 		}
-		
+
 		clkusb = clk_get(NULL, "usb_eclk");
         if (IS_ERR(clkusb)) {
 			printk(KERN_ERR "nuc970-usb:failed to get usb clock source\n");
@@ -179,18 +179,18 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
 			return ret;
 		}
 
-		clk_prepare(clkusb);	
+		clk_prepare(clkusb);
         clk_enable(clkusb);
-        
+
         clk_set_parent(clkmux, clkaplldiv);
-        
+
         clk_set_rate(clkapll, 96000000);
 		clk_set_rate(clkusb, 48000000);
 
         /* enable PHY 0/1 */
 		__raw_writel(0x160, (volatile void __iomem *)(NUC970_VA_EHCI+0xC4));
 		__raw_writel(0x520, (volatile void __iomem *)(NUC970_VA_EHCI+0xC8));
-		
+
         hcd = usb_create_hcd(driver, &pdev->dev, "nuc970-ohci");
         if (!hcd)
                 return -ENOMEM;
@@ -222,7 +222,7 @@ static int usb_hcd_nuc970_probe(const struct hc_driver *driver,
         if (retval == 0)
                 return retval;
 
-        pr_debug("Removing nuc970 OHCI USB Controller\n");
+        pr_debug("Removing nuc970/n9h30 OHCI USB Controller\n");
 
         iounmap(hcd->regs);
 err2:
@@ -280,7 +280,7 @@ static int ohci_nuc970_start (struct usb_hcd *hcd)
 
 static const struct hc_driver ohci_nuc970_hc_driver = {
         .description =		hcd_name,
-        .product_desc = 	"Nuvoton NUC970 OHCI Host Controller",
+        .product_desc = 	"Nuvoton NUC970/N9H30 OHCI Host Controller",
         .hcd_priv_size =	sizeof(struct ohci_hcd),
 
         /*
@@ -292,9 +292,9 @@ static const struct hc_driver ohci_nuc970_hc_driver = {
         /*
          * basic lifecycle operations
          */
-        .start =        ohci_nuc970_start,
+        .start =                ohci_nuc970_start,
         .stop =			ohci_stop,
-	   .shutdown =      ohci_shutdown,
+	.shutdown =		ohci_shutdown,
 
         /*
          * managing i/o requests and associated device resources
@@ -460,4 +460,3 @@ static struct platform_driver ohci_hcd_nuc970_driver = {
 		        .of_match_table = of_match_ptr(nuc970_ohci_of_match),
         },
 };
-

@@ -586,7 +586,7 @@ config ARCH_W90X900
 		ConsumerElectronicsIC/ARMMicrocontroller/ARMMicrocontroller>
 
 config ARCH_NUC970
-	bool "Nuvoton NUC970 CPU"
+	bool "Nuvoton NUC970/N9H30 CPU"
 	select ARCH_REQUIRE_GPIOLIB
 	select CLKDEV_LOOKUP
 	select CPU_ARM926T
@@ -594,7 +594,7 @@ config ARCH_NUC970
 	select GENERIC_CLOCKEVENTS
 	select PINCTRL
 	help
-	  Support for Nuvoton NUC970 Series MCUs.
+	  Support for Nuvoton NUC970/N9H30 Series MCUs.
 
 config ARCH_LPC32XX
 	bool "NXP LPC32XX"

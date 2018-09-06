@@ -35,16 +35,16 @@ config PWM_SYSFS
 
 
 config PWM_NUC970
-	tristate "NUC970 PWM support"
+	tristate "NUC970/N9H30 PWM support"
 	depends on ARCH_NUC970
 	help
-	  Generic PWM framework driver for Nuvoton NUC970 Series MCU.
+	  Generic PWM framework driver for Nuvoton NUC970/N9H30 Series Microprocessor
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-nuc970.
 
 choice
-	prompt "NUC970 PWM channel 0 output pin"
+	prompt "NUC970/N9H30 PWM channel 0 output pin"
 	default NUC970_PWM0_NONE
 	depends on PWM_NUC970
 	help
@@ -68,7 +68,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 PWM channel 1 output pin"
+	prompt "NUC970/N9H30 PWM channel 1 output pin"
 	default NUC970_PWM1_NONE
 	depends on PWM_NUC970
 	help
@@ -88,7 +88,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 PWM channel 2 output pin"
+	prompt "NUC970/N9H30 PWM channel 2 output pin"
 	default NUC970_PWM2_NONE
 	depends on PWM_NUC970
 	help
@@ -109,7 +109,7 @@ choice
 endchoice
 
 choice
-	prompt "NUC970 PWM channel 3 output pin"
+	prompt "NUC970/N9H30 PWM channel 3 output pin"
 	default NUC970_PWM3_NONE
 	depends on PWM_NUC970
 	help

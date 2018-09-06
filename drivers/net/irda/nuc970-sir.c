@@ -1,6 +1,12 @@
 /*
- * 
+ * linux/drivers/net/irda/nuc970-sir.c
  *
+ * Copyright (c) 2014-2018 Nuvoton technology corporation.
+ *
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation;version 2 of the License.
  *
  */
 
@@ -106,7 +112,7 @@ static int nuc970irda_do_write(struct sir_dev *dev, const unsigned char *ptr, si
 	IRDA_ASSERT(priv != NULL, return -1;);
 	IRDA_ASSERT(priv->magic == IRTTY_MAGIC, return -1;);
 
-	printk("\n nuc970irda_do_write \n");
+	//printk("\n nuc970irda_do_write \n");
 
 	tty = priv->tty;
 	if (!tty->ops->write)
@@ -127,7 +133,7 @@ static int nuc970irda_start_dev(struct sir_dev *dev)
 	/* serialize with ldisc open/close */
 	mutex_lock(&nuc970irda_mutex);
 
-	printk("\n nuc970irda_start_dev \n");
+	//printk("\n nuc970irda_start_dev \n");
 
 	priv = dev->priv;
 	if (unlikely(!priv || priv->magic!=IRTTY_MAGIC)) {
@@ -192,7 +198,7 @@ static inline void nuc970_stop_receiver(struct tty_struct *tty, int stop)
 	mutex_lock(&tty->termios_mutex);
 	old_termios = tty->termios;
 	cflag = tty->termios.c_cflag;
-	
+
 	if (stop)
 		cflag &= ~CREAD;
 	else
@@ -217,14 +223,14 @@ static void nuc970_reset_buffer_flags(struct n_irda_data *ldata)
 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
 }
 
-/* 
+/*
  *  Function nuc970irda_open
  *
  *    This function is called by the TTY module when the IrDA line
  *    discipline is called for.  Because we are sure the tty line exists,
- *    we only have to link it to a free IrDA channel.  
+ *    we only have to link it to a free IrDA channel.
  */
-static int nuc970irda_open(struct tty_struct *tty) 
+static int nuc970irda_open(struct tty_struct *tty)
 {
 	struct sir_dev *dev;
 	struct sirtty_cb *priv = NULL;
@@ -249,7 +255,7 @@ static int nuc970irda_open(struct tty_struct *tty)
 		tty->ops->stop(tty);
 
 	tty_driver_flush_buffer(tty);
-	
+
         /* apply mtt override */
         sir_nuc970_drv.qos_mtt_bits = qos_mtt_bits;
 
@@ -293,18 +299,18 @@ err_free_bufs:
 		kfree(ldata->read_buf);
 		kfree(ldata);
 		kfree(priv);
-	
+
 	return ret;
 }
 
-/* 
+/*
  *  Function nuc970irda_close (tty)
  *
  *    Close down a IrDA channel. This means flushing out any pending queues,
  *    and then restoring the TTY line discipline to what it was before it got
- *    hooked to IrDA (which usually is TTY again).  
+ *    hooked to IrDA (which usually is TTY again).
  */
-static void nuc970irda_close(struct tty_struct *tty) 
+static void nuc970irda_close(struct tty_struct *tty)
 {
 	struct n_irda_data *ldata = tty->disc_data;
         struct sirtty_cb *priv = ldata->priv;
@@ -426,7 +432,7 @@ ssize_t	nuc970irda_write(struct tty_struct *tty, struct file *file,
 	writelen = tty_write_room(tty);
 	if (writelen > nr)
 		writelen = nr;
-	return tty->ops->write(tty, buf, writelen);	
+	return tty->ops->write(tty, buf, writelen);
 }
 
 /**
@@ -480,13 +486,13 @@ static void n_irda_set_room(struct tty_struct *tty)
 }
 
 
-/* 
+/*
  *  Function nuc970irda_receive_buf( tty, cp, count)
  *
  *    Handle the 'receiver data ready' interrupt.  This function is called
  *    by the 'tty_io' module in the kernel when a block of IrDA data has
  *    been received, which can now be decapsulated and delivered for
- *    further processing 
+ *    further processing
  *
  * calling context depends on underlying driver and tty->port->low_latency!
  * for example (low_latency: 1 / 0):
@@ -495,7 +501,7 @@ static void n_irda_set_room(struct tty_struct *tty)
  */
 
 static void nuc970irda_receive_buf(struct tty_struct *tty, const unsigned char *cp,
-			      char *fp, int count) 
+			      char *fp, int count)
 {
 	struct n_irda_data *ldata = tty->disc_data;
 	int i;
@@ -528,7 +534,7 @@ static void nuc970irda_receive_buf(struct tty_struct *tty, const unsigned char *
 			break;
 	}
 	__tty_set_flow_change(tty, 0);
-	
+
 }
 
 /*
@@ -538,7 +544,7 @@ static void nuc970irda_receive_buf(struct tty_struct *tty, const unsigned char *
  *    more packets to send, we send them here.
  *
  */
-static void nuc970irda_write_wakeup(struct tty_struct *tty) 
+static void nuc970irda_write_wakeup(struct tty_struct *tty)
 {
 
 }
@@ -571,7 +577,7 @@ static int __init nuc970_sir_init(void)
 }
 
 
-static void __exit nuc970_sir_cleanup(void) 
+static void __exit nuc970_sir_cleanup(void)
 {
 	int err;
 
@@ -585,10 +591,7 @@ static void __exit nuc970_sir_cleanup(void)
 module_init(nuc970_sir_init);
 module_exit(nuc970_sir_cleanup);
 
-MODULE_AUTHOR("D>");
+
 MODULE_DESCRIPTION("IrDA device driver");
 MODULE_ALIAS_LDISC(N_IRDA);
 MODULE_LICENSE("GPL");
-
-
-

@@ -1,7 +1,7 @@
 /*
  *  linux/drivers/mmc/host/nuc970_emmc.c - Nuvoton NUC970 SD Driver
  *
- *  Copyright (C) 2014 Cougar Creek Computing Devices Ltd, All Rights Reserved
+ *  Copyright (C) 2014 Nuvoton Technology Corp., All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -595,7 +595,7 @@ static void nuc970_emmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
             if (ios->clock == 0)
                 return;
-                
+
             if (ios->clock <= 400000)
             {
                 clk_set_rate(host->upll_clk, 100000000);
@@ -831,7 +831,7 @@ printk("nuc970_emmc_probe\n");
     nuc970_emmc_disable(host);
 
 #ifdef CONFIG_OF
-    
+
     p = devm_pinctrl_get_select_default(&pdev->dev);
     if (IS_ERR(p)) {
         return PTR_ERR(p);
@@ -961,7 +961,7 @@ static struct platform_driver nuc970_emmc_driver = {
 
 module_platform_driver(nuc970_emmc_driver);
 
-MODULE_DESCRIPTION("NUC970 eMMC Card Interface driver");
+MODULE_DESCRIPTION("NUC970/N9H30 eMMC Card Interface driver");
 MODULE_AUTHOR("HPChen");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970_emmc");

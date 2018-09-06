@@ -395,7 +395,7 @@ config MMC_SPI
 	  If unsure, or if your system has no SPI master driver, say N.
 
 config MMC_NUC970_SD
-        tristate "Nuvoton NUC970 SD Card support"
+        tristate "Nuvoton NUC970/N9H30 SD Card support"
         depends on MACH_NUC970
 
 config NUC970_SD0_EN
@@ -406,7 +406,7 @@ config NUC970_SD1_EN
         depends on MMC_NUC970_SD
 
 choice
-    prompt "NUC970 SD1 pin selection"
+    prompt "NUC970/N9H30 SD1 pin selection"
     default NUC970_SD1_PH
     depends on NUC970_SD1_EN
     help
@@ -420,11 +420,11 @@ choice
 endchoice
 
 config MMC_NUC970_EMMC
-	tristate "Nuvoton NUC970 eMMC support"
+	tristate "Nuvoton NUC970/N9H30 eMMC support"
 	depends on MACH_NUC970 && NUC970_FMI_EMMC
 
 choice
-    prompt "NUC970 eMMC pin selection"
+    prompt "NUC970/N9H30 eMMC pin selection"
     default NUC970_EMMC_PC
     depends on MMC_NUC970_EMMC
 

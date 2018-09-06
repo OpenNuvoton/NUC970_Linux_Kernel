@@ -49,39 +49,39 @@
 #ifdef CONFIG_ILI9431_MPU80_240x320
 void nuc970_mpu_write_cmd(struct fb_info *info, unsigned short uscmd)
 {
-	struct nuc970fb_info *fbi = info->par;	
+	struct nuc970fb_info *fbi = info->par;
 	void __iomem *regs = fbi->io;
-	
+
 	writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<30), regs+REG_LCM_MPU_CMD);        //RS=0
 	writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<29), regs+REG_LCM_MPU_CMD);        //w
-	
+
 	writel((readl(regs+REG_LCM_DCCS) | (1<<5)), regs+REG_LCM_DCCS);              //CMD ON
 	writel(((readl(regs+REG_LCM_MPU_CMD) & ~0xffff) | uscmd), regs+REG_LCM_MPU_CMD);
-	while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));     
+	while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));
 	writel((readl(regs+REG_LCM_DCCS) & ~(1<<5)), regs+REG_LCM_DCCS);             //CMD OFF
 }
 
 void nuc970_mpu_write_data(struct fb_info *info, unsigned short usdata)
 {
-	struct nuc970fb_info *fbi = info->par;	
+	struct nuc970fb_info *fbi = info->par;
 	void __iomem *regs = fbi->io;
-	
+
 	writel(readl(regs+REG_LCM_MPU_CMD) | (1<<30), regs+REG_LCM_MPU_CMD);        //RS=1
 	writel(readl(regs+REG_LCM_MPU_CMD) & ~(1<<29), regs+REG_LCM_MPU_CMD);        //w
-	
+
 	writel((readl(regs+REG_LCM_DCCS) | (1<<5)), regs+REG_LCM_DCCS);              //CMD ON
 	writel(((readl(regs+REG_LCM_MPU_CMD) & ~0xffff) | usdata), regs+REG_LCM_MPU_CMD);
-	while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));     
+	while(readl(regs+REG_LCM_MPU_CMD) & (1ul<<31));
 	writel((readl(regs+REG_LCM_DCCS) & ~(1<<5)), regs+REG_LCM_DCCS);             //CMD OFF
 }
 
 static void init_ili9341(struct fb_info *info)
 {
-	struct nuc970fb_info *fbi = info->par;	
+	struct nuc970fb_info *fbi = info->par;
 	void __iomem *regs = fbi->io;
 
 	writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_DISP_OUT_EN, regs + REG_LCM_DCCS);
-	
+
 	nuc970_mpu_write_cmd(info, 0xCB);
 	nuc970_mpu_write_data(info, 0x39);
 	nuc970_mpu_write_data(info, 0x2C);
@@ -179,7 +179,7 @@ static void init_ili9341(struct fb_info *info)
 	nuc970_mpu_write_data(info, 0x31);
 	nuc970_mpu_write_data(info, 0x36);
 	nuc970_mpu_write_data(info, 0x0F);
-		
+
 	//set display location
 	nuc970_mpu_write_cmd(info, 0x2a);
 	nuc970_mpu_write_data(info, 0x00);
@@ -192,13 +192,13 @@ static void init_ili9341(struct fb_info *info)
 	nuc970_mpu_write_data(info, 0);
 	nuc970_mpu_write_data(info, 319>>8);
 	nuc970_mpu_write_data(info, 319);
-		
+
 	nuc970_mpu_write_cmd(info, 0x11);
 	mdelay(1);
-	
-	nuc970_mpu_write_cmd(info, 0x29);    //Display on    
+
+	nuc970_mpu_write_cmd(info, 0x29);    //Display on
 	nuc970_mpu_write_cmd(info, 0x2C);    //Write memory
-	
+
 	writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_VA_EN, regs + REG_LCM_DCCS);
 }
 #endif
@@ -516,9 +516,9 @@ static inline void modify_gpio(void __iomem *reg,
  */
 static int nuc970fb_init_registers(struct fb_info *info)
 {
-	struct nuc970fb_info *fbi = info->par;	
+	struct nuc970fb_info *fbi = info->par;
 	void __iomem *regs = fbi->io;
-	 
+
 	/*reset the display engine*/
 	writel(0, regs + REG_LCM_DCCS);
 	writel(readl(regs + REG_LCM_DCCS) | LCM_DCCS_ENG_RST,
@@ -529,15 +529,15 @@ static int nuc970fb_init_registers(struct fb_info *info)
 	ndelay(100);
 
 	writel(0, regs + REG_LCM_DEV_CTRL);
-	
-#ifdef CONFIG_ILI9431_MPU80_240x320 
+
+#ifdef CONFIG_ILI9431_MPU80_240x320
 {
 	int ret;
 	struct nuc970fb_mach_info *mach_info = fbi->mach_info;
-		
-	/* control blen pin to let LED on */    
+
+	/* control blen pin to let LED on */
 	ret = gpio_request(mach_info->gpio_blen,NULL);
-	if (ret) 
+	if (ret)
 		printk("Warning, request gpio fail...\n");
 	gpio_direction_output(mach_info->gpio_blen, 0);
 }
@@ -589,11 +589,11 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 	if (lcdirq & LCM_INT_CS_DISP_F_STATUS) 
 	{
 		writel(readl(irq_base) | 1<<30, irq_base);
-#ifdef CONFIG_PM        
+#ifdef CONFIG_PM
 		if(fbi->powerdown) {
 			complete(&fbi->completion);
 		}
-#endif        
+#endif
 		/* wait VA_EN low */
 		if ((readl(regs + REG_LCM_DCCS) &
 			LCM_DCCS_SINGLE) == LCM_DCCS_SINGLE)
@@ -699,20 +699,20 @@ static struct nuc970fb_mach_info *nuc970fb_parse_dt(struct device *dev)
 		dev_err(dev, "memory allocation for fb_info failed\n");
 		return ERR_PTR(-ENOMEM);
 	}
-	
+
 	display = devm_kzalloc(dev, sizeof(*display), GFP_KERNEL);
 	if (!display) {
 		dev_err(dev, "memory allocation for fb_info failed\n");
 		return ERR_PTR(-ENOMEM);
 	}
-	
-	printk("\t[%s]-->1\n", __func__);  
+
+	printk("\t[%s]-->1\n", __func__);
 
 	mach_info->displays = display;
 	mach_info->num_displays = 1;		//fixed to only 1 display
 	mach_info->default_display = 0;
-	
-	printk("\t[%s]-->2\n", __func__);  
+
+	printk("\t[%s]-->2\n", __func__);
 	if (of_property_read_u32(dev->of_node, "type", &temp)) {
 		dev_warn(dev, "can't get type from dt\n");
 		goto read_error;
@@ -726,119 +726,119 @@ static struct nuc970fb_mach_info *nuc970fb_parse_dt(struct device *dev)
 	} else {
 		display->bpp = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "width", &temp)) {
 		dev_warn(dev, "can't get width from dt\n");
 		goto read_error;
 	} else {
 		display->width = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "height", &temp)) {
 		dev_warn(dev, "can't get height from dt\n");
 		goto read_error;
 	} else {
 		display->height = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "xres", &temp)) {
 		dev_warn(dev, "can't get xres from dt\n");
 		goto read_error;
 	} else {
 		display->xres = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "yres", &temp)) {
 		dev_warn(dev, "can't get yres from dt\n");
 		goto read_error;
 	} else {
 		display->yres = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "pixclock", &temp)) {
 		dev_warn(dev, "can't get pixclock from dt\n");
 		goto read_error;
 	} else {
 		display->pixclock = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "left_margin", &temp)) {
 		dev_warn(dev, "can't get left_margin from dt\n");
 		goto read_error;
 	} else {
 		display->left_margin = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "right_margin", &temp)) {
 		dev_warn(dev, "can't get right_margin from dt\n");
 		goto read_error;
 	} else {
 		display->right_margin = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "hsync_len", &temp)) {
 		dev_warn(dev, "can't get hsync_len from dt\n");
 		goto read_error;
 	} else {
 		display->hsync_len = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "upper_margin", &temp)) {
 		dev_warn(dev, "can't get upper_margin from dt\n");
 		goto read_error;
 	} else {
 		display->upper_margin = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "lower_margin", &temp)) {
 		dev_warn(dev, "can't get lower_margin from dt\n");
 		goto read_error;
 	} else {
 		display->lower_margin = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "vsync_len", &temp)) {
 		dev_warn(dev, "can't get vsync_len from dt\n");
 		goto read_error;
 	} else {
 		display->vsync_len = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "dccs", &temp)) {
 		dev_warn(dev, "can't get dccs from dt\n");
 		goto read_error;
 	} else {
 		display->dccs = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "fbctrl", &temp)) {
 		dev_warn(dev, "can't get fbctrl from dt\n");
 		goto read_error;
 	} else {
 		display->fbctrl = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "devctl", &temp)) {
 		dev_warn(dev, "can't get devctl from dt\n");
 		goto read_error;
 	} else {
 		display->devctl = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "scale", &temp)) {
 		dev_warn(dev, "can't get scale from dt\n");
 		goto read_error;
 	} else {
 		display->scale = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "gpio_blen", &temp)) {
 		dev_warn(dev, "can't get gpio_blen from dt\n");
 		goto read_error;
 	} else {
 		mach_info->gpio_blen = temp;
 	}
-	
+
 	if (of_property_read_u32(dev->of_node, "gpio_lcs", &temp)) {
 		dev_warn(dev, "can't get gpio_lcs from dt\n");
 		goto read_error;
@@ -851,10 +851,10 @@ static struct nuc970fb_mach_info *nuc970fb_parse_dt(struct device *dev)
 read_error:
 	devm_kfree(dev, display);
 	devm_kfree(dev, mach_info);
-	
+
 	return ERR_PTR(-EINVAL);
 }
-#else 
+#else
 static struct nuc970fb_mach_info *nuc970fb_parse_dt(struct device *dev)
 {
 	return dev->platform_data;
@@ -874,9 +874,9 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	int size;
 	struct pinctrl *p;
 	struct clk *clkmux, *clkuplldiv;
-	
+
 	dev_dbg(&pdev->dev, "devinit\n");
-	
+
 	mach_info = nuc970fb_parse_dt(&pdev->dev);
 	if (mach_info == NULL) {
 		dev_err(&pdev->dev,
@@ -884,7 +884,7 @@ static int nuc970fb_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 	printk("[%s] %x\n", __func__, mach_info->displays[0].bpp);
-		
+
 	if (mach_info->default_display > mach_info->num_displays) {
 		dev_err(&pdev->dev,
 			"default display No. is %d but only %d displays \n",
@@ -954,12 +954,12 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	fbinfo->fbops			= &nuc970fb_ops;
 	fbinfo->flags			= FBINFO_FLAG_DEFAULT;
 	fbinfo->pseudo_palette		= &fbi->pseudo_pal;
-#ifdef CONFIG_PM      
+#ifdef CONFIG_PM
 	fbi->powerdown           = 0;
 #endif
-#ifdef CONFIG_PM  	
+#ifdef CONFIG_PM
 	init_completion(&fbi->completion);
-#endif    
+#endif
 	ret = request_irq(irq, nuc970fb_irqhandler, 0,
 			  pdev->name, fbi);
 	if (ret) {
@@ -972,34 +972,34 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	clk_prepare(clk_get(NULL, "lcd_hclk"));
 	clk_enable(clk_get(NULL, "lcd_hclk"));
 	fbi->clk = clk_get(NULL, "lcd_eclk");
-	
+
 	if(display->pixclock > 12000000)
-	{ 
+	{
 		// change clock source to upll
 		clkmux = clk_get(NULL, "lcd_eclk_mux");
 		if (IS_ERR(clkmux)) {
-			printk(KERN_ERR "nuc970-lcd:failed to get lcd clock mux control\n");
+			printk(KERN_ERR "Failed to get lcd clock mux control\n");
 			ret = PTR_ERR(clkmux);
 			return ret;
 		}
 
 		clkuplldiv = clk_get(NULL, "lcd_uplldiv");
 		if (IS_ERR(clkuplldiv)) {
-			printk(KERN_ERR "nuc970-lcd:failed to get lcd clock divider control\n");
+			printk(KERN_ERR "Failed to get lcd clock divider control\n");
 			ret = PTR_ERR(clkuplldiv);
 			return ret;
 		}
-		
+
 		// select lcd clock from upll
 		clk_set_parent(clkmux, clkuplldiv);
 	}
-	
+
 	clk_set_rate(fbi->clk, display->pixclock);
 
-	clk_prepare(fbi->clk);	
+	clk_prepare(fbi->clk);
 	clk_enable(fbi->clk);
 	fbi->clk_rate = clk_get_rate(fbi->clk);
-	
+
 	dev_dbg(&pdev->dev, "got and enabled clock\n");
 
 	/* calutate the video buffer size */
@@ -1045,14 +1045,14 @@ static int nuc970fb_probe(struct platform_device *pdev)
 			ret);
 		goto free_cpufreq;
 	}
-	
+
 #if defined(CONFIG_OF)
 	p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
  #if defined(CONFIG_FB_LCD_16BIT_PIN)
 	p = devm_pinctrl_get_select(&pdev->dev, "lcd-16bit");
  #elif defined(CONFIG_FB_LCD_18BIT_PIN)
-	p = devm_pinctrl_get_select(&pdev->dev, "lcd-18bit");	
+	p = devm_pinctrl_get_select(&pdev->dev, "lcd-18bit");
  #else
 	p = devm_pinctrl_get_select(&pdev->dev, "lcd-24bit");
  #endif
@@ -1060,19 +1060,19 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	if(IS_ERR(p)) {
 		dev_err(&pdev->dev, "unable to reserve pin\n");
 		ret = PTR_ERR(p);
-	}	
+	}
 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
 		fbinfo->node, fbinfo->fix.id);
-		
+
 #ifdef CONFIG_ILI9431_MPU80_240x320
 	init_ili9341(fbinfo);
 #endif
 
-#ifdef CONFIG_PM     
+#ifdef CONFIG_PM
 	writel(readl(fbi->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, fbi->io + REG_LCM_DCCS);
 	writel(readl(fbi->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, fbi->io + REG_LCM_INT_CS);
 #endif
-	
+
 	return 0;
 
 free_cpufreq:
@@ -1149,13 +1149,13 @@ static int nuc970fb_suspend(struct platform_device *dev, pm_message_t state)
 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
 	struct nuc970fb_info *info = fbinfo->par;
 	unsigned long timeout;
-		
-	printk(KERN_INFO "nuc970fb suspend\n");
+
+	printk(KERN_INFO "fb suspend\n");
 	info->powerdown = 1;
-	
+
 	timeout = wait_for_completion_interruptible_timeout
 			 (&info->completion, NUC970_FB_TIMEOUT);
-			
+
 	nuc970fb_stop_lcd(fbinfo);
 
 	return 0;
@@ -1166,13 +1166,13 @@ static int nuc970fb_resume(struct platform_device *dev)
 	struct fb_info	   *fbinfo = platform_get_drvdata(dev);
 	struct nuc970fb_info *info = fbinfo->par;
 
-	printk(KERN_INFO "nuc970fb resume\n");
-	
+	printk(KERN_INFO "fb resume\n");
+
 	info->powerdown = 0;
-	
+
 	nuc970fb_init_registers(fbinfo);
 	nuc970fb_activate_var(fbinfo);
-	
+
 	writel(readl(info->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, info->io + REG_LCM_DCCS);
 	writel(readl(info->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, info->io + REG_LCM_INT_CS);
 
@@ -1211,5 +1211,5 @@ static struct platform_driver nuc970fb_driver = {
 
 module_platform_driver(nuc970fb_driver);
 
-MODULE_DESCRIPTION("Framebuffer driver for the nuc970");
+MODULE_DESCRIPTION("Framebuffer driver for the nuc970/N9H30");
 MODULE_LICENSE("GPL");

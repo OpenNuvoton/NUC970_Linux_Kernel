@@ -101,17 +101,17 @@ config USB_FSL_MPH_DR_OF
 if USB_EHCI_HCD
 
 config USB_NUC970_EHCI
-	bool "NUC970 EHCI (USB 2.0) support"
+	bool "NUC970/N9H30 EHCI (USB 2.0) support"
 	depends on USB_EHCI_HCD && ARCH_NUC970
 	---help---
-		Enables support for NUC970 USB EHCI controller
+		Enables support for NUC970/N9H30 USB EHCI controller
 
 choice
-    prompt "NUC970 USB Host port power pin select"
+    prompt "NUC970/N9H30 USB Host port power pin select"
     default NUC970_USBH_PWR_PE
 	depends on !USE_OF
     depends on USB_NUC970_EHCI
-	
+
     config NUC970_USBH_PWR_PE
 	bool "PE.14 and PE.15 for USBH_PPWR0/1, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_PF
@@ -123,12 +123,12 @@ choice
 endchoice
 
 config USB_NUC970_PM_VBUS_OFF
-	bool "NUC970 turn off USB Host VBUS power while power down"
+	bool "NUC970/N9H30 turn off USB Host VBUS power while power down"
 	depends on !USE_OF
 	depends on USB_NUC970_EHCI && (NUC970_USBH_PWR_PE || NUC970_USBH_PWR_PF)
 	---help---
 		While kernel in power down mode, turn off USB Host port VBUS power supply.
-		After kernel resumed, all connected USB devices will be re-enumerated. 
+		After kernel resumed, all connected USB devices will be re-enumerated.
 
 config USB_EHCI_PCI
 	tristate
@@ -390,17 +390,17 @@ config USB_OHCI_HCD
 if USB_OHCI_HCD
 
 config USB_NUC970_OHCI
-	bool "NUC970 OHCI (USB 1.1) support"
+	bool "NUC970/N9H30 OHCI (USB 1.1) support"
 	depends on USB_OHCI_HCD && ARCH_NUC970
 	---help---
-		Enables support for NUC970 USB OHCI controller
+		Enables support for NUC970/N9H30 USB OHCI controller
 
 choice
-    prompt "NUC970 USB Host port power pin select"
+    prompt "NUC970/N9H30 USB Host port power pin select"
     default NUC970_USBH_PWR_PE_2
 	depends on !USE_OF
     depends on (USB_NUC970_OHCI && !USB_NUC970_EHCI)
-	
+
     config NUC970_USBH_PWR_PE_2
 	bool "PE.14 and PE.15 for USBH_PPWR0/1, PH.1 for USBH_OVRCUR"
     config NUC970_USBH_PWR_PF_2
@@ -417,7 +417,7 @@ config USB_NUC970_PM_VBUS_OFF_2
 	depends on !USE_OF
 	---help---
 		While kernel in power down mode, turn off USB Host port VBUS power supply.
-		After kernel resumed, all connected USB devices will be re-enumerated. 
+		After kernel resumed, all connected USB devices will be re-enumerated.
 
 config USB_OHCI_HCD_OMAP1
 	bool "OHCI support for OMAP1/2 chips"
@@ -642,7 +642,7 @@ config USB_SL811_HCD
 	help
 	  The SL811HS is a single-port USB controller that supports either
 	  host side or peripheral side roles.  Enable this option if your
-	  board has this chip, and you want to use it as a host controller. 
+	  board has this chip, and you want to use it as a host controller.
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the

@@ -48,17 +48,17 @@ static int nuc970_dma_hw_params(struct snd_pcm_substream *substream,
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	unsigned long flags;
 	int ret = 0;
-	
+
 	spin_lock_irqsave(&nuc970_audio->irqlock, flags);
-	
+
 	if(runtime->dma_addr == 0) {
 		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
 		if (ret < 0)
 			return ret;
-		nuc970_audio->substream[substream->stream] = substream;        	
+		nuc970_audio->substream[substream->stream] = substream;
 	}
 
-	nuc970_audio->dma_addr[substream->stream] = runtime->dma_addr | 0x80000000;
+	nuc970_audio->dma_addr[substream->stream] = runtime->dma_addr;
 	nuc970_audio->buffersize[substream->stream] =
 						params_buffer_bytes(params);
 
@@ -92,7 +92,7 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 	unsigned long val;
 	unsigned long flags;
 	int stream;
-	
+
 	spin_lock_irqsave(&nuc970_audio->irqlock, flags);
 
 	val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
@@ -105,11 +105,11 @@ static irqreturn_t nuc970_dma_interrupt(int irq, void *dev_id)
 
 		if (val & R_DMA_RIA_IRQ) {
 			val = R_DMA_RIA_IRQ;
-			AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, val);            
+			AUDIO_WRITE(nuc970_audio->mmio + ACTL_RSR, val);
 		}
 
 	} else if (val & P_DMA_IRQ) {
-		stream = SNDRV_PCM_STREAM_PLAYBACK;   
+		stream = SNDRV_PCM_STREAM_PLAYBACK;
 		AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val | P_DMA_IRQ);
 
 		val = AUDIO_READ(nuc970_audio->mmio + ACTL_PSR);
@@ -136,7 +136,7 @@ static int nuc970_dma_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
-		
+
 	snd_pcm_lib_free_pages(substream);
 	nuc970_audio->substream[substream->stream] = NULL;
 	return 0;
@@ -178,13 +178,13 @@ static int nuc970_dma_prepare(struct snd_pcm_substream *substream)
 	default:
 		ret = -EINVAL;
 	}
-	
+
 	/* set DMA IRQ to half */
 	val = AUDIO_READ(nuc970_audio->mmio + ACTL_CON);
 	val &= ~0xf000;
 	val |= (R_DMA_IRQ_SEL_HALF | P_DMA_IRQ_SEL_HALF);
 	AUDIO_WRITE(nuc970_audio->mmio + ACTL_CON, val);
-	
+
 	spin_unlock_irqrestore(&nuc970_audio->irqlock, flags);
 	return ret;
 }
@@ -211,9 +211,9 @@ static snd_pcm_uframes_t nuc970_dma_pointer(struct snd_pcm_substream *substream)
 	unsigned long res;
 	struct nuc970_audio *nuc970_audio = runtime->private_data;
 	snd_pcm_uframes_t frames;
-	
+
 	spin_lock(&nuc970_audio->lock);
-	
+
 	nuc970_dma_getposition(substream, &src, &dst);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
@@ -222,10 +222,10 @@ static snd_pcm_uframes_t nuc970_dma_pointer(struct snd_pcm_substream *substream)
 		res = src - runtime->dma_addr;
 
 	 frames = bytes_to_frames(substream->runtime, res);
-	 
+
 	 spin_unlock(&nuc970_audio->lock);
-	 
-	 return frames;        
+
+	 return frames;
 }
 
 static int nuc970_dma_open(struct snd_pcm_substream *substream)
@@ -249,9 +249,9 @@ int nuc970_dma_create(struct nuc970_audio *nuc970_audio)
 {
 	int ret = request_irq(nuc970_audio->irq_num, nuc970_dma_interrupt, 0, "nuc970-dma", nuc970_audio);
 
-	if(ret)          
+	if(ret)
 		return -EBUSY;
-	
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(nuc970_dma_create);
@@ -259,8 +259,8 @@ EXPORT_SYMBOL_GPL(nuc970_dma_create);
 int nuc970_dma_destroy(struct nuc970_audio *nuc970_audio)
 {
 	 free_irq(nuc970_audio->irq_num, nuc970_audio);
-	 
-	 return 0;    
+
+	 return 0;
 }
 EXPORT_SYMBOL_GPL(nuc970_dma_destroy);
 
@@ -348,5 +348,5 @@ static struct platform_driver nuc970_pcm_driver = {
 
 module_platform_driver(nuc970_pcm_driver);
 
-MODULE_DESCRIPTION("nuc970 Audio DMA module");
+MODULE_DESCRIPTION("NUC970/N9H30 Audio DMA module");
 MODULE_LICENSE("GPL");

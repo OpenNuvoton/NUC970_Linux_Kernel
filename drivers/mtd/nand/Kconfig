@@ -524,13 +524,13 @@ config MTD_NAND_NUC900
 	  on w90p910 / NUC9xx.
 
 config MTD_NAND_NUC970
-	tristate "Nuvoton NUC970 MTD NAND"
+	tristate "Nuvoton NUC970/N9H30 MTD NAND"
 	depends on ARCH_NUC970 && NUC970_FMI_MTD_NAND
 	help
-	  This enables the driver for the NAND Flash on NUC970.
+	  This enables the driver for the NAND Flash on NUC970/N9H30.
 
 choice
-	prompt "NUC970 NAND Flash pin selection"
+	prompt "NUC970/N9H30 NAND Flash pin selection"
 	default NUC970_NAND_PC
 	depends on MTD_NAND_NUC970
 	help

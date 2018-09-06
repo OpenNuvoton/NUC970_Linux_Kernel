@@ -59,10 +59,10 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         }
 
 		/* Enable USB Host clock */
-        clk_prepare(clk_get(NULL, "usb_eclk"));	
+        clk_prepare(clk_get(NULL, "usb_eclk"));
         clk_enable(clk_get(NULL, "usb_eclk"));
-        
-        clk_prepare(clk_get(NULL, "usbh_hclk"));	
+
+        clk_prepare(clk_get(NULL, "usbh_hclk"));
         clk_enable(clk_get(NULL, "usbh_hclk"));
 
 #ifdef CONFIG_OF
@@ -78,10 +78,10 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
 			of_mfp_setting = 2;
 		else
 			of_mfp_setting = 0;
-			
+
 		//printk("of_mfp_setting = %d\n", of_mfp_setting);
 
-		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) != 0) 
+		if (of_property_read_u32_array(pdev->dev.of_node, "ov_active", val32, 1) != 0)
 		{
 			printk("%s - can not get map-addr!\n", __func__);
 			return -EINVAL;
@@ -98,7 +98,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         	__raw_writel(__raw_readl(NUC970_VA_OHCI+0x204) | 0x8, (volatile void __iomem *)(NUC970_VA_OHCI+0x204));
         }
 
-		if (of_property_read_u32_array(pdev->dev.of_node, "pm_vbus_off", val32, 1) == 0) 
+		if (of_property_read_u32_array(pdev->dev.of_node, "pm_vbus_off", val32, 1) == 0)
 		{
 			if (val32[0])
 				of_pm_vbus_off = 1;
@@ -201,7 +201,7 @@ static int usb_nuc970_probe(const struct hc_driver *driver,
         /* cache this readonly data; minimize chip reads */
         ehci->hcs_params = readl(&ehci->caps->hcs_params);
         ehci->sbrn = 0x20;
-        
+
         retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
 
         if (retval != 0)
@@ -233,7 +233,7 @@ void usb_nuc970_remove(struct usb_hcd *hcd, struct platform_device *pdev)
 
 static const struct hc_driver ehci_nuc970_hc_driver = {
         .description = hcd_name,
-        .product_desc = "Nuvoton NUC970 EHCI Host Controller",
+        .product_desc = "Nuvoton NUC970/N9H30 EHCI Host Controller",
         .hcd_priv_size = sizeof(struct ehci_hcd),
 
         /*
@@ -330,7 +330,7 @@ static int ehci_nuc970_pm_suspend(struct device *dev)
 
 #else   /* !CONFIG_OF */
 
-    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
+    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF
         /* turn off port power */
         #if defined (CONFIG_NUC970_USBH_PWR_PE)
 	        __raw_writel(__raw_readl(REG_GPIOE_DATAOUT) & 0x3FFF, REG_GPIOE_DATAOUT);   // PE.14 & PE.15 output low
@@ -344,7 +344,7 @@ static int ehci_nuc970_pm_suspend(struct device *dev)
     #endif  /* end of CONFIG_USB_NUC970_PM_VBUS_OFF */
 
 #endif  /* end of CONFIG_OFF */
-	
+
 	return ret;
 }
 
@@ -368,7 +368,7 @@ static int ehci_nuc970_pm_resume(struct device *dev)
 
 #else  /* !CONFIG_OF */
 
-    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF    
+    #ifdef CONFIG_USB_NUC970_PM_VBUS_OFF
         #if defined (CONFIG_NUC970_USBH_PWR_PE)
 	        __raw_writel(__raw_readl(REG_MFP_GPE_H) | 0x77000000, REG_MFP_GPE_H);       // PE.14 & PE.15 for USBH_PWR
         #elif defined (CONFIG_NUC970_USBH_PWR_PF)
@@ -415,4 +415,3 @@ static struct platform_driver ehci_hcd_nuc970_driver = {
 		        .of_match_table = of_match_ptr(nuc970_ehci_of_match),
         },
 };
-

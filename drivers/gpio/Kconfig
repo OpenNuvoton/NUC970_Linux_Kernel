@@ -109,17 +109,17 @@ config GPIO_MAX730X
 comment "Memory mapped GPIO drivers:"
 
 config GPIO_NUC970
-	tristate "NUC970 GPIO support"
+	tristate "NUC970/N9H30 GPIO support"
 	depends on GPIOLIB
 	select NEED_MACH_GPIO_H
 	help
-	  Say yes here to support GPIO functionality of NUC970 chip
+	  Say yes here to support GPIO functionality of NUC970/N9H30 chip
 config GPIO_NUC970_EINT_WKUP
-	tristate "NUC970 external I/O wake-up support"
+	tristate "NUC970/N9H30 external I/O wake-up support"
 	depends on GPIO_NUC970
 	default no
         help
-          Say yes here to support GPIO wakeup functionality of NUC970 chip
+          Say yes here to support GPIO wakeup functionality of NUC970/N9H30 chip
 
 config GPIO_CLPS711X
 	def_bool y

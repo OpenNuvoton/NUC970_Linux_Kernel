@@ -18,10 +18,10 @@ config IRTTY_SIR
 	  If unsure, say Y.
 
 config NUC970_SIR
-	tristate "NUC970 SIR on UART"
+	tristate "NUC970/N9H30 SIR on UART"
 	depends on IRDA && TTY
 	help
-      Enable SIR function device on NUC970 UART devcies.
+      Enable SIR function device on NUC970/N9H30 UART devcies.
 
 config BFIN_SIR
 	tristate "Blackfin SIR on UART"
@@ -275,12 +275,12 @@ config SIGMATEL_FIR
 	select CRC32
 	---help---
 	  Say Y here if you want to build support for the SigmaTel STIr4200
-	  USB IrDA FIR bridge device driver.  
+	  USB IrDA FIR bridge device driver.
 
 	  USB bridge based on the SigmaTel STIr4200 don't conform to the
 	  IrDA-USB device class specification, and therefore need their
 	  own specific driver. Those dongles support SIR and FIR (4Mbps)
-	  speeds. 
+	  speeds.
 
 	  To compile it as a module, choose M here: the module will be called
 	  stir4200.
@@ -414,4 +414,3 @@ config SH_IRDA
 	  Say Y here if your want to enable SuperH IrDA devices.
 
 endmenu
-

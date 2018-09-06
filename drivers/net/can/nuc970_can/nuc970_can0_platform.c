@@ -1,7 +1,7 @@
 /*
  *  linux/drivers/serial/nuc970_can0_platform.c
  *
- *  NUC970 CAN driver
+ *  NUC970/N9H30 CAN driver
  *
  *
  *  Copyright (C) 2014 Nuvoton Technology Corp.
@@ -80,18 +80,18 @@ static int c_can_plat_probe(struct platform_device *pdev)
 	int irq;
 	struct clk *clk;
 
-	int retval = 0; 
+	int retval = 0;
 
 	if (pdev->dev.of_node) {
 		match = of_match_device(nuc970_can0_of_table, &pdev->dev);
-		if (!match) { 
+		if (!match) {
 			dev_err(&pdev->dev, "Failed to find matching dt id\n");
 			ret = -EINVAL;
 			goto exit;
 		}
-		id = match->data; 
+		id = match->data;
 	} else {
-		id = platform_get_device_id(pdev); 
+		id = platform_get_device_id(pdev);
 	}
 
 #ifdef CONFIG_OF
@@ -105,7 +105,7 @@ static int c_can_plat_probe(struct platform_device *pdev)
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "can0-PI");
 	#endif
 #endif
-	
+
 	if (IS_ERR(pinctrl))
 	{
 		dev_err(&pdev->dev, "unable to reserve pin\n");
@@ -150,7 +150,7 @@ static int c_can_plat_probe(struct platform_device *pdev)
 	priv->regs = reg_map_c_can;
 	priv->read_reg = c_can_plat_read_reg_aligned_to_32bit;
 	priv->write_reg = c_can_plat_write_reg_aligned_to_32bit;
-	
+
 	dev->irq = irq;
 	priv->base = addr;
 	priv->device = &pdev->dev;

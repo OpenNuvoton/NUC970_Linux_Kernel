@@ -1,5 +1,5 @@
  /*
- *  linux/drivers/mmc/host/nuc970_sd_2port.c - Nuvoton NUC970 dual SD Driver
+ *  linux/drivers/mmc/host/nuc970_sd_2port.c - Nuvoton NUC970/N9H30 dual SD Driver
  *
  * Copyright (c) 2014 Nuvoton Technology Corp.
  *
@@ -625,7 +625,7 @@ static void nuc970_sd_send_stop(struct nuc970_sd_host *host, struct mmc_command 
  */
 static void nuc970_sd_send_request(struct nuc970_sd_host *host)
 {
-    
+
     ENTRY();
 		/***************************************************/
 		if (host->IsVersionC == 0)
@@ -704,7 +704,7 @@ static void nuc970_sd_completed_command(struct nuc970_sd_host *host, unsigned in
             host->transfer_index = 0;
             host->in_use_index = 0;
             if (host->port == 0)
-                wait_event_interruptible(sd_wq_xfer, (sd_state_xfer != 0));            
+                wait_event_interruptible(sd_wq_xfer, (sd_state_xfer != 0));
             else if (host->port == 1)
                 wait_event_interruptible(sd1_wq_xfer, (sd1_state_xfer != 0));
         }
@@ -729,7 +729,7 @@ static int nuc970_sd_card_detect(struct mmc_host *mmc)
     if (nuc970_sd_read(REG_FMICSR) != FMICSR_SD_EN)
         nuc970_sd_write(REG_FMICSR, FMICSR_SD_EN);
 
-    nuc970_sd_select_port(host->port);    
+    nuc970_sd_select_port(host->port);
     if (host->port == 0)
         host->present = nuc970_sd_read(REG_SDISR) & SDISR_CDPS0;
     else if (host->port == 1)
@@ -749,7 +749,7 @@ static void nuc970_sd_request(struct mmc_host *mmc, struct mmc_request *mrq)
     host->flags = 0;
     ENTRY();
     /* more than 1s timeout needed with slow SD cards */
-    //mod_timer(&host->timer, jiffies +  msecs_to_jiffies(2000));    
+    //mod_timer(&host->timer, jiffies +  msecs_to_jiffies(2000));
         //return -ENOSYS;
     card_present = nuc970_sd_card_detect(mmc);
     if (down_interruptible(&sdh_fmi_sem)) return;
@@ -789,8 +789,8 @@ static void nuc970_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
             if (ios->clock == 0) {
                 up(&sdh_fmi_sem);
                 return;
-            }   
-            printk("ios->clock=%d\n",ios->clock);             
+            }
+            printk("ios->clock=%d\n",ios->clock);
             if (ios->clock <= 400000)
             {
                 clk_set_rate(host->upll_clk, 100000000);
@@ -919,7 +919,7 @@ static int nuc970_sd1_event_thread(struct nuc970_sd_host *sd1_host)
                 }
 
                 if (nuc970_sd_read(REG_SDISR) & SDISR_RITO_IF)
-                {  
+                {
                     nuc970_sd_write(REG_SDTMOUT, 0x0);
                     nuc970_sd_write(REG_SDISR, SDISR_RITO_IF);
 
@@ -1479,7 +1479,7 @@ static struct platform_driver nuc970_sd_driver = {
 
 module_platform_driver(nuc970_sd_driver);
 
-MODULE_DESCRIPTION("NUC970 dual SD Card Interface driver");
+MODULE_DESCRIPTION("NUC970/N9H30 dual SD Card Interface driver");
 MODULE_AUTHOR("HPChen");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:nuc970_sd");

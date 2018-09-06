@@ -1,7 +1,7 @@
 /*
  *  linux/drivers/net/can/nuc970_can/nuc970_can1_platform.c
  *
- *  NUC970 CAN driver
+ *  NUC970/N9H30 CAN driver
  *
  *
  *  Copyright (C) 2014 Nuvoton Technology Corp.
@@ -96,17 +96,17 @@ static int c_can_plat_probe(struct platform_device *pdev)
 	int retval = 0;
     struct pinctrl *pinctrl;
     #endif
- 
+
 	if (pdev->dev.of_node) {
 		match = of_match_device(nuc970_can1_of_table, &pdev->dev);
-		if (!match) { 
+		if (!match) {
 			dev_err(&pdev->dev, "Failed to find matching dt id\n");
 			ret = -EINVAL;
 			goto exit;
 		}
-		id = match->data; 
+		id = match->data;
 	} else {
-	id = platform_get_device_id(pdev); 
+	id = platform_get_device_id(pdev);
 	}
 
 #ifdef CONFIG_OF

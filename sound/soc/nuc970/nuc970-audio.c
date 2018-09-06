@@ -29,8 +29,8 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 		int ret;
 
-//slave mode        
-#ifdef CONFIG_NUC970_I2S_SLAVE_MODE     
+//slave mode
+#ifdef CONFIG_NUC970_I2S_SLAVE_MODE
 		 /* set codec DAI configuration */
 		ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
 								  SND_SOC_DAIFMT_NB_NF |
@@ -44,19 +44,19 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
 								  SND_SOC_DAIFMT_CBS_CFS);
 		if (ret < 0)
 			return ret;
-	
+
 		ret = snd_soc_dai_set_sysclk(codec_dai, NAU8822_PLL, 12000000, SND_SOC_CLOCK_OUT);
 		if (ret < 0)
 			return ret;
-				
+
 		ret = snd_soc_dai_set_clkdiv(codec_dai, NAU8822_BCLKDIV, 0xC);      // divide 8 form MCLK to BCLK
 		if (ret < 0)
 			return ret;
-#else       
+#else
 //master mode
 		unsigned int clk = 0;
 		unsigned int sample_rate = params_rate(params);
-		
+
 		/* set codec DAI configuration */
 		ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
 								  SND_SOC_DAIFMT_NB_NF |
@@ -77,12 +77,12 @@ static int nuc970_audio_hw_params(struct snd_pcm_substream *substream,
 		ret = snd_soc_dai_set_sysclk(codec_dai, NAU8822_MCLK, clk, SND_SOC_CLOCK_OUT);
 		if (ret < 0)
 				return ret;
-		
+
 		/* set prescaler division for sample rate */
 		ret = snd_soc_dai_set_sysclk(cpu_dai, NUC970_AUDIO_CLKDIV, sample_rate, SND_SOC_CLOCK_OUT);
 		if (ret < 0)
 				return ret;
-		
+
 		/* set MCLK division for sample rate */
 		ret = snd_soc_dai_set_sysclk(cpu_dai, NUC970_AUDIO_SAMPLECLK, sample_rate, SND_SOC_CLOCK_OUT);
 		if (ret < 0)
@@ -119,7 +119,7 @@ static int nuc970_audio_probe(struct platform_device *pdev)
 	int ret;
 
 	card->dev = &pdev->dev;
-	
+
 	if (np) {
 		nuc970evb_i2s_dai.cpu_dai_name = NULL;
 		nuc970evb_i2s_dai.cpu_of_node = of_parse_phandle(np,
@@ -130,7 +130,7 @@ static int nuc970_audio_probe(struct platform_device *pdev)
 			ret = -EINVAL;
 		}
 
-		nuc970evb_i2s_dai.platform_name = NULL;     
+		nuc970evb_i2s_dai.platform_name = NULL;
 		nuc970evb_i2s_dai.platform_of_node  = of_parse_phandle(np,
 				"i2s-platform", 0);
 		if (!nuc970evb_i2s_dai.platform_of_node) {
@@ -138,9 +138,9 @@ static int nuc970_audio_probe(struct platform_device *pdev)
 			   "Property 'i2s-platform' missing or invalid\n");
 			ret = -EINVAL;
 		}
-		
+
 	}
-	
+
 	ret = snd_soc_register_card(card);
 	if (ret)
 		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n", ret);
@@ -179,4 +179,4 @@ static struct platform_driver nuc970_audio_driver = {
 module_platform_driver(nuc970_audio_driver);
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("NUC970 Series ASoC audio support");
+MODULE_DESCRIPTION("NUC970/N9H30 Series SoC audio support");
