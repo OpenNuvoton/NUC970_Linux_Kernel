@@ -41,7 +41,7 @@ extern int nuc970_sys_suspend_sz;
 
 static int nuc970_suspend_enter(suspend_state_t state)
 {
-
+	u32 upll_div;
 	#ifdef PM_FROM_SRAM
 	int (*nuc970_suspend_ptr) (int,int,int,int);
 	void *sram_swap_area;
@@ -52,6 +52,9 @@ static int nuc970_suspend_enter(suspend_state_t state)
 
 	__raw_writel(__raw_readl(REG_CLK_PMCON) & ~1, REG_CLK_PMCON);	// clear bit 0 so NUC970 enter pd mode instead of idle in next function call
 	#ifndef PM_FROM_SRAM
+	upll_div=__raw_readl(NUC970_VA_CLK+0x64);
+	__raw_writel(0xC0000015,NUC970_VA_CLK+0x64); //Set UPLL to 264Mhz
+	udelay(2);
 	__raw_writel(0xffff,NUC970_VA_CLK+0x80);
 	__raw_writel(__raw_readl(NUC970_VA_EBI_SDIC+0x18)|0x100,NUC970_VA_EBI_SDIC+0x18);	//Enable Reset DLL(bit[8]) of DDR2
 	udelay(2);
@@ -61,7 +64,9 @@ static int nuc970_suspend_enter(suspend_state_t state)
 	__raw_writel(__raw_readl(NUC970_VA_EBI_SDIC+0x04) & ~0x20,NUC970_VA_EBI_SDIC+0x04);
 	cpu_do_idle();
 	__raw_writel(__raw_readl(NUC970_VA_EBI_SDIC+0x04) | 0x20,NUC970_VA_EBI_SDIC+0x04);
-	__raw_writel(__raw_readl(NUC970_VA_EBI_SDIC+0x00) | 0x10000,NUC970_VA_EBI_SDIC+0x00);	//Set SDIC_OPMCTL[16] high to enable auto power down mode;
+	__raw_writel(__raw_readl(NUC970_VA_EBI_SDIC+0x00) | 0x10000,NUC970_VA_EBI_SDIC+0x00);	//Set SDIC_OPMCTL[16] high to enable auto power down mode
+	__raw_writel(upll_div,NUC970_VA_CLK+0x64); //Restore UPLL
+	udelay(2);
 	#else
 	/* Allocate some space for temporary SRAM storage */
 	sram_swap_area = kmalloc(nuc970_sys_suspend_sz, GFP_KERNEL);
