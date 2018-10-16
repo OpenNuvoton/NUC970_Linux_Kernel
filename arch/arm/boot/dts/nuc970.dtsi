@@ -1564,6 +1564,12 @@
 			status = "okay";
 		};
 
+		crypto_prng@b000f000{
+			compatible = "nuvoton,nuvoton-rng";
+			reg = <0xb000f000 0x1000>;
+			status = "disable";
+		};
+
 		emac0@b0002000 {
 			compatible = "nuvoton,nuc970-emac0";
 			reg = <0xb0002000 0x1000>;

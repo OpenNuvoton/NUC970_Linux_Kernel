@@ -141,6 +141,12 @@ static struct platform_device nuc970_device_crypto = {
                 .coherent_dma_mask = 0xffffffffUL
         }
 };
+
+static struct platform_device nuc970_device_prng = {
+	.name = "nuvoton-rng",
+	.id = -1,
+	.resource = nuc970_crypto_resource,
+};
 #endif
 
 /* USB Device (Gadget)*/
@@ -1599,6 +1605,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #if defined(CONFIG_CRYPTO_DEV_NUC970) || defined(CONFIG_CRYPTO_DEV_NUC970_MODULE)
 		&nuc970_device_crypto,
+		&nuc970_device_prng,
 #endif
 #if defined(CONFIG_FB_NUC970) || defined(CONFIG_FB_NUC970_MODULE)
         &nuc970fb_device_lcd,
