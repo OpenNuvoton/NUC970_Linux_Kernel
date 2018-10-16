@@ -473,13 +473,6 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 		case 1:
 			peint=eint0;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT0_H0:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint0-PH");
@@ -493,19 +486,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<0) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 2:
 			peint=eint1;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT1_H1:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint1-PH");
@@ -519,19 +512,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<1) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 3:
 			peint=eint2;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT2_H2:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint2-PH");
@@ -545,19 +538,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<2) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 4:
 			peint=eint3;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT3_H3:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint3-PH");
@@ -571,19 +564,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<3) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 5:
 			peint=eint4;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT4_H4:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint4-PH");
@@ -597,19 +590,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<4) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 6:
 			peint=eint5;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT5_H5:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint5-PH");
@@ -623,19 +616,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<5) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 7:
 			peint=eint6;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(peint->pin);
-				}
 				switch(peint->pin){
 					case IRQ_EXT6_H6:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint6-PH");
@@ -649,19 +642,19 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
 				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<6) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(peint->pin);
+				}
 				peint++;
 		}
 		break;
 		case 8:
 			peint=eint7;
 			while(peint->pin!=(u32)0){
-				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
-					printk("register %s irq failed %d\n",peint->name ,err);
-				}
-				if(flag==1){
-					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
-					enable_irq_wake(IRQ_EXT7_H7);
-				}
 				switch(peint->pin){
 					case IRQ_EXT7_H7:
 						p = devm_pinctrl_get_select(&pdev->dev, "eint7-PH");
@@ -674,6 +667,13 @@ static int nuc970_enable_eint(uint32_t flag,struct platform_device *pdev){
 				{
 					dev_err(&pdev->dev, "unable to reserve pin\n");
 					return PTR_ERR(p);
+				}
+				if ((err = request_irq(peint->pin,peint->handler, peint->trigger|IRQF_NO_SUSPEND, peint->name, 0)) != 0) {
+					printk("register %s irq failed %d\n",peint->name ,err);
+				}
+				if(flag==1){
+					__raw_writel((1<<7) | __raw_readl(REG_WKUPSER),REG_WKUPSER);
+					enable_irq_wake(IRQ_EXT7_H7);
 				}
 				peint++;
 		}
