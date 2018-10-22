@@ -1136,6 +1136,12 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 
     sema_init(&sdh_fmi_sem, 1);
 
+#ifdef CONFIG_OF
+
+	p = devm_pinctrl_get_select_default(&pdev->dev);
+
+#else
+
 #if defined (CONFIG_NUC970_SD1_EN) & defined(CONFIG_NUC970_SD0_EN)
 
     #if defined (CONFIG_NUC970_SD1_PE)
@@ -1168,6 +1174,8 @@ static int nuc970_sd_probe(struct platform_device *pdev)
     #endif
 
 #endif
+#endif	// config_of
+
     if (IS_ERR(p))
     {
         dev_err(&pdev->dev, "unable to reserve pin\n");
