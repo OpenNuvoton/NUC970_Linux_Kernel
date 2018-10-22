@@ -1085,6 +1085,12 @@ static irqreturn_t c_can_isr(int irq, void *dev_id)
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct c_can_priv *priv = netdev_priv(dev);
 
+	if(__raw_readl(priv->base+0x16C))
+	{
+		__raw_writel(0x0,(priv->base+0x16C));
+		return IRQ_NONE;
+	}
+
 	priv->irqstatus = priv->read_reg(priv, C_CAN_INT_REG);
 	if (!priv->irqstatus)
 		return IRQ_NONE;
@@ -1112,7 +1118,7 @@ static int c_can_open(struct net_device *dev)
 	}
 
 	/* register interrupt handler */
-	err = request_irq(dev->irq, &c_can_isr, IRQF_SHARED, dev->name,
+	err = request_irq(dev->irq, &c_can_isr, IRQF_NO_SUSPEND, dev->name,
 				dev);
 	if (err < 0) {
 		netdev_err(dev, "failed to request interrupt\n");
