@@ -32,6 +32,8 @@
 
 #include "nuc970_can.h"
 
+#define DISABLE_SIE 1
+
 /* Number of interface registers */
 #define IF_ENUM_REG_LEN		11
 #define C_CAN_IFACE(reg, iface)	(C_CAN_IF1_##reg + (iface) * IF_ENUM_REG_LEN)
@@ -255,10 +257,18 @@ static void c_can_enable_all_interrupts(struct c_can_priv *priv,
 						C_CAN_CTRL_REG);
 
 	if (enable)
+	{
+		#ifndef DISABLE_SIE		
 		cntrl_save |= (CONTROL_SIE | CONTROL_EIE | CONTROL_IE);
+		#else
+		cntrl_save |= (CONTROL_EIE | CONTROL_IE);
+		cntrl_save &= ~(CONTROL_SIE);
+		#endif
+	}
 	else
 		cntrl_save &= ~(CONTROL_EIE | CONTROL_IE | CONTROL_SIE);
 
+	cntrl_save &= ~CONTROL_INIT;
 	priv->write_reg(priv, C_CAN_CTRL_REG, cntrl_save);
 }
 
@@ -645,10 +655,11 @@ static void c_can_chip_config(struct net_device *dev)
 		priv->write_reg(priv, C_CAN_CTRL_REG, CONTROL_EIE |
 				CONTROL_SIE | CONTROL_IE | CONTROL_TEST);
 		priv->write_reg(priv, C_CAN_TEST_REG, TEST_SILENT);
-	} else
+	} else {
 		/* normal mode*/
-		priv->write_reg(priv, C_CAN_CTRL_REG,
-				CONTROL_EIE | CONTROL_SIE | CONTROL_IE);
+		//priv->write_reg(priv, C_CAN_CTRL_REG,
+		//		CONTROL_EIE | CONTROL_SIE | CONTROL_IE);
+	}
 
 	/* configure message objects */
 	c_can_configure_msg_objects(dev);
@@ -663,6 +674,8 @@ static void c_can_chip_config(struct net_device *dev)
 static void c_can_start(struct net_device *dev)
 {
 	struct c_can_priv *priv = netdev_priv(dev);
+
+	c_can_enable_all_interrupts(priv, DISABLE_ALL_INTERRUPTS);
 
 	/* basic c_can configuration */
 	c_can_chip_config(dev);
@@ -807,8 +820,8 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
 		 * message object n, we need to handle the same properly.
 		 */
 		if (val & (1 << (msg_obj - 1))) {
-			c_can_object_get(dev, 0, msg_obj, IF_COMM_ALL &
-					~IF_COMM_TXRQST);
+			c_can_object_get(dev, 0, msg_obj, ((IF_COMM_ALL &~IF_COMM_TXRQST) | IF_COMM_CLR_INT_PND));
+
 			msg_ctrl_save = priv->read_reg(priv,
 					C_CAN_IFACE(MSGCTRL_REG, 0));
 
