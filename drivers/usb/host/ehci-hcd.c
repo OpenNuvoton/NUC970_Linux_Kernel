@@ -858,6 +858,12 @@ static int ehci_urb_enqueue (
 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
 	struct list_head	qtd_list;
 
+	if (((ehci_readl(ehci, &ehci->regs->port_status[0]) & 0x1005) != 0x1005) && (urb->dev->portnum == 1))
+	    return -ENODEV;
+
+	if (((ehci_readl(ehci, &ehci->regs->port_status[1]) & 0x1005) != 0x1005) && (urb->dev->portnum == 2))
+	    return -ENODEV;
+
 	INIT_LIST_HEAD (&qtd_list);
 
 	switch (usb_pipetype (urb->pipe)) {
