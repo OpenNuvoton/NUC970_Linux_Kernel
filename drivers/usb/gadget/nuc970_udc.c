@@ -465,11 +465,11 @@ void paser_irq_cep(int irq, struct nuc970_udc *dev, u32 IrqSt)
 				__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_STAT);
 
 				if (!is_last)
-					__raw_writel(0x440, controller.reg + REG_USBD_CEP_IRQ_ENB);//enable out token and status complete int
+					__raw_writel(0x442, controller.reg + REG_USBD_CEP_IRQ_ENB);//enable out token and status complete int
 				else
 				{ //transfer finished
 					__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
-					__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
+					__raw_writel(0x402, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
 					dev->ep0state = EP0_END_XFER;
 				}
 			}
@@ -482,12 +482,12 @@ void paser_irq_cep(int irq, struct nuc970_udc *dev, u32 IrqSt)
 					is_last = write_fifo(ep,req);
 
 				if (!is_last)
-					__raw_writel(0x428, controller.reg + REG_USBD_CEP_IRQ_ENB);
+					__raw_writel(0xa, controller.reg + REG_USBD_CEP_IRQ_ENB);
 				else
 				{
 					if (dev->setup_ret >= 0)
 						__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   // clear nak so that sts stage is complete
-					__raw_writel(0x422, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
+					__raw_writel(0x40a, controller.reg + REG_USBD_CEP_IRQ_ENB);     // suppkt int//enb sts completion int
 
 					if (dev->setup_ret < 0)//== -EOPNOTSUPP)
 						dev->ep0state=EP0_IDLE;
@@ -1146,7 +1146,7 @@ static int nuc970_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_
         if ((req->req.length != 0) && (dev->ep0state == EP0_END_XFER))
         {
             dev->ep0state = EP0_IN_DATA_PHASE;
-            __raw_writel(0x08, controller.reg + REG_USBD_CEP_IRQ_ENB);
+            __raw_writel(0x0a, controller.reg + REG_USBD_CEP_IRQ_ENB);
 		}
 		if ((dev->setup_ret > 1000) || ((req->req.length==0)&&(dev->ep0state == EP0_OUT_DATA_PHASE)))
 		{
@@ -1583,12 +1583,12 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
 			if (crq.bRequestType & USB_DIR_IN)
 			{
 				dev->ep0state = EP0_IN_DATA_PHASE;
-				__raw_writel(0x08, controller.reg + REG_USBD_CEP_IRQ_ENB);
+				__raw_writel(0x0a, controller.reg + REG_USBD_CEP_IRQ_ENB);
 			}
 			else
 			{
 				dev->ep0state = EP0_OUT_DATA_PHASE;
-				__raw_writel(0x40, controller.reg + REG_USBD_CEP_IRQ_ENB);
+				__raw_writel(0x42, controller.reg + REG_USBD_CEP_IRQ_ENB);
 			}
 
 			if (dev->gadget.speed == USB_SPEED_FULL)
@@ -1599,7 +1599,7 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
             if ((ret < 0) || (crq.bRequest == 0x05))
 			{
 				__raw_writel(0x400, controller.reg + REG_USBD_CEP_IRQ_STAT);
-				__raw_writel(0x448, controller.reg + REG_USBD_CEP_IRQ_ENB);     // enable in/RxED/status complete interrupt
+				__raw_writel(0x44a, controller.reg + REG_USBD_CEP_IRQ_ENB);     // enable in/RxED/status complete interrupt
 				__raw_writel(CEP_NAK_CLEAR, controller.reg + REG_USBD_CEP_CTRL_STAT);   //clear nak so that sts stage is complete
 			}
 			else if (ret > 1000)
