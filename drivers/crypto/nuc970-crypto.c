@@ -299,6 +299,23 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	crpt_regs->CRPT_AES_CTL = ctx->keysize | ctx->mode | AES_INSWAP | AES_OUTSWAP |
 	                          AES_DMAEN | (ctx->channel << 24);
 
+	if (ctx->use_mtp_key)
+	{
+		//printk("AES using MTP key.\n");
+
+    	if (IS_ERR(clk_get(NULL, "mtpc"))) {
+        	printk("clk_get mtpc error!!\n");
+        	return -1;
+    	}
+		/* Enable MTP clock */
+    	clk_prepare(clk_get(NULL, "mtpc"));	
+    	clk_enable(clk_get(NULL, "mtpc"));
+		
+		MTP_Enable();
+
+		crpt_regs->CRPT_AES_CTL |= AES_EXTERNAL_KEY;
+	}
+
 	if (ctx->is_first_block)
 		ctx->is_first_block = 0;
 	else
@@ -306,7 +323,7 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 									
 	if (encrypt)
 		crpt_regs->CRPT_AES_CTL |= AES_ENCRYPT;
-	
+		
 	req_len = areq->nbytes;
 	in_sg = areq->src;
 	out_sg = areq->dst;
@@ -413,7 +430,7 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 	int  i;
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
-
+	
 	switch (keylen) 
 	{
 		case AES_KEYSIZE_128:
@@ -429,7 +446,6 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 			break;
 			
 		case 1:
-			//printk("use_mtp_key = %d\n", *key);
 			if (*key == 1)
 				ctx->use_mtp_key = 1;
 			else
@@ -441,6 +457,9 @@ static int nuc970_aes_setkey(struct crypto_ablkcipher *cipher,
 			*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
 			return -EINVAL;
 	}
+	
+	if (ctx->use_mtp_key)
+		return 0;
 
 	//printk("aes_regs = 0x%x\n", (u32)aes_regs);	
 	for (i = 0; i < keylen/4; i++)
