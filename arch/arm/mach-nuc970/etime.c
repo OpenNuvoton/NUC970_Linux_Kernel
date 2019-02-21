@@ -97,9 +97,10 @@ static void nuc970_clockevent_setmode(enum clock_event_mode mode,
 static int nuc970_clockevent_setnextevent(unsigned long evt,
 		struct clock_event_device *clk)
 {
-	if(evt < 2)
-		evt = 2;
-	__raw_writel(evt, REG_ETMR_CMPR(0)); /* CMPR must greater or equal to 2 */
+
+	__raw_writel(0, REG_ETMR_CTL(0));
+	__raw_writel(evt, REG_ETMR_CMPR(0));
+	while(__raw_readl(REG_ETMR_DR(0)) != 0);
 	__raw_writel(__raw_readl(REG_ETMR_CTL(0)) | COUNTEN, REG_ETMR_CTL(0));
 
  	return 0;
@@ -136,7 +137,7 @@ static void nuc970_clockevent_resume(struct clock_event_device *clk)
 #endif
 static struct clock_event_device nuc970_clockevent_device = {
 	.name		= "nuc970-etimer0",
-	.shift		= 32,
+	.shift		= 24,
 	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
 	.set_mode	= nuc970_clockevent_setmode,
 	.set_next_event	= nuc970_clockevent_setnextevent,
@@ -187,15 +188,9 @@ static void __init nuc970_clockevents_init(void)
 	__raw_writel(RESETINT, REG_ETMR_ISR(0));
 	setup_irq(IRQ_ETIMER0, &nuc970_etimer0_irq);
 
-	nuc970_clockevent_device.mult = div_sc(rate, NSEC_PER_SEC,
-					nuc970_clockevent_device.shift);
-	nuc970_clockevent_device.max_delta_ns = clockevent_delta2ns(0xffffffff,
-					&nuc970_clockevent_device);
-	nuc970_clockevent_device.min_delta_ns = clockevent_delta2ns(0xf,
-					&nuc970_clockevent_device);
 	nuc970_clockevent_device.cpumask = cpumask_of(0);
 
-	clockevents_register_device(&nuc970_clockevent_device);
+	clockevents_config_and_register(&nuc970_clockevent_device, rate, 2, 0xffffff);
 }
 
 static cycle_t nuc970_get_cycles(struct clocksource *cs)
