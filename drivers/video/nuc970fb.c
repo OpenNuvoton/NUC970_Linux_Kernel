@@ -948,7 +948,7 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	fbinfo->fix.ywrapstep		= 0;
 	fbinfo->fix.accel		= FB_ACCEL_NONE;
 	fbinfo->var.nonstd		= 0;
-	fbinfo->var.activate		= FB_ACTIVATE_NOW;
+	fbinfo->var.activate		= FB_ACTIVATE_NOW|FB_ACTIVATE_FORCE;
 	fbinfo->var.accel_flags		= 0;
 	fbinfo->var.vmode		= FB_VMODE_NONINTERLACED;
 	fbinfo->fbops			= &nuc970fb_ops;
@@ -1032,7 +1032,13 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	nuc970fb_init_registers(fbinfo);
 
 	nuc970fb_check_var(&fbinfo->var, fbinfo);
-
+	
+	ret = fb_set_var(fbinfo, &fbinfo->var);
+	if (ret) {
+		dev_warn(&pdev->dev, "unable to set display parameters\n");
+		goto free_video_memory;
+	}
+	
 	ret = nuc970fb_cpufreq_register(fbi);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to register cpufreq\n");
@@ -1045,6 +1051,13 @@ static int nuc970fb_probe(struct platform_device *pdev)
 			ret);
 		goto free_cpufreq;
 	}
+#if !defined(CONFIG_FRAMEBUFFER_CONSOLE) && defined(CONFIG_LOGO)
+			if (fb_prepare_logo(fbinfo, FB_ROTATE_UR)) {
+				/* Start display and show logo on boot */
+				fb_set_cmap(&fbinfo->cmap, fbinfo);
+				fb_show_logo(fbinfo, FB_ROTATE_UR);
+			}
+#endif
 
 #if defined(CONFIG_OF)
 	p = devm_pinctrl_get_select_default(&pdev->dev);
