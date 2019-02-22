@@ -74,6 +74,8 @@ static struct nuvoton_vin_device* nuvoton_cam[NUVOTON_MAX_DEVICES];
 
 u32 sensor_pd = 0;  //0:PI0, 1:PI2
 u32 video_freq = 24000000;
+static unsigned int lcm_baddr;
+static int lcm_flag=0;
 
 void nuvoton_vdi_enable(void){	
 	int i;
@@ -94,6 +96,12 @@ void nuvoton_vdi_disable(void){
 	int i;
 	u8 packet=0,planar=0,engine=0;
 	ENTRY();
+	if(lcm_flag==1)
+	{
+		__raw_writel(lcm_baddr,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+		lcm_flag = 0;
+	}
+
 	for(i=0;i<NUVOTON_MAX_DEVICES;i++)
 	{
 		if(nuvoton_cam[i]->vpe.PacketEnable==1) packet=1;
@@ -1221,19 +1229,18 @@ static int nuvoton_vdi_close(struct file *filp)
 	down_write(&nuvoton_vin_dev_lock);
 
 	cam = video_drvdata(filp);
-
-	nuvoton_vin_release_buffers(cam);	
 	vdi_user--;
 	cam->users=0;
 	cam->vpe.PacketEnable=0;
 	cam->vpe.PlanarEnable=0;
 	cam->type=0;
 	cam->stream = STREAM_OFF;
+	nuvoton_vdi_disable();
+	nuvoton_vin_release_buffers(cam);
 	VDEBUG("Video device %s closed", video_device_node_name(cam->v4ldev));
 
 	kref_put(&cam->kref, nuvoton_vin_release_resources);	
 	up_write(&nuvoton_vin_dev_lock);	
-  nuvoton_vdi_disable();
 	LEAVE();
 	return 0;
 }
@@ -1432,18 +1439,19 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
   {
 			cam=nuvoton_cam[i];
 			f  = &cam->frame_current;
-//		if (cam->stream == STREAM_OFF || list_empty(&cam->inqueue)) {
-			if (cam->stream == STREAM_OFF || list_is_last(&(*f)->frame,&cam->inqueue)){
 			if(cam->stream == STREAM_ON && cam->type==V4L2_BUF_TYPE_VIDEO_OVERLAY) {
-				__raw_writel(cam->frame[0].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
-				__raw_writel(cam->frame[0].pbuf,REG_CAP_PKTBA0);
-				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
-				__raw_writel((__raw_readl(REG_CAP_INT) & ~0x10000) ,REG_CAP_INT); 	   /* Disable CAP Interrupt */
-			}else{
+				lcm_flag = 1;
+				lcm_baddr = __raw_readl(NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+                                __raw_writel(cam->frame[0].pbuf,NUC970_VA_LCD+REG_LCM_VA_BADDR0);
+                                __raw_writel(cam->frame[0].pbuf,REG_CAP_PKTBA0);
+                                __raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
+                                __raw_writel((__raw_readl(REG_CAP_INT) & ~0x10000) ,REG_CAP_INT);          /* Disable CAP Interrupt */
+                        }
+
+			if (cam->stream == STREAM_OFF || list_is_last(&(*f)->frame,&cam->inqueue)){
 				wake_up_interruptible(&cam->wait_frame);
+				continue;
 			}
-			continue;
-		}
 			spin_lock(&cam->queue_lock);
 			if((*f)->state == F_QUEUED)
 				list_move_tail(&(*f)->frame, &cam->outqueue);
@@ -1465,7 +1473,7 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 				/* Update New frame */
 				__raw_writel(__raw_readl(REG_CAP_CTL) | CAP_CTL_UPDATE,REG_CAP_CTL);
                                 cap_cnt++;
-		  }	
+			}
 	  spin_unlock(&cam->queue_lock);
 	  wake_up_interruptible(&cam->wait_frame);	
   }
