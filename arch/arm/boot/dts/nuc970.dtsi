@@ -319,8 +319,8 @@
 			can0 {
 				pinctrl_can0_PB: can0-PB {
 					nuvoton,pins =
-						<2 0xa 0xc 0
-						 2 0xb 0xc 0>;
+						<1 0xa 0xc 0
+						 1 0xb 0xc 0>;
 				};
 
 				pinctrl_can0_PH: can0-PH {
