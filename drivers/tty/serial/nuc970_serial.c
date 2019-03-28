@@ -198,18 +198,21 @@ static void nuc970serial_enable_ms(struct uart_port *port)
 
 }
 
+static int max_count = 0;
 static void
 receive_chars(struct uart_nuc970_port *up)
 {
 	unsigned char ch;
 	unsigned int fsr;
-	int max_count = 256;
+	unsigned int isr;
+	unsigned int dcnt;
+
 	char flag;
+	isr = serial_in(up, UART_REG_ISR);
+	fsr = serial_in(up, UART_REG_FSR);
 
-	do {
-                if(serial_in(up, UART_REG_FSR) & (1 << 14)) break;
-
-		fsr = serial_in(up, UART_REG_FSR);
+	while(!(fsr & RX_EMPTY)) {
+		//fsr = serial_in(up, UART_REG_FSR);
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
 
@@ -250,12 +253,31 @@ receive_chars(struct uart_nuc970_port *up)
 			continue;
 
 		uart_insert_char(&up->port, fsr, RX_OVER_IF, ch, flag);
+		max_count++;
+		dcnt=(serial_in(up, UART_REG_FSR) >> 8) & 0x3f;
+		if(max_count > 1023)
+		{
+			spin_lock(&up->port.lock);
+			tty_flip_buffer_push(&up->port.state->port);
+			spin_unlock(&up->port.lock);
+			max_count=0;
+			if((isr & TOUT_IF) && (dcnt == 0))
+				goto tout_end;
+		}
 
-	} while (!(fsr & RX_EMPTY) && (max_count-- > 0));
+		if(isr & RDA_IF) {
+			if(dcnt == 1)
+				return; // have remaining data, don't reset max_count
+		}
+		fsr = serial_in(up, UART_REG_FSR);
+	}
 
 	spin_lock(&up->port.lock);
 	tty_flip_buffer_push(&up->port.state->port);
 	spin_unlock(&up->port.lock);
+tout_end:
+	max_count=0;
+	return;
 }
 
 static void transmit_chars(struct uart_nuc970_port *up)
