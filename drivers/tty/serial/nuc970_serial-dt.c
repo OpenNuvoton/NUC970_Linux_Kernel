@@ -392,6 +392,9 @@ static void nuc970serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 	unsigned int mcr = 0;
 	unsigned int ier = 0;
 
+	if (up->rs485.flags & SER_RS485_ENABLED)
+		return;
+
 	if (mctrl & TIOCM_RTS)
 	{
 		// set RTS high level trigger
