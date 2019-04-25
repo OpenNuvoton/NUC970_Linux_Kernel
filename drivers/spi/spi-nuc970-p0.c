@@ -445,6 +445,7 @@ static int nuc970_spi0_setupxfer(struct spi_device *spi,
 	if (ret)
 		return ret;
 
+	nuc970_set_divider(hw);
 	nuc970_spi0_setup_txbitlen(hw, hw->pdata->txbitlen);
 	nuc970_tx_edge(hw, hw->pdata->txneg);
 	nuc970_rx_edge(hw, hw->pdata->rxneg);

@@ -182,6 +182,9 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	struct nuc970_chip *nuc970;
 	struct pinctrl *p;
 	int ret;
+#ifdef CONFIG_OF
+	int pwm_id;
+#endif
 
 	nuc970 = devm_kzalloc(&pdev->dev, sizeof(*nuc970), GFP_KERNEL);
 	if (nuc970 == NULL) {
@@ -194,7 +197,12 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	nuc970->chip.ops = &nuc970_pwm_ops;
 	//nuc970->chip.of_xlate = of_pwm_xlate_with_flags;
 	//nuc970->chip.of_pwm_n_cells = 3;
+#ifdef CONFIG_OF
+	of_property_read_u32_array(pdev->dev.of_node,"id", &pwm_id,1);
+	nuc970->chip.base = pwm_id;
+#else
 	nuc970->chip.base = pdev->id;
+#endif
 	nuc970->chip.npwm = 1;
 
 	nuc970->clk = clk_get(NULL, "pwm");

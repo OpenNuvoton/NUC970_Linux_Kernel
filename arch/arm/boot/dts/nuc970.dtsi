@@ -1425,6 +1425,7 @@
 			reg = <0xb8007000 0x100>;
 			interrupts = <60 4 1>;
 			map-addr = <0xf8007000>;
+			id = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm0_PA>;
 			status = "disabled";
@@ -1435,6 +1436,7 @@
 			reg = <0xb8007000 0x100>;
 			interrupts = <60 4 1>;
 			map-addr = <0xf8007000>;
+			id = <1>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm1_PA>;
 			status = "disabled";
@@ -1445,6 +1447,7 @@
 			reg = <0xb8007000 0x100>;
 			interrupts = <60 4 1>;
 			map-addr = <0xf8007000>;
+			id = <2>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm2_PA>;
 			status = "disabled";
@@ -1455,6 +1458,7 @@
 			reg = <0xb8007000 0x100>;
 			interrupts = <60 4 1>;
 			map-addr = <0xf8007000>;
+			id = <3>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_pwm3_PA>;
 			status = "disabled";
