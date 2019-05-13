@@ -84,22 +84,24 @@ static void Lock_RegWriteProtect(void)
 
 static int nuc970wdt_ping(struct watchdog_device *wdd)
 {
-	unsigned int val;
+	unsigned int val = __raw_readl(REG_WDT_CR) | WTR;
+	unsigned long flags;
 
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
-	val = __raw_readl(REG_WDT_CR);
-	val |= WTR;
 	__raw_writel(val, REG_WDT_CR);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
+
 	return 0;
 }
 
 
 static int nuc970wdt_start(struct watchdog_device *wdd)
 {
-	unsigned int val = 0;
+	unsigned int val = (WTRE | WTE | WTR);
+	unsigned long flags;
 
-	val |= (WTRE | WTE | WTR);
 #ifdef NUC970_WDT_WKUP
 	val |= WTIE;
 	val |= WTWKE;
@@ -112,9 +114,12 @@ static int nuc970wdt_start(struct watchdog_device *wdd)
 	} else {
 		val |= 0x7 << 8;
 	}
+
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CR);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -132,8 +137,8 @@ static int nuc970wdt_stop(struct watchdog_device *wdd)
 static int nuc970wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeout)
 {
 	unsigned int val;
+	unsigned long flags;
 
-	Unlock_RegWriteProtect();
 	val = __raw_readl(REG_WDT_CR);
 	val &= ~WTIS;
 	if(timeout < 2) {
@@ -144,8 +149,12 @@ static int nuc970wdt_set_timeout(struct watchdog_device *wdd, unsigned int timeo
 		val |= 0x7 << 8;
 	}
 
+	local_irq_save(flags);
+	Unlock_RegWriteProtect();
 	__raw_writel(val, REG_WDT_CR);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
+
 	return 0;
 }
 
@@ -285,11 +294,15 @@ static void nuc970wdt_shutdown(struct platform_device *pdev)
 static u32 reg_save;
 static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
+	unsigned long flags;
+
 	reg_save = __raw_readl(REG_WDT_CR);
 
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(__raw_readl(REG_WDT_CR) & ~WTRE, REG_WDT_CR); //Disable WDT reset
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 
 	__raw_writel( (1<<28) | __raw_readl(REG_WKUPSER), REG_WKUPSER); //Enable System WDT wakeup
 	if (request_irq(IRQ_WDT, nuc970_wdt_interrupt, IRQF_NO_SUSPEND, "nuc970wdt", NULL)) {
@@ -302,9 +315,13 @@ static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
 
 static int nuc970wdt_resume(struct platform_device *dev)
 {
+	unsigned long flags;
+
+	local_irq_save(flags);
 	Unlock_RegWriteProtect();
 	__raw_writel(reg_save | WTR, REG_WDT_CR);
 	Lock_RegWriteProtect();
+	local_irq_restore(flags);
 
 	disable_irq_wake(IRQ_WDT);
 	free_irq(IRQ_WDT, NULL);

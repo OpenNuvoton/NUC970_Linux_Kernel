@@ -47,6 +47,9 @@ u32 nuc970_uart_init[1] = {
 
 void nuc970_restart(char mode, const char *cmd)
 {
+	unsigned long flags;
+
+	local_irq_save(flags);
 	//UnlockReg
 	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) {
 		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
@@ -55,6 +58,7 @@ void nuc970_restart(char mode, const char *cmd)
 	}
 
 	__raw_writel(1, REG_AHBIPRST);      // System reset...
+	local_irq_restore(flags);
 }
 
 EXPORT_SYMBOL(nuc970_restart);
