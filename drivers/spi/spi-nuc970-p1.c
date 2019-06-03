@@ -242,6 +242,9 @@ static irqreturn_t nuc970_spi1_irq(int irq, void *dev)
 	unsigned int status, i, offset;
 	unsigned int count = hw->count, last;
 
+	status = __raw_readl(hw->regs + REG_CNTRL);
+	__raw_writel(status, hw->regs + REG_CNTRL);
+
 	hw->count += hw->pdata->txnum+1;
 
 	if (hw->rx) {
@@ -267,9 +270,6 @@ static irqreturn_t nuc970_spi1_irq(int irq, void *dev)
 	} else {
 		complete(&hw->done);
 	}
-
-	status = __raw_readl(hw->regs + REG_CNTRL);
-	__raw_writel(status, hw->regs + REG_CNTRL);
 
 	return IRQ_HANDLED;
 }
