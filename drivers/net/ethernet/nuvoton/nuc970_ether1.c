@@ -31,7 +31,7 @@
 #include <mach/regs-gcr.h>
 
 #define DRV_MODULE_NAME		"nuc970-emc1"
-#define DRV_MODULE_VERSION	"1.0"
+#define DRV_MODULE_VERSION	"1.1"
 
 /* Ethernet MAC1 Registers */
 #define REG_CAMCMR		(void __iomem *)0xF0003000
@@ -64,6 +64,7 @@
 //#define MCMDR_ENMDC		(0x01 << 19)
 #define MCMDR_OPMOD		(0x01 << 20)
 #define SWR				(0x01 << 24)
+#define MCMDR_TXON_RXON		(MCMDR_TXON | MCMDR_RXON)
 
 /* cam command register */
 #define CAMCMR_AUP		0x01
@@ -139,12 +140,18 @@
 
 #define MII_TIMEOUT	100
 
-#define ETH_TRIGGER_RX	do{__raw_writel(ENSTART, REG_RSDR);}while(0)
-#define ETH_TRIGGER_TX	do{__raw_writel(ENSTART, REG_TSDR);}while(0)
-#define ETH_ENABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_TXON, REG_MCMDR);}while(0)
-#define ETH_ENABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) | MCMDR_RXON, REG_MCMDR);}while(0)
-#define ETH_DISABLE_TX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_TXON, REG_MCMDR);}while(0)
-#define ETH_DISABLE_RX	do{__raw_writel(__raw_readl( REG_MCMDR) & ~MCMDR_RXON, REG_MCMDR);}while(0)
+#define ETH_SET_REG(reg, val)   __raw_writel((val), (reg))
+#define ETH_SETB_REG(reg, bits)	__raw_writel(__raw_readl(reg) |  (bits), (reg))
+#define ETH_CLRB_REG(reg, bits)	__raw_writel(__raw_readl(reg) & ~(bits), (reg))
+
+#define ETH_TRIGGER_TX    do { ETH_SET_REG(REG_TSDR, ENSTART); } while (0)
+#define ETH_TRIGGER_RX    do { ETH_SET_REG(REG_RSDR, ENSTART); } while (0)
+#define ETH_ENABLE_TX     do { ETH_SETB_REG(REG_MCMDR, MCMDR_TXON); } while (0)
+#define ETH_ENABLE_RX     do { ETH_SETB_REG(REG_MCMDR, MCMDR_RXON); } while (0)
+#define ETH_DISABLE_TX    do { ETH_CLRB_REG(REG_MCMDR, MCMDR_TXON); } while (0)
+#define ETH_DISABLE_RX    do { ETH_CLRB_REG(REG_MCMDR, MCMDR_RXON); } while (0)
+#define ETH_ENABLE_TX_RX  do { ETH_SETB_REG(REG_MCMDR, MCMDR_TXON_RXON); } while (0)
+#define ETH_DISABLE_TX_RX do { ETH_CLRB_REG(REG_MCMDR, MCMDR_TXON_RXON); } while (0)
 
 struct nuc970_rxbd {
 	unsigned int sl;
@@ -517,8 +524,7 @@ static void nuc970_reset_mac(struct net_device *dev, int need_free)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
 
-	ETH_DISABLE_TX;
-	ETH_DISABLE_RX;;
+	ETH_DISABLE_TX_RX;
 
 	nuc970_return_default_idle(dev);
 	nuc970_set_fifo_threshold(dev);
@@ -530,7 +536,6 @@ static void nuc970_reset_mac(struct net_device *dev, int need_free)
 		nuc970_free_desc(dev);
 	nuc970_init_desc(dev);
 
-	//dev->trans_start = jiffies; /* prevent tx timeout */
 	ether->cur_tx = 0x0;
 	ether->finish_tx = 0x0;
 	ether->cur_rx = 0x0;
@@ -539,10 +544,6 @@ static void nuc970_reset_mac(struct net_device *dev, int need_free)
 	nuc970_enable_cam(dev);
 	nuc970_enable_cam_command(dev);
 	nuc970_enable_mac_interrupt(dev);
-	ETH_ENABLE_TX;
-	ETH_ENABLE_RX;
-
-	ETH_TRIGGER_RX;
 
 	dev->trans_start = jiffies; /* prevent tx timeout */
 
@@ -610,12 +611,8 @@ static int nuc970_set_mac_address(struct net_device *dev, void *addr)
 static int nuc970_ether_close(struct net_device *dev)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct platform_device *pdev;
 
-	pdev = ether->pdev;
-
-	ETH_DISABLE_TX;
-	ETH_DISABLE_RX;
+	ETH_DISABLE_TX_RX;
 	netif_stop_queue(dev);
 	napi_disable(&ether->napi);
 	free_irq(ether->txirq, dev);
@@ -710,6 +707,7 @@ static irqreturn_t nuc970_tx_interrupt(int irq, void *dev_id)
 	} else if (status & MISTA_TXBERR) {
 		dev_err(&pdev->dev, "emc bus error interrupt\n");
 		nuc970_reset_mac(dev, 1);
+		ETH_ENABLE_TX_RX;
 	}
 
 	if (netif_queue_stopped(dev)) {
@@ -797,7 +795,6 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 	}
 
 rx_out:
-
 	ETH_TRIGGER_RX;
 	return(rx_cnt);
 }
@@ -815,7 +812,7 @@ static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 
 		dev_err(&pdev->dev, "emc rx bus error\n");
 		nuc970_reset_mac(dev, 1);
-
+		ETH_ENABLE_TX_RX;
 	} else {
 		if(status & MISTA_WOL) {
 
@@ -832,21 +829,11 @@ static irqreturn_t nuc970_rx_interrupt(int irq, void *dev_id)
 
 static int nuc970_ether_open(struct net_device *dev)
 {
-	struct nuc970_ether *ether;
-	struct platform_device *pdev;
-
-	ether = netdev_priv(dev);
-	pdev = ether->pdev;
+	struct nuc970_ether *ether = netdev_priv(dev);
+	struct platform_device *pdev = ether->pdev;
 
 	nuc970_reset_mac(dev, 0);
-	nuc970_set_fifo_threshold(dev);
-	nuc970_set_curdest(dev);
-	nuc970_enable_cam(dev);
-	nuc970_enable_cam_command(dev);
-	nuc970_enable_mac_interrupt(dev);
 	nuc970_set_global_maccmd(dev);
-	ETH_ENABLE_RX;
-
 
 	if (request_irq(ether->txirq, nuc970_tx_interrupt,
 						0x0, pdev->name, dev)) {
@@ -865,8 +852,7 @@ static int nuc970_ether_open(struct net_device *dev)
 	netif_start_queue(dev);
 	napi_enable(&ether->napi);
 
-	ETH_TRIGGER_RX;
-
+	ETH_ENABLE_TX_RX;
 	dev_info(&pdev->dev, "%s is OPENED\n", dev->name);
 
 	return 0;
@@ -1285,9 +1271,7 @@ static int nuc970_ether_suspend(struct platform_device *pdev, pm_message_t state
 	netif_device_detach(dev);
 
 	if(netif_running(dev)) {
-		ETH_DISABLE_TX;
-		ETH_DISABLE_RX;
-
+		ETH_DISABLE_TX_RX;
 		napi_disable(&ether->napi);
 
 		if(ether->wol) {  // enable wakeup from magic packet
@@ -1320,15 +1304,11 @@ static int nuc970_ether_resume(struct platform_device *pdev)
 		}
 
 		napi_enable(&ether->napi);
-
-		ETH_ENABLE_TX;
-		ETH_ENABLE_RX;
-
+		ETH_ENABLE_TX_RX;
 	}
 
 	netif_device_attach(dev);
 	return 0;
-
 }
 
 #else
