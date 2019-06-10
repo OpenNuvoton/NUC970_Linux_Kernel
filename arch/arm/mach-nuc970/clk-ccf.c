@@ -417,6 +417,14 @@ int __init nuc970_init_clocks(void)
 			pr_err("nuc970 clk %d: register failed with %ld\n",
 				i, PTR_ERR(clk[i]));
 	
+
+#ifndef FB_NUC970
+	if(__raw_readl(REG_CLK_HCLKEN) & (1 << 25)) {
+		printk("=============================================================================\n");
+		printk("WARNING: LCD enabled in loader but not in kernel, this may cause EMAC hang...\n");
+		printk("=============================================================================\n");
+	}
+#endif
 	
 	// register clock device	
 	clk_register_clkdev(clk[timer0_gate], "timer0", NULL);		// limitation of name size is xxxxxxxxxxxxxxxx
