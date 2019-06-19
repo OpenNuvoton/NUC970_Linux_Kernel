@@ -54,6 +54,7 @@
 #define RDA_IF			0x00000001
 #define THRE_IF			0x00000002
 #define TOUT_IF			0x00000010
+#define THRE_INT		0x00000200
 
 #define UART_REG_TOR	0x20
 #define UART_REG_BAUD	0x24
