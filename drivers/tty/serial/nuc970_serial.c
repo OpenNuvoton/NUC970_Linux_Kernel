@@ -810,6 +810,17 @@ void nuc970serial_config_rs485(struct uart_port *port, struct serial_rs485 *rs48
 		serial_out(p,UART_REG_ALT_CSR,(serial_in(p, UART_REG_ALT_CSR) & ~(1 << 10)) );
 
 #else
+		//rs485_start_rx(p);	// stay in Rx mode
+
+		if(rs485conf->flags & SER_RS485_RTS_ON_SEND)
+		{
+			serial_out(p, UART_REG_MCR, (serial_in(p, UART_REG_MCR) & ~0x200) );
+		}
+		else
+		{
+			serial_out(p, UART_REG_MCR, (serial_in(p, UART_REG_MCR) | 0x200) );
+		}
+
 		// set auto direction mode
 		serial_out(p,UART_REG_ALT_CSR,(serial_in(p, UART_REG_ALT_CSR) | (1 << 10)) );
 #endif
