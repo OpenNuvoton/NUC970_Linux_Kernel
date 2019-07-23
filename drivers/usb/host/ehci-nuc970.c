@@ -24,8 +24,10 @@
 #include <mach/regs-timer.h>
 #include <mach/regs-gpio.h>
 
+#ifdef CONFIG_OF
 static int  of_pm_vbus_off;
 static int  of_mfp_setting;   /* D+/D- multi-function pin setting - 0: not used; 1: PE.14/PE.15; 2: PF.10  */
+#endif
 
 #if 0
 #include <linux/kthread.h>
