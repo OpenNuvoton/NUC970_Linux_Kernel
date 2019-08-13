@@ -102,7 +102,7 @@ static int nuc970wdt_start(struct watchdog_device *wdd)
 	unsigned int val = (WTRE | WTE | WTR);
 	unsigned long flags;
 
-#ifdef NUC970_WDT_WKUP
+#ifdef CONFIG_NUC970_WDT_WKUP
 	val |= WTIE;
 	val |= WTWKE;
 #endif
@@ -177,7 +177,7 @@ static struct watchdog_device nuc970_wdd = {
 	.ops = &nuc970wdt_ops,
 };
 
-#ifdef NUC970_WDT_WKUP
+#ifdef CONFIG_NUC970_WDT_WKUP
 static irqreturn_t nuc970_wdt_interrupt(int irq, void *dev_id)
 {
 	Unlock_RegWriteProtect();
@@ -290,7 +290,7 @@ static void nuc970wdt_shutdown(struct platform_device *pdev)
 	nuc970wdt_stop(&nuc970_wdd);
 }
 
-#ifdef NUC970_WDT_WKUP
+#ifdef CONFIG_NUC970_WDT_WKUP
 static u32 reg_save;
 static int nuc970wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
@@ -332,7 +332,7 @@ static int nuc970wdt_resume(struct platform_device *dev)
 #else
 #define nuc970wdt_suspend NULL
 #define nuc970wdt_resume  NULL
-#endif /* NUC970_WDT_WKUP */
+#endif /* CONFIG_NUC970_WDT_WKUP */
 
 static const struct of_device_id nuc970_wdt_of_match[] = {
 	{ .compatible = "nuvoton,nuc970-wdt" },
