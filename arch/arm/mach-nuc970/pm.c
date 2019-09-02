@@ -24,7 +24,7 @@
 #include <mach/map.h>
 
 #ifdef CONFIG_PM_SLEEP
-//#define PM_FROM_SRAM
+#define PM_FROM_SRAM
 
 #ifdef PM_FROM_SRAM
 #include <asm/cacheflush.h>
