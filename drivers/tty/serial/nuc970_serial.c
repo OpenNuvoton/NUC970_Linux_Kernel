@@ -31,6 +31,8 @@
 #include <linux/serial_reg.h>
 #include <linux/serial_core.h>
 #include <linux/serial.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/nmi.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
@@ -1033,6 +1035,7 @@ void nuc970serial_resume_port(int line)
 	uart_resume_port(&nuc970serial_reg, &up->port);
 }
 
+#ifndef CONFIG_OF
 static int nuc970serial_pinctrl(struct platform_device *pdev)
 {
 	struct pinctrl *p = NULL;
@@ -1188,119 +1191,156 @@ else if(pdev->id == 10)
 }
 	return retval;
 }
+#endif
 
-void nuc970serial_set_clock(void)
+void nuc970serial_set_clock(struct uart_nuc970_port *up)
 {
-	clk = clk_get(NULL, "uart0");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 0){
+		clk = clk_get(NULL, "uart0");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart0_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
-
+		clk = clk_get(NULL, "uart0_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 
 	#ifdef CONFIG_NUC970_UART1
-	clk = clk_get(NULL, "uart1");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 1){
+		clk = clk_get(NULL, "uart1");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart1_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart1_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART2
-	clk = clk_get(NULL, "uart2");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 2){
+		clk = clk_get(NULL, "uart2");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart2_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart2_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART3
-	clk = clk_get(NULL, "uart3");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 3){
+		clk = clk_get(NULL, "uart3");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart3_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart3_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART4
-	clk = clk_get(NULL, "uart4");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 4){
+		clk = clk_get(NULL, "uart4");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart4_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart4_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART5
-	clk = clk_get(NULL, "uart5");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 5){
+		clk = clk_get(NULL, "uart5");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart5_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart5_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART6
-	clk = clk_get(NULL, "uart6");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 6){
+		clk = clk_get(NULL, "uart6");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart6_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart6_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART7
-	clk = clk_get(NULL, "uart7");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 7){
+		clk = clk_get(NULL, "uart7");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart7_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart7_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART8
-	clk = clk_get(NULL, "uart8");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 8){
+		clk = clk_get(NULL, "uart8");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart8_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart8_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART9
-	clk = clk_get(NULL, "uart9");
-	clk_prepare(clk);
-	clk_enable(clk);
+	if(up->port.line == 9){
+		clk = clk_get(NULL, "uart9");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart9_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart9_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 	#ifdef CONFIG_NUC970_UART10
-	clk = clk_get(NULL, "uart10");
-	clk_prepare(clk);
-	clk_enable(clk);
+		if(up->port.line == 10){
+		clk = clk_get(NULL, "uart10");
+		clk_prepare(clk);
+		clk_enable(clk);
 
-	clk = clk_get(NULL, "uart10_eclk");
-	clk_prepare(clk);
-	clk_enable(clk);
+		clk = clk_get(NULL, "uart10_eclk");
+		clk_prepare(clk);
+		clk_enable(clk);
+	}
 	#endif
 
 }
+
+#ifdef CONFIG_OF
+static int  get_uart_port_number(struct platform_device *pdev)
+{
+	u32   val32[2];
+
+	if (of_property_read_u32_array(pdev->dev.of_node, "port-number", val32, 1) != 0) 
+	{
+		printk("%s - can not get port-number!\n", __func__);
+		return -EINVAL;
+	}
+	// printk("%s - serial port %d called...\n", __func__, val32[0]);
+	return val32[0];
+}
+#endif
 
 /*
  * Register a set of serial devices attached to a platform device.  The
@@ -1309,47 +1349,74 @@ void nuc970serial_set_clock(void)
  */
 static int nuc970serial_probe(struct platform_device *pdev)
 {
-	struct plat_nuc970serial_port *p = pdev->dev.platform_data;
 	struct uart_nuc970_port *up;
 
-	int ret, i, retval;
+	int ret, i;
 
-//	memset(&port, 0, sizeof(struct uart_port));
+#ifdef CONFIG_OF
+	struct pinctrl *pinctrl;
+	u32   val32[2];
+#else
+	int retval;
+	struct plat_nuc970serial_port *p = pdev->dev.platform_data;
+#endif
 
+#ifdef CONFIG_OF
+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		return PTR_ERR(pinctrl);
+	}
+#else
 	retval = nuc970serial_pinctrl(pdev);
 	if(retval != 0)
 		return retval;
+#endif
 
-	nuc970serial_set_clock();
-
+#ifdef CONFIG_OF
+	i = get_uart_port_number(pdev);
+	if (i < 0) 
+		return -EINVAL;
+#else
 	i = pdev->id;
+#endif
 
-	//for (i = 0; i < UART_NR && p; p++, i++) {
-		up = &nuc970serial_ports[i];
+	up = &nuc970serial_ports[i];
+	up->port.line 			= i;
+	nuc970serial_set_clock(up);
 
-		up->port.line 			= i;
-		up->port.iobase       	= p->iobase;
-		up->port.membase      	= p->membase;
-		up->port.irq          	= p->irq;
-		up->port.uartclk      	= p->uartclk;
-		up->port.mapbase     	= p->mapbase;
-		up->port.private_data 	= p->private_data;
-		up->port.dev 			= &pdev->dev;
-		up->port.flags 			= ASYNC_BOOT_AUTOCONF;
+#ifdef CONFIG_OF
+	if (of_property_read_u32_array(pdev->dev.of_node, "map-addr", val32, 1) != 0) 
+	{
+		printk("%s - can not get map-addr!\n", __func__);
+		return -EINVAL;
+	}
 
-		/* Possibly override default I/O functions.  */
-		if (p->serial_in)
-			up->port.serial_in = p->serial_in;
-		if (p->serial_out)
-			up->port.serial_out = p->serial_out;
+	up->port.membase = (unsigned char __iomem *)val32[0];
+	up->port.iobase = (unsigned long)up->port.membase;
+	up->port.irq = platform_get_irq(pdev, 0);
+	printk("platform_get_irq - %d\n", up->port.irq);
 
-		ret = uart_add_one_port(&nuc970serial_reg, &up->port);
+	up->port.dev 			= &pdev->dev;
+	up->port.flags 			= ASYNC_BOOT_AUTOCONF;
 
+#else
+	up->port.iobase       	= p->iobase;
+	up->port.membase      	= p->membase;
+	up->port.irq          	= p->irq;
+	up->port.uartclk      	= p->uartclk;
+	up->port.mapbase     	= p->mapbase;
+	up->port.private_data 	= p->private_data;
+	up->port.dev 			= &pdev->dev;
+	up->port.flags 			= ASYNC_BOOT_AUTOCONF;
 
-	//}
+	/* Possibly override default I/O functions.  */
+	if (p->serial_in)
+		up->port.serial_in = p->serial_in;
+	if (p->serial_out)
+		up->port.serial_out = p->serial_out;
+#endif
 
-
-
+	ret = uart_add_one_port(&nuc970serial_reg, &up->port);
 
 	return 0;
 }
@@ -1380,7 +1447,13 @@ static int nuc970serial_suspend(struct platform_device *dev, pm_message_t state)
 
 	struct uart_nuc970_port *up;
 
+#if defined(CONFIG_OF)
+	i = get_uart_port_number(dev);
+	if (i < 0)
+		return i;
+#else
 	i = dev->id;
+#endif
 	up = &nuc970serial_ports[i];
 
 
@@ -1447,6 +1520,12 @@ static int nuc970serial_resume(struct platform_device *dev)
 	return 0;
 }
 
+static const struct of_device_id nuc970_serial_of_match[] = {
+	{ .compatible = "nuvoton,nuc970-uart" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nuc970_serial_of_match);
+
 static struct platform_driver nuc970serial_driver = {
 	.probe		= nuc970serial_probe,
 	.remove		= nuc970serial_remove,
@@ -1455,6 +1534,9 @@ static struct platform_driver nuc970serial_driver = {
 	.driver		= {
 		.name	= "nuc970-uart",
 		.owner	= THIS_MODULE,
+#if defined(CONFIG_OF)
+		.of_match_table = of_match_ptr(nuc970_serial_of_match),
+#endif
 	},
 };
 
