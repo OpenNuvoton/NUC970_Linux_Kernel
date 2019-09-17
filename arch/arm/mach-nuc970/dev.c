@@ -142,6 +142,12 @@ static struct platform_device nuc970_device_crypto = {
         }
 };
 
+static struct platform_device nuc970_device_crypto_raw = {
+	.name = "nuc970-crypto-raw",
+	.id = -1,
+	.resource = nuc970_crypto_resource,
+};
+
 static struct platform_device nuc970_device_prng = {
 	.name = "nuvoton-rng",
 	.id = -1,
@@ -1605,6 +1611,7 @@ static struct platform_device *nuc970_public_dev[] __initdata = {
 #endif
 #if defined(CONFIG_CRYPTO_DEV_NUC970) || defined(CONFIG_CRYPTO_DEV_NUC970_MODULE)
 		&nuc970_device_crypto,
+		&nuc970_device_crypto_raw,
 		&nuc970_device_prng,
 #endif
 #if defined(CONFIG_FB_NUC970) || defined(CONFIG_FB_NUC970_MODULE)

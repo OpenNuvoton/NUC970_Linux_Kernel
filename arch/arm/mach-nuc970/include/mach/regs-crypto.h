@@ -33,10 +33,7 @@ struct nuc970_crypto_regs
 	u32 CRPT_PRNG_KEY6;			/*!< Offset: 0x0028   PRNG Generated Key6                                */
 	u32 CRPT_PRNG_KEY7;			/*!< Offset: 0x002C   PRNG Generated Key7                                */
 	u32 RESERVED1[8];		    /*!< Offset: 0x0030 ~ 0x004C   Reserved                                  */
-	u32 CRPT_AES_FDBCK0;		/*!< Offset: 0x0050   AES Engine Output Feedback Data after Cryptographic Operation */
-	u32 CRPT_AES_FDBCK1;		/*!< Offset: 0x0054   AES Engine Output Feedback Data after Cryptographic Operation */
-	u32 CRPT_AES_FDBCK2;		/*!< Offset: 0x0058   AES Engine Output Feedback Data after Cryptographic Operation */
-	u32 CRPT_AES_FDBCK3;		/*!< Offset: 0x005C   AES Engine Output Feedback Data after Cryptographic Operation */
+	u32 CRPT_AES_FDBCK[4];		/*!< Offset: 0x0050 ~ 0x005C   AES Engine Output Feedback Data after Cryptographic Operation */
 	u32 CRPT_TDES_FDBCKH;		/*!< Offset: 0x0060   Triple DES engine Output higher feedback data after cryptographic operation */
 	u32 CRPT_TDES_FDBCKL;		/*!< Offset: 0x0064   Triple DES engine Output lower feedback data after cryptographic operation */
 	u32 RESERVED2[38];		    /*!< Offset: 0x0068 ~ 0x00FC   Reserved                                  */
@@ -44,63 +41,23 @@ struct nuc970_crypto_regs
 	u32 CRPT_AES_STS;			/*!< Offset: 0x0104   AES engine flag                                    */
 	u32 CRPT_AES_DATIN;			/*!< Offset: 0x0108   AES engine data input port                         */
 	u32 CRPT_AES_DATOUT;		/*!< Offset: 0x010C   AES engine data output port                        */
-	u32 CRPT_AES0_KEY0;			/*!< Offset: 0x0110   AES0 Key Word 0 Register                           */
-	u32 CRPT_AES0_KEY1;			/*!< Offset: 0x0114   AES0 Key Word 1 Register                           */
-	u32 CRPT_AES0_KEY2;			/*!< Offset: 0x0118   AES0 Key Word 2 Register                           */
-	u32 CRPT_AES0_KEY3;			/*!< Offset: 0x011C   AES0 Key Word 3 Register                           */
-	u32 CRPT_AES0_KEY4;			/*!< Offset: 0x0120   AES0 Key Word 4 Register                           */
-	u32 CRPT_AES0_KEY5;			/*!< Offset: 0x0124   AES0 Key Word 5 Register                           */
-	u32 CRPT_AES0_KEY6;			/*!< Offset: 0x0128   AES0 Key Word 6 Register                           */
-	u32 CRPT_AES0_KEY7;			/*!< Offset: 0x012C   AES0 Key Word 7 Register                           */
-	u32 CRPT_AES0_IV0;			/*!< Offset: 0x0130   AES0 Initial Vector Word 0 Register                */
-	u32 CRPT_AES0_IV1;			/*!< Offset: 0x0134   AES0 Initial Vector Word 1 Register                */
-	u32 CRPT_AES0_IV2;			/*!< Offset: 0x0138   AES0 Initial Vector Word 2 Register                */
-	u32 CRPT_AES0_IV3;			/*!< Offset: 0x013C   AES0 Initial Vector Word 3 Register                */
+	u32 CRPT_AES0_KEY[8];		/*!< Offset: [0x0110] ~ [0x012c] AES Key Word 0~7 Register               */
+	u32 CRPT_AES0_IV[4];		/*!< Offset: [0x0130] ~ [0x013c] AES Initial Vector Word 0 ~ 3 Register  */
 	u32 CRPT_AES0_SADDR;		/*!< Offset: 0x0140   AES0 Source Address Register                       */
 	u32 CRPT_AES0_DADDR;		/*!< Offset: 0x0144   AES0 Destination Address Register                  */
 	u32 CRPT_AES0_CNT;			/*!< Offset: 0x0148   AES0 Byte Count Register                           */
-	u32 CRPT_AES1_KEY0;			/*!< Offset: 0x014C   AES1 Key Word 0 Register                           */
-	u32 CRPT_AES1_KEY1;			/*!< Offset: 0x0150   AES1 Key Word 1 Register                           */
-	u32 CRPT_AES1_KEY2;			/*!< Offset: 0x0154   AES1 Key Word 2 Register                           */
-	u32 CRPT_AES1_KEY3;			/*!< Offset: 0x0158   AES1 Key Word 3 Register                           */
-	u32 CRPT_AES1_KEY4;			/*!< Offset: 0x015C   AES1 Key Word 4 Register                           */
-	u32 CRPT_AES1_KEY5;			/*!< Offset: 0x0160   AES1 Key Word 5 Register                           */
-	u32 CRPT_AES1_KEY6;			/*!< Offset: 0x0164   AES1 Key Word 6 Register                           */
-	u32 CRPT_AES1_KEY7;			/*!< Offset: 0x0168   AES1 Key Word 7 Register                           */
-	u32 CRPT_AES1_IV0;			/*!< Offset: 0x016C   AES1 Initial Vector Word 0 Register                */
-	u32 CRPT_AES1_IV1;			/*!< Offset: 0x0170   AES1 Initial Vector Word 1 Register                */
-	u32 CRPT_AES1_IV2;			/*!< Offset: 0x0174   AES1 Initial Vector Word 2 Register                */
-	u32 CRPT_AES1_IV3;			/*!< Offset: 0x0178   AES1 Initial Vector Word 3 Register                */
+	u32 CRPT_AES1_KEY[8];		/*!< Offset: [0x014C] ~ [0x0168] AES Key Word 0~7 Register               */
+	u32 CRPT_AES1_IV[4];		/*!< Offset: [0x016C] ~ [0x0178] AES Initial Vector Word 0 ~ 3 Register  */
 	u32 CRPT_AES1_SADDR;		/*!< Offset: 0x017C   AES1 Source Address Register                       */
 	u32 CRPT_AES1_DADDR;		/*!< Offset: 0x0180   AES1 Destination Address Register                  */
 	u32 CRPT_AES1_CNT;			/*!< Offset: 0x0184   AES1 Byte Count Register                           */
-	u32 CRPT_AES2_KEY0;			/*!< Offset: 0x0188   AES2 Key Word 0 Register                           */
-	u32 CRPT_AES2_KEY1;			/*!< Offset: 0x018C   AES2 Key Word 1 Register                           */
-	u32 CRPT_AES2_KEY2;			/*!< Offset: 0x0190   AES2 Key Word 2 Register                           */
-	u32 CRPT_AES2_KEY3;			/*!< Offset: 0x0194   AES2 Key Word 3 Register                           */
-	u32 CRPT_AES2_KEY4;			/*!< Offset: 0x0198   AES2 Key Word 4 Register                           */
-	u32 CRPT_AES2_KEY5;			/*!< Offset: 0x019C   AES2 Key Word 5 Register                           */
-	u32 CRPT_AES2_KEY6;			/*!< Offset: 0x01A0   AES2 Key Word 6 Register                           */
-	u32 CRPT_AES2_KEY7;			/*!< Offset: 0x01A4   AES2 Key Word 7 Register                           */
-	u32 CRPT_AES2_IV0;			/*!< Offset: 0x01A8   AES2 Initial Vector Word 0 Register                */
-	u32 CRPT_AES2_IV1;			/*!< Offset: 0x01AC   AES2 Initial Vector Word 1 Register                */
-	u32 CRPT_AES2_IV2;			/*!< Offset: 0x01B0   AES2 Initial Vector Word 2 Register                */
-	u32 CRPT_AES2_IV3;			/*!< Offset: 0x01B4   AES2 Initial Vector Word 3 Register                */
+	u32 CRPT_AES2_KEY[8];		/*!< Offset: [0x0188] ~ [0x01A4] AES Key Word 0~7 Register               */
+	u32 CRPT_AES2_IV[4];		/*!< Offset: [0x01A8] ~ [0x01B4] AES Initial Vector Word 0 ~ 3 Register  */
 	u32 CRPT_AES2_SADDR;		/*!< Offset: 0x01B8   AES2 Source Address Register                       */
 	u32 CRPT_AES2_DADDR;		/*!< Offset: 0x01BC   AES2 Destination Address Register                  */
 	u32 CRPT_AES2_CNT;			/*!< Offset: 0x01C0   AES2 Byte Count Register                           */
-	u32 CRPT_AES3_KEY0;			/*!< Offset: 0x01C4   AES3 Key Word 0 Register                           */
-	u32 CRPT_AES3_KEY1;			/*!< Offset: 0x01C8   AES3 Key Word 1 Register                           */
-	u32 CRPT_AES3_KEY2;			/*!< Offset: 0x01CC   AES3 Key Word 2 Register                           */
-	u32 CRPT_AES3_KEY3;			/*!< Offset: 0x01D0   AES3 Key Word 3 Register                           */
-	u32 CRPT_AES3_KEY4;			/*!< Offset: 0x01D4   AES3 Key Word 4 Register                           */
-	u32 CRPT_AES3_KEY5;			/*!< Offset: 0x01D8   AES3 Key Word 5 Register                           */
-	u32 CRPT_AES3_KEY6;			/*!< Offset: 0x01DC   AES3 Key Word 6 Register                           */
-	u32 CRPT_AES3_KEY7;			/*!< Offset: 0x01E0   AES3 Key Word 7 Register                           */
-	u32 CRPT_AES3_IV0;			/*!< Offset: 0x01E4   AES3 Initial Vector Word 0 Register                */
-	u32 CRPT_AES3_IV1;			/*!< Offset: 0x01E8   AES3 Initial Vector Word 1 Register                */
-	u32 CRPT_AES3_IV2;			/*!< Offset: 0x01EC   AES3 Initial Vector Word 2 Register                */
-	u32 CRPT_AES3_IV3;			/*!< Offset: 0x01F0   AES3 Initial Vector Word 3 Register                */
+	u32 CRPT_AES3_KEY[8];		/*!< Offset: [0x01C4] ~ [0x01E0] AES Key Word 0~7 Register               */
+	u32 CRPT_AES3_IV[4];		/*!< Offset: [0x01E4] ~ [0x01F0] AES Initial Vector Word 0 ~ 3 Register  */
 	u32 CRPT_AES3_SADDR;		/*!< Offset: 0x01F4   AES3 Source Address Register                       */
 	u32 CRPT_AES3_DADDR;		/*!< Offset: 0x01F8   AES3 Destination Address Register                  */
 	u32 CRPT_AES3_CNT;			/*!< Offset: 0x01FC   AES3 Byte Count Register                           */

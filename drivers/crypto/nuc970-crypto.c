@@ -29,37 +29,12 @@
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-crypto.h>
+#include <mach/nuc970-crypto.h>
 #include <mach/regs-mtp.h>
 
 /* Static structures */
 
 #define DMA_BUFSZ			(4096)
-
-struct nuc970_crypto_dev {
-	struct device  *dev;  
-	struct nuc970_crypto_regs  *regs;
-	spinlock_t 	 aes_lock;
-	spinlock_t 	 des_lock;
-	spinlock_t 	 sha_lock;
-	spinlock_t 	 mtp_lock;
-	
-	u8			 aes_channels;
-	u8           des_channels;
-	
-    u32          *aes_inbuf;
-    dma_addr_t   aes_inbuf_dma_addr;
-    u32          *aes_outbuf;
-    dma_addr_t   aes_outbuf_dma_addr;
-	
-    u32          *des_inbuf;
-    dma_addr_t   des_inbuf_dma_addr;
-    u32          *des_outbuf;
-    dma_addr_t   des_outbuf_dma_addr;
-
-    u32          *hmac_inbuf;
-    dma_addr_t   hmac_inbuf_dma_addr;
-}  nuc970_crdev;
-
 
 struct nuc970_ctx {
 	int		channel;
@@ -77,6 +52,7 @@ struct cryp_algo_template {
 	struct crypto_alg crypto;
 };
 
+struct nuc970_crypto_dev  nuc970_crdev;
 
 static volatile bool  mtp_is_enabled = false;
 
@@ -261,10 +237,10 @@ void dump_regs(void)
 	printk("CRPT_INTSTS = 0x%x\n", crpt_regs->CRPT_INTSTS);
 	printk("CRPT_AES_CTL = 0x%x\n", crpt_regs->CRPT_AES_CTL);
 	printk("CRPT_AES_STS = 0x%x\n", crpt_regs->CRPT_AES_STS);
-	printk("CRPT_AES0_KEY0 = 0x%x\n", crpt_regs->CRPT_AES0_KEY0);
-	printk("CRPT_AES0_KEY1 = 0x%x\n", crpt_regs->CRPT_AES0_KEY1);
-	printk("CRPT_AES0_KEY2 = 0x%x\n", crpt_regs->CRPT_AES0_KEY2);
-	printk("CRPT_AES0_KEY3 = 0x%x\n", crpt_regs->CRPT_AES0_KEY3);
+	printk("CRPT_AES0_KEY0 = 0x%x\n", crpt_regs->CRPT_AES0_KEY[0]);
+	printk("CRPT_AES0_KEY1 = 0x%x\n", crpt_regs->CRPT_AES0_KEY[1]);
+	printk("CRPT_AES0_KEY2 = 0x%x\n", crpt_regs->CRPT_AES0_KEY[2]);
+	printk("CRPT_AES0_KEY3 = 0x%x\n", crpt_regs->CRPT_AES0_KEY[3]);
 	printk("CRPT_AES0_SADDR = 0x%x\n", crpt_regs->CRPT_AES0_SADDR);
 	printk("CRPT_AES0_DADDR = 0x%x\n", crpt_regs->CRPT_AES0_DADDR);
 	printk("CRPT_AES0_CNT = 0x%x\n", crpt_regs->CRPT_AES0_CNT);
@@ -285,7 +261,7 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	
 	BUG_ON(!areq->info);
 
-	spin_lock(&nuc970_crdev.aes_lock);
+	mutex_lock(&nuc970_crdev.aes_lock);
 	
 	crpt_regs->CRPT_INTEN |= (AESIEN | AESERRIEN);
 	crpt_regs->CRPT_AES_CTL = 0;
@@ -380,7 +356,7 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 		if (!time_before(jiffies, timeout))
 		{
 			printk("Crypto AES engine failed!\n");
-			spin_unlock(&nuc970_crdev.aes_lock);
+			mutex_unlock(&nuc970_crdev.aes_lock);
 			return 1;
 		}
 		crpt_regs->CRPT_INTSTS = (AESIF|AESERRIF);
@@ -406,7 +382,7 @@ static int nuc970_do_aes_crypt(struct ablkcipher_request *areq, u32 encrypt)
 			}
 		}	
 	}
-	spin_unlock(&nuc970_crdev.aes_lock);
+	mutex_unlock(&nuc970_crdev.aes_lock);
 	return 0;
 }
 
@@ -476,7 +452,7 @@ static int nuc970_aes_init(struct crypto_tfm *tfm)
 	struct cryp_algo_template *cryp_alg = container_of(alg, struct cryp_algo_template, crypto);
 	int   chn;
 	
-	spin_lock(&nuc970_crdev.aes_lock);
+	mutex_lock(&nuc970_crdev.aes_lock);
 
 	for (chn = 0; chn < 4; chn++)
 	{
@@ -488,7 +464,7 @@ static int nuc970_aes_init(struct crypto_tfm *tfm)
 	}	
 	if (chn >= 4)
 	{
-		spin_unlock(&nuc970_crdev.aes_lock);
+		mutex_unlock(&nuc970_crdev.aes_lock);
 		return -ENOMEM;
 	}
 	
@@ -498,7 +474,7 @@ static int nuc970_aes_init(struct crypto_tfm *tfm)
 	ctx->use_mtp_key = 0;
 	ctx->is_first_block = 1;
 
-	spin_unlock(&nuc970_crdev.aes_lock);
+	mutex_unlock(&nuc970_crdev.aes_lock);
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
 
@@ -509,10 +485,10 @@ static void nuc970_aes_exit(struct crypto_tfm *tfm)
 {
 	struct nuc970_ctx  *ctx = crypto_tfm_ctx(tfm);
 
-	spin_lock(&nuc970_crdev.aes_lock);
+	mutex_lock(&nuc970_crdev.aes_lock);
 	nuc970_crdev.aes_channels &= ~(1 << ctx->channel);
 	nuc970_crdev.regs->CRPT_AES_CTL = AES_STOP;
-	spin_unlock(&nuc970_crdev.aes_lock);
+	mutex_unlock(&nuc970_crdev.aes_lock);
 }
 
 
@@ -530,7 +506,7 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 	
 	BUG_ON(!areq->info);
 
-	spin_lock(&nuc970_crdev.des_lock);
+	mutex_lock(&nuc970_crdev.des_lock);
 	
 	crpt_regs->CRPT_INTEN |= (TDESIEN | TDESERRIEN);
 	
@@ -620,13 +596,13 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 			if (!time_before(jiffies, timeout))
 			{
 				printk("Time-out! Crypto DES/TDES engine failed!\n");
-				spin_unlock(&nuc970_crdev.des_lock);
+				mutex_unlock(&nuc970_crdev.des_lock);
 				return 1;
 			}
 			if (crpt_regs->CRPT_INTSTS & TDESERRIF)
 			{
 				printk("TDESERRIF!!\n");
-				spin_unlock(&nuc970_crdev.des_lock);
+				mutex_unlock(&nuc970_crdev.des_lock);
 				return 1;
 			}
 			
@@ -655,7 +631,7 @@ static int nuc970_do_des_crypt(struct ablkcipher_request *areq, u32 encrypt)
 		}	
 	}
 
-	spin_unlock(&nuc970_crdev.des_lock);
+	mutex_unlock(&nuc970_crdev.des_lock);
 	
 	return 0;
 }
@@ -707,7 +683,7 @@ static int nuc970_des_init(struct crypto_tfm *tfm)
 	
 	//printk("[%s]\n", __func__);
 
-	spin_lock(&nuc970_crdev.des_lock);
+	mutex_lock(&nuc970_crdev.des_lock);
 
 	for (chn = 0; chn < 4; chn++)
 	{
@@ -719,7 +695,7 @@ static int nuc970_des_init(struct crypto_tfm *tfm)
 	}	
 	if (chn >= 4)
 	{
-		spin_unlock(&nuc970_crdev.des_lock);
+		mutex_unlock(&nuc970_crdev.des_lock);
 		return -ENOMEM;
 	}
 	
@@ -730,7 +706,7 @@ static int nuc970_des_init(struct crypto_tfm *tfm)
 	ctx->tdes_regs = (struct nuc970_tdes_regs *)((u32)nuc970_crdev.regs + 0x208 + (0x40 * chn));
 	ctx->is_first_block = 1;
 
-	spin_unlock(&nuc970_crdev.des_lock);
+	mutex_unlock(&nuc970_crdev.des_lock);
 
 	//printk("[%s],ctx=0x%x, chn=%d\n", __func__, (int)ctx, ctx->channel);
 
@@ -743,9 +719,9 @@ static void nuc970_des_exit(struct crypto_tfm *tfm)
 
 	//printk("[%s]\n", __func__);
 
-	spin_lock(&nuc970_crdev.des_lock);
+	mutex_lock(&nuc970_crdev.des_lock);
 	nuc970_crdev.des_channels &= ~(1 << ctx->channel);
-	spin_unlock(&nuc970_crdev.des_lock);
+	mutex_unlock(&nuc970_crdev.des_lock);
 }
 
 
@@ -1478,14 +1454,14 @@ static int nuc970_sha_cra_init(struct crypto_tfm *tfm)
 	
 	//printk("nuc970_sha_cra_init.\n");
 
-	//spin_lock(&nuc970_crdev.sha_lock);
+	//mutex_lock(&nuc970_crdev.sha_lock);
 	return 0;
 }
 
 static void nuc970_sha_cra_exit(struct crypto_tfm *tfm)
 {
 	//printk("nuc970_sha_cra_exit.\n");
-	//spin_unlock(&nuc970_crdev.sha_lock);
+	//mutex_unlock(&nuc970_crdev.sha_lock);
 }
 
 
@@ -1772,6 +1748,10 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
 		goto failed;
 	}
 
+	nuc970_crdev.aes_inbuf_size  = DMA_BUFSZ;
+	nuc970_crdev.aes_outbuf_size = DMA_BUFSZ;
+	nuc970_crdev.hmac_inbuf_size = DMA_BUFSZ;
+
 	for (i = 0; i < ARRAY_SIZE(nuc970_crypto_algs); i++) 
 	{
 		err = crypto_register_alg(&nuc970_crypto_algs[i].crypto);
@@ -1786,9 +1766,9 @@ static int nuc970_crypto_probe(struct platform_device *pdev)
 			goto failed;
 	}
 	
-	spin_lock_init(&nuc970_crdev.aes_lock);
-	spin_lock_init(&nuc970_crdev.des_lock);
-	spin_lock_init(&nuc970_crdev.sha_lock);
+	mutex_init(&nuc970_crdev.aes_lock);
+	mutex_init(&nuc970_crdev.des_lock);
+	mutex_init(&nuc970_crdev.sha_lock);
 		
 	printk(KERN_NOTICE "NUC970 Crypto engine enabled.\n");
 	return 0;
