@@ -563,9 +563,13 @@ int __init nuc970_of_init_irq(struct device_node *node, struct device_node *pare
 	__raw_writel(0xFFFFFFFC, REG_AIC_MDCR);
 	__raw_writel(0xFFFFFFFF, REG_AIC_MDCRH);
 
+#ifdef CONFIG_NUC970_CLK_ETIMER
+	irq_set_chip_and_handler(IRQ_ETIMER0, &nuc970_irq_chip, handle_level_irq);
+	set_irq_flags(IRQ_ETIMER0, IRQF_VALID);
+#else
 	irq_set_chip_and_handler(IRQ_TMR0, &nuc970_irq_chip, handle_level_irq);
 	set_irq_flags(IRQ_TMR0, IRQF_VALID);
-
+#endif
 	//irq_set_chip_and_handler(IRQ_UART0, &nuc970_irq_chip, handle_level_irq);
 	//set_irq_flags(IRQ_UART0, IRQF_VALID);
 
