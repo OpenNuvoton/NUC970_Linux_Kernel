@@ -366,6 +366,9 @@ static irqreturn_t nuc970_i2c_irq(int irqno, void *dev_id)
 		/* deal with arbitration loss */
 		dev_err(i2c->dev, "deal with arbitration loss\n");
 		i2c->arblost = 1;
+		nuc970_i2c1_disable_irq(i2c);
+		nuc970_i2c1_stop(i2c, 0);
+
 		goto out;
 	}
 
@@ -415,7 +418,10 @@ static int nuc970_i2c1_set_master(struct nuc970_i2c *i2c)
 			return 0;
 		}
 
+		writel(0x1, i2c->regs + CSR);
 		msleep(1);
+		nuc970_i2c1_stop(i2c, 0);
+		msleep(3);
 	}
 
 	return -ETIMEDOUT;
@@ -441,6 +447,8 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 	}
 
 	spin_lock_irq(&i2c->lock);
+
+	nuc970_i2c1_enable_irq(i2c);
 
 	i2c->msg     = msgs;
 	i2c->msg_num = num;
@@ -483,10 +491,13 @@ static int nuc970_i2c1_doxfer(struct nuc970_i2c *i2c,
 	if(i2c->arblost) {
 		dev_dbg(i2c->dev, "arb lost, stop\n");
 		i2c->arblost = 0;
-		nuc970_i2c1_stop(i2c, 0);
+		writel(0x1, i2c->regs + CSR);
 		msleep(1);
+		nuc970_i2c1_stop(i2c, 0);
+		msleep(3);
 		nuc970_i2c1_disable_irq(i2c);
 		nuc970_i2c1_hangup(i2c);
+
 		ret = -EAGAIN;
 	}
 
@@ -506,8 +517,6 @@ static int nuc970_i2c1_xfer(struct i2c_adapter *adap,
 	struct nuc970_i2c *i2c = (struct nuc970_i2c *)adap->algo_data;
 	int retry;
 	int ret;
-
-	nuc970_i2c1_enable_irq(i2c);
 
 	for (retry = 0; retry < adap->retries; retry++) {
 
