@@ -174,17 +174,17 @@ static long nvt_aes_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 
 struct file_operations nvt_aes_fops = {
-	.owner		= THIS_MODULE,
-	.read		= nvt_aes_read,
-	.write		= nvt_aes_write,
+	.owner      = THIS_MODULE,
+	.read       = nvt_aes_read,
+	.write      = nvt_aes_write,
 	.mmap       = nvt_aes_mmap,
-	.unlocked_ioctl	= nvt_aes_ioctl,
+	.unlocked_ioctl = nvt_aes_ioctl,
 };
 
 static struct miscdevice nvt_aes_dev = {
-	.minor		= MISC_DYNAMIC_MINOR,
-	.name		= "nuvoton-aes",
-	.fops		= &nvt_aes_fops,
+	.minor      = MISC_DYNAMIC_MINOR,
+	.name       = "nuvoton-aes",
+	.fops       = &nvt_aes_fops,
 };
 
 
@@ -315,16 +315,16 @@ static long nvt_sha_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 }
 
 struct file_operations nvt_sha_fops = {
-	.owner		= THIS_MODULE,
-	.read		= nvt_sha_read,        /* used to read SHA output digest            */
-	.write		= nvt_sha_write,       /* used to push SHA input data               */
-	.unlocked_ioctl	= nvt_sha_ioctl,   /* used to start and finish a SHA operation  */
+	.owner      = THIS_MODULE,
+	.read       = nvt_sha_read,        /* used to read SHA output digest            */
+	.write      = nvt_sha_write,       /* used to push SHA input data               */
+	.unlocked_ioctl = nvt_sha_ioctl,   /* used to start and finish a SHA operation  */
 };
 
 static struct miscdevice nvt_sha_dev = {
-	.minor		= MISC_DYNAMIC_MINOR,
-	.name		= "nuvoton-sha",
-	.fops		= &nvt_sha_fops,
+	.minor      = MISC_DYNAMIC_MINOR,
+	.name       = "nuvoton-sha",
+	.fops       = &nvt_sha_fops,
 };
 
 
