@@ -838,24 +838,31 @@ static void nuc970_nand_command_lp(struct mtd_info *mtd, unsigned int command, i
 
 	write_cmd_reg(nand, command & 0xff);
 
-	if (column != -1 || page_addr != -1) {
-		if (column != -1) {
-			write_addr_reg(nand, (column&0xFF) );
-			if ( page_addr != -1 )
-				write_addr_reg(nand, (column >> 8) );
-			else
-				write_addr_reg(nand, (column >> 8) | ENDADDR);
+	if (command == NAND_CMD_READID)
+	{
+		write_addr_reg(nand, ENDADDR);
+	}
+	else
+	{
+		if (column != -1 || page_addr != -1) {
+			if (column != -1) {
+				write_addr_reg(nand, (column&0xFF) );
+				if ( page_addr != -1 )
+					write_addr_reg(nand, (column >> 8) );
+				else
+					write_addr_reg(nand, (column >> 8) | ENDADDR);
 
-		}
+			}
 
-		if (page_addr != -1) {
-			write_addr_reg(nand, (page_addr&0xFF) );
+			if (page_addr != -1) {
+				write_addr_reg(nand, (page_addr&0xFF) );
 
-			if ( chip->chipsize > (128 << 20) ) {
-				write_addr_reg(nand, (page_addr >> 8)&0xFF );
-				write_addr_reg(nand, ((page_addr >> 16)&0xFF)|ENDADDR );
-			} else {
-				write_addr_reg(nand, ((page_addr >> 8)&0xFF)|ENDADDR );
+				if ( chip->chipsize > (128 << 20) ) {
+					write_addr_reg(nand, (page_addr >> 8)&0xFF );
+					write_addr_reg(nand, ((page_addr >> 16)&0xFF)|ENDADDR );
+				} else {
+					write_addr_reg(nand, ((page_addr >> 8)&0xFF)|ENDADDR );
+				}
 			}
 		}
 	}
