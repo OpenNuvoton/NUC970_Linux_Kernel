@@ -171,6 +171,7 @@ static int nuc970_g2d_bitblt(nuc970_g2d_params *params)
 			cmd32 = 0x20;
 			break;
 	}
+	cmd32 |= __raw_readl(REG_GE2D_MISCTL) & 0xFFFFFFF8;
 	__raw_writel(cmd32, REG_GE2D_MISCTL);
   
 	__raw_writel((params->dst_full_width << 16 | params->src_full_width), REG_GE2D_SDPITCH);
@@ -261,6 +262,7 @@ static int nuc970_g2d_bitblt_rop(nuc970_g2d_params *params)
 			cmd32 = 0x20;
 			break;
 	}
+	cmd32 |= __raw_readl(REG_GE2D_MISCTL) & 0xFFFFFFF8;
 	__raw_writel(cmd32, REG_GE2D_MISCTL);
   
 	__raw_writel((params->dst_full_width << 16 | params->src_full_width), REG_GE2D_SDPITCH);
