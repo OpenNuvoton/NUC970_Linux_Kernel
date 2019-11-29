@@ -289,7 +289,7 @@ static int nuc970_g2d_bitblt_rop(nuc970_g2d_params *params)
 	return 0;    
 }
 
-static int nuc970_g2d_fill_rectangle(nuc970_g2d_params *params)
+static int nuc970_g2d_fill_rectangle(nuc970_g2d_params *params, int rgb565)
 {
 	unsigned int cmd32 = 0xcc430060;    
 	unsigned int dst_width =  params->dst_work_width;
@@ -298,7 +298,12 @@ static int nuc970_g2d_fill_rectangle(nuc970_g2d_params *params)
 	unsigned int dst_y = params->dst_start_y;
 	unsigned int color32;
 	
-	color32 = make_color(params->bpp_src, params->color_val[G2D_RED], params->color_val[G2D_GREEN], params->color_val[G2D_BLUE]);
+	if(rgb565)
+		color32 = ((params->color_val[G2D_RED] & 0x1F) << 11) | 
+			  ((params->color_val[G2D_GREEN] & 0x3F) << 5) | 
+			  (params->color_val[G2D_BLUE] & 0x1F);
+	else
+		color32 = make_color(params->bpp_src, params->color_val[G2D_RED], params->color_val[G2D_GREEN], params->color_val[G2D_BLUE]);
 	dbgprintk("[%s](%d,%d)[%dx%d],0x%08x\n", __func__, dst_x, dst_y, dst_width, dst_height, color32);    
 	
 	__raw_writel(color32, REG_GE2D_FGCOLR); // fill with foreground color  
@@ -383,7 +388,7 @@ static int nuc970_g2d_rotation(nuc970_g2d_params *params)
 	return 0;    
 }
 
-static int nuc970_g2d_line(nuc970_g2d_params *params)
+static int nuc970_g2d_line(nuc970_g2d_params *params, int rgb565)
 {
 	unsigned int cmd32; 
 	unsigned int x1 = params->line_x1;
@@ -394,7 +399,12 @@ static int nuc970_g2d_line(nuc970_g2d_params *params)
 	int abs_X, abs_Y, min, max;
 	unsigned int step_constant, initial_error, direction_code;
 	
-	color32 = make_color(params->bpp_src, params->color_val[G2D_RED], params->color_val[G2D_GREEN], params->color_val[G2D_BLUE]);
+	if(rgb565)
+		color32 = ((params->color_val[G2D_RED] & 0x1F) << 11) | 
+			  ((params->color_val[G2D_GREEN] & 0x3F) << 5) | 
+			  (params->color_val[G2D_BLUE] & 0x1F);
+	else
+		color32 = make_color(params->bpp_src, params->color_val[G2D_RED], params->color_val[G2D_GREEN], params->color_val[G2D_BLUE]);
 	dbgprintk("[%s](%d,%d)-(%d,%d),0x%08x\n", __func__, x1, y1, x2, y2, color32);    
 	
 	abs_X = abs(x2-x1);   //absolute value
@@ -584,7 +594,7 @@ static long nuc970_ge2d_ioctl(struct file *file, unsigned int cmd, unsigned long
 		break;
 	   
 	   case NUC970_GE2D_FILL_RECTANGLE:
-			nuc970_g2d_fill_rectangle(params);
+			nuc970_g2d_fill_rectangle(params, 0);
 		break;
 	   
 	   case NUC970_GE2D_ROTATION:
@@ -592,11 +602,19 @@ static long nuc970_ge2d_ioctl(struct file *file, unsigned int cmd, unsigned long
 		break;
 		
 		case NUC970_GE2D_LINE:
-			nuc970_g2d_line(params);
+			nuc970_g2d_line(params, 0);
 		break; 
 		
 		case NUC970_GE2D_STRETCH:
 			nuc970_g2d_stretch(params);
+		break; 
+
+		case NUC970_GE2D_LINE565:
+			nuc970_g2d_line(params, 1);
+		break; 
+		
+		case NUC970_GE2D_FILL_RECTANGLE565:
+			nuc970_g2d_fill_rectangle(params, 1);
 		break; 
 	}
 	
