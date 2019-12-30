@@ -537,7 +537,7 @@ static int sc_open(struct inode *inode, struct file *filp)
 			break;
 		}
 	mutex_lock(&sc[intf].lock);
-	if(sc->open == 1) {
+	if(sc[intf].open == 1) {
 		mutex_unlock(&sc[intf].lock);
 		return -EBUSY;
 	}
