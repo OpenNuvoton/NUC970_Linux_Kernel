@@ -418,7 +418,7 @@ int __init nuc970_init_clocks(void)
 				i, PTR_ERR(clk[i]));
 	
 
-#ifndef FB_NUC970
+#ifndef CONFIG_FB_NUC970
 	if(__raw_readl(REG_CLK_HCLKEN) & (1 << 25)) {
 		printk("=============================================================================\n");
 		printk("WARNING: LCD enabled in loader but not in kernel, this may cause EMAC hang...\n");
