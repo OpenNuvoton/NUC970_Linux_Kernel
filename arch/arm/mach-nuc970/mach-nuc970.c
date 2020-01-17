@@ -83,7 +83,7 @@ static void __init nuc970_init_late(void)
 	nuc970_init_suspend();
 }
 
-static void __init nuc970_reserve_memoey(void)
+static void __init nuc970_reserve_memory(void)
 {
 	if(memblock_reserve(0, 1024) < 0)
 		printk("Failed to reserve memory 0x0~0x400\n");
@@ -99,6 +99,6 @@ MACHINE_START(NUC970, "N9H30")
 	.init_machine	= nuc970_init,
 	.init_time	= nuc970_timer_init,
 	.init_late	= nuc970_init_late,
-	.reserve	= nuc970_reserve_memoey,
+	.reserve	= nuc970_reserve_memory,
 	.restart	= nuc970_restart,
 MACHINE_END
