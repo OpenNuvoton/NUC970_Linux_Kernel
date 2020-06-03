@@ -13,7 +13,7 @@
 	compatible = "nuvoton,nuc972-evb", "nuvoton,nuc972", "nuvoton,nuc970";
 
 	chosen {
-		bootargs = "root=/dev/ram0 console=ttyS0,115200n8 rdinit=/sbin/init mem=32M lpj=744448";
+		bootargs = "root=/dev/ram0 console=ttyS0,115200n8 rdinit=/sbin/init mem=64M lpj=744448";
 	};
 
 	apb {
