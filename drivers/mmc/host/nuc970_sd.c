@@ -820,7 +820,7 @@ static void nuc970_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
     LEAVE();
 }
 
-
+#define SD_TIMEOUT	10000000
 /*
  * Handle CO, RI, and R2 event
  */
@@ -828,6 +828,7 @@ static int nuc970_sd_event_thread(struct nuc970_sd_host *sd_host)
 {
     int event = 0;
     int completed = 0;
+    unsigned int timeout = 0;
     ENTRY();
 
         completed = 0;
@@ -835,49 +836,62 @@ static int nuc970_sd_event_thread(struct nuc970_sd_host *sd_host)
         sd_event = SD_EVENT_NONE;
         if (event & SD_EVENT_CMD_OUT)
         {
-            while (1)
-            {
-                if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_CO_EN))
-                {
-                    completed = 1;
-                    break;
-                }
-            }
+		while (timeout < SD_TIMEOUT)
+		{
+			if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_CO_EN))
+			{
+				completed = 1;
+				break;
+			}else {
+				ndelay(100);
+				timeout++;
+			}
+		}
         }
 
         if (event & SD_EVENT_RSP_IN)
         {
-            while (1)
-            {
-                if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_RI_EN))
-                {
-                    completed = 1;
-                    break;
-                }
+		timeout = 0;
+		while (timeout < SD_TIMEOUT)
+		{
+			if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_RI_EN))
+			{
+				completed = 1;
+				break;
+			}
+			if (nuc970_sd_read(REG_SDISR) & SDISR_RITO_IF)
+			{
+				nuc970_sd_write(REG_SDTMOUT, 0x0);
+				nuc970_sd_write(REG_SDISR, SDISR_RITO_IF);
 
-                if (nuc970_sd_read(REG_SDISR) & SDISR_RITO_IF)
-                {
-                    nuc970_sd_write(REG_SDTMOUT, 0x0);
-                    nuc970_sd_write(REG_SDISR, SDISR_RITO_IF);
-
-                    completed = 1;
-                    sd_host->cmd->error = -ETIMEDOUT;
-                    break;
-                }
-            }
+				completed = 1;
+				sd_host->cmd->error = -ETIMEDOUT;
+				break;
+			}
+			timeout++;
+			ndelay(100);
+		}
         }
 
         if (event & SD_EVENT_RSP2_IN)
         {
-            while (1)
-            {
-                if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_R2_EN))
-                {
-                    completed = 1;
-                    break;
-                }
-            }
+		timeout = 0;
+		while (timeout < SD_TIMEOUT)
+		{
+			if (!(nuc970_sd_read(REG_SDCSR) & SDCSR_R2_EN))
+			{
+				completed = 1;
+				break;
+			}else {
+				ndelay(100);
+				timeout++;
+			}
+		}
         }
+	if(timeout >= SD_TIMEOUT){
+		completed = 1;
+		sd_host->cmd->error = -ETIMEDOUT;
+	}
         if (completed)
         {
             nuc970_sd_completed_command(sd_host, event);
