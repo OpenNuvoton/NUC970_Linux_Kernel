@@ -46,7 +46,7 @@
  */
 #define WDT_HW_TIMEOUT		0x05
 
-static int heartbeat = 2;	// default 2 second
+static int heartbeat = 9;	// default 9 second
 module_param(heartbeat, int, 0);
 MODULE_PARM_DESC(heartbeat, "Watchdog heartbeats in seconds. "
 	"(default = " __MODULE_STRING(WDT_HEARTBEAT) ")");
@@ -253,7 +253,7 @@ static int nuc970wdt_probe(struct platform_device *pdev)
 	clk_prepare(nuc970_wdt->eclk);
 	clk_enable(nuc970_wdt->eclk);
 
-	nuc970_wdd.timeout = 2;		// default time out = 2 sec (2.03)
+	nuc970_wdd.timeout = 9;		// default time out = 9 sec (8.03)
 	nuc970_wdd.min_timeout = 1;	// min time out = 1 sec (0.53)
 	nuc970_wdd.max_timeout = 9;	// max time out = 9 sec (8.03)
 	watchdog_init_timeout(&nuc970_wdd, heartbeat, &pdev->dev);
