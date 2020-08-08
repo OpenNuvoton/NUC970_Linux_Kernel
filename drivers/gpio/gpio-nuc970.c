@@ -104,12 +104,13 @@ static int nuc970_gpio_core_direction_in(struct gpio_chip *gc,
 	unsigned long value;
 	const struct gpio_port *port =
 	    nuc970_gpio_cla_port(gpio_num, &port_num);
+	unsigned long flags;
 
-	spin_lock(&gpio_lock);
+	spin_lock_irqsave(&gpio_lock, flags);
 	value = __raw_readl(port->dir);
 	value &= ~(1 << port_num);
 	__raw_writel(value, port->dir);
-	spin_unlock(&gpio_lock);
+	spin_unlock_irqrestore(&gpio_lock, flags);
 
 	return 0;
 }
@@ -126,7 +127,6 @@ static int nuc970_gpio_core_get(struct gpio_chip *gc, unsigned gpio_num)
 
 	} else {		//GPIO IN
 		value = (__raw_readl(port->in) >> port_num) & 0x1;
-		__raw_writel(value, port->in);
 	}
 	return value;
 }
@@ -137,7 +137,9 @@ static void nuc970_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num,
 	int port_num, value;
 	const struct gpio_port *port =
 	    nuc970_gpio_cla_port(gpio_num, &port_num);
-	spin_lock(&gpio_lock);
+	unsigned long flags;
+
+	spin_lock_irqsave(&gpio_lock, flags);
 
 
 	value = __raw_readl(port->out);
@@ -148,7 +150,7 @@ static void nuc970_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num,
 	__raw_writel(value, port->out);
 
 
-	spin_unlock(&gpio_lock);
+	spin_unlock_irqrestore(&gpio_lock, flags);
 }
 
 static int nuc970_gpio_core_direction_out(struct gpio_chip *gc,
@@ -158,12 +160,13 @@ static int nuc970_gpio_core_direction_out(struct gpio_chip *gc,
 	unsigned long value;
 	const struct gpio_port *port =
 	    nuc970_gpio_cla_port(gpio_num, &port_num);
+	unsigned long flags;
 
-	spin_lock(&gpio_lock);
+	spin_lock_irqsave(&gpio_lock, flags);
 	value = __raw_readl(port->dir);
 	value |= (1 << port_num);
 	__raw_writel(value, port->dir);
-	spin_unlock(&gpio_lock);
+	spin_unlock_irqrestore(&gpio_lock, flags);
 	nuc970_gpio_core_set(gc, gpio_num, val);
 
 	return 0;
