@@ -1276,7 +1276,7 @@ static int nuc970_ether_suspend(struct platform_device *pdev, pm_message_t state
 
 		if(ether->wol) {  // enable wakeup from magic packet
 			__raw_writel(__raw_readl(REG_MCMDR) | MCMDR_MGPWAKE, REG_MCMDR);
-			__raw_writel(__raw_readl(REG_WKUPSER) | (1 << 16), REG_WKUPSER);
+			__raw_writel(__raw_readl(REG_WKUPSER) | (1 << 17), REG_WKUPSER);
 		} else {
 			phy_stop(ether->phy_dev);
 		}
