@@ -1453,7 +1453,7 @@ static irqreturn_t nuvoton_vdi_isr(int irq, void *priv)
 				continue;
 			}
 			spin_lock(&cam->queue_lock);
-			if((*f)->state == F_QUEUED)
+			if((*f)->state == F_QUEUED && !list_is_last(&(*f)->frame,&cam->inqueue))
 				list_move_tail(&(*f)->frame, &cam->outqueue);
 			if (!list_empty(&cam->inqueue))
 			{
