@@ -210,6 +210,11 @@ static int nuc970_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 {
 	struct nuc970_rtc *rtc = dev_get_drvdata(dev);
 	unsigned int timeval, carval;
+	int *err;
+
+	err = check_rtc_access_enable(rtc);
+	if (IS_ERR(err))
+		return PTR_ERR(err);
 
 	timeval = __raw_readl(rtc->rtc_reg + REG_RTC_TAR);
 	carval	= __raw_readl(rtc->rtc_reg + REG_RTC_CAR);
