@@ -38,6 +38,7 @@
 #include <linux/interrupt.h>
 #include <linux/usb/gadget.h>
 #include <linux/platform_device.h>
+#include <linux/sched.h>
 #include <asm/byteorder.h>
 #include <linux/dma-mapping.h>
 #include <asm/io.h>
@@ -1890,12 +1891,13 @@ static int nuc970_udc_probe(struct platform_device *pdev)
 	spin_lock_init (&udc->lock);
 
 	__raw_writel(__raw_readl(controller.reg + REG_USBD_PHY_CTL) | 0x200, controller.reg + REG_USBD_PHY_CTL);
-	// FIXME: is it possible to loop forever?
+
 	while (1)
 	{
 		__raw_writel(0x20, controller.reg + REG_USBD_EPA_MPS);
 		if (__raw_readl(controller.reg + REG_USBD_EPA_MPS) == 0x20)
 			break;
+		cond_resched();
 	}
 
 	/* initial gadget structure */
