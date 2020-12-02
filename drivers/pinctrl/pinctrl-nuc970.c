@@ -3228,7 +3228,7 @@ static const struct pinctrl_map nuc970_pinmap[] = {
 	},
 	{
 		.dev_name = "nuc970-pwm.1",
-		.name = "pwm-PD",
+		.name = "pwm1-PD",
 		.type = PIN_MAP_TYPE_MUX_GROUP,
 		.ctrl_dev_name = "pinctrl-nuc970",
 		.data.mux.function = "pwm1",
