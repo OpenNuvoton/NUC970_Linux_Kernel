@@ -77,7 +77,7 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode);
 static void nuc970_udc_enable(struct nuc970_udc *dev);
 static void nuc970_udc_disable(struct nuc970_udc *dev);
 
-
+//#define pr_devel printk
 
 static void nuke (struct nuc970_udc *udc, struct nuc970_ep *ep)
 {
@@ -220,6 +220,7 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 					printk("unplug!\n");
 					return 0;
 				}
+				//msleep(1);
 			}
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
@@ -532,7 +533,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 
 	if (list_empty(&ep->queue))
 	{
-		pr_devel("nep->queue is empty\n");
+		//pr_devel("nep->queue is empty\n");
 		req = 0;
 	}
 	else
@@ -568,6 +569,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 					printk("unplug!\n");
 					break;
 				}
+				//msleep(1);
 			}
 			if (dev->usb_dma_trigger)
 			{
@@ -579,6 +581,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 						printk("unplug!\n");
 						break;
 					}
+					//msleep(1);
 				}
 				__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -658,6 +661,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 					printk("unplug!\n");
 					break;
 				}
+				//msleep(1);
 			}
 			fifo_count = __raw_readl(controller.reg + datacnt_reg);
 
@@ -671,6 +675,7 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 						printk("unplug!\n");
 						break;
 					}
+					//msleep(1);
 				}
 				__raw_writel(0x02, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -695,7 +700,7 @@ void paser_irq_nepint(int irq, struct nuc970_ep *ep, u32 IrqSt)
 
 	if (list_empty(&ep->queue))
 	{
-		pr_devel("nepirq->queue is empty\n");
+		//pr_devel("nepirq->queue is empty\n");
 		req = 0;
 		return;
 	}
@@ -714,6 +719,7 @@ void paser_irq_nepint(int irq, struct nuc970_ep *ep, u32 IrqSt)
 					printk("unplug!\n");
 					break;
 				}
+				//msleep(1);
 			}
 			if (dev->usb_dma_trigger)
 			{
@@ -725,6 +731,7 @@ void paser_irq_nepint(int irq, struct nuc970_ep *ep, u32 IrqSt)
 						printk("unplug!\n");
 						break;
 					}
+					//msleep(1);
 				}
 				__raw_writel(0x20, controller.reg + REG_USBD_IRQ_STAT);
 				udc_isr_dma(dev);
@@ -1508,7 +1515,7 @@ static void udc_isr_ctrl_pkt(struct nuc970_udc *dev)
 
 	if (list_empty(&ep->queue))
 	{
-		pr_devel("ctrl ep->queue is empty\n");
+		//pr_devel("ctrl ep->queue is empty\n");
 		req = 0;
 	}
 	else
@@ -1736,6 +1743,7 @@ static u32 udc_transfer(struct nuc970_ep *ep, u8* buf, size_t size, u32 mode)
 				printk("unplug!\n");
 				return 0;
 			}
+			//msleep(1);
 		}
 		{
 			dev->usb_dma_dir = Ep_In;
