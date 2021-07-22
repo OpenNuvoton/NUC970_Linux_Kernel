@@ -68,8 +68,11 @@
 #define SDCSR_CLK74_OE      (1<<5)
 #define SDCSR_CLK8_OE       (1<<6)
 #define SDCSR_CLK_KEEP0     (1<<7)
+#define SDCSR_CMD_CODE(n)   (((n) & 0x3f) << 8)
 #define SDCSR_SW_RST        (1<<14)
 #define SDCSR_DBW           (1<<15)
+#define SDCSR_BLK_CNT(n)    (((n) & 0xff) << 16)
+#define SDCSR_SDNWR(n)      (((n) & 0xf) << 24)
 #define SDCSR_CLK_KEEP1     (1<<31)
 
 /* SD Interrupt Control Register (SDIER) */
@@ -77,13 +80,16 @@
 #define SDIER_CRC_IE        (1<<1)
 #define SDIER_CD0_IE        (1<<8)
 #define SDIER_CD1_IE        (1<<9)
+#define SDIER_CDn_IE(n)     (1 << ((n) + 8))
 #define SDIER_SDIO0_IE      (1<<10)
 #define SDIER_SDIO1_IE      (1<<11)
+#define SDIER_SDIOn_IE(n)   (1 << ((n) + 10))
 #define SDIER_RITO_IE       (1<<12)
 #define SDIER_DITO_IE       (1<<13)
 #define SDIER_WKUP_EN       (1<<14)
 #define SDIER_CD0SRC        (1<<30)
 #define SDIER_CD1SRC        (1<<31)
+#define SDIER_CDnSRC(n)     (1 << ((n) + 30))
 
 /* SD Interrupt Status Register (SDISR) */
 #define SDISR_BLKD_IF       (1)
@@ -93,14 +99,17 @@
 #define SDISR_SDDAT0        (1<<7)
 #define SDISR_CD0_IF        (1<<8)
 #define SDISR_CD1_IF        (1<<9)
+#define SDISR_CDn_IF(n)     (1 << ((n) + 8))
 #define SDISR_SDIO0_IF      (1<<10)
 #define SDISR_SDIO1_IF      (1<<11)
+#define SDISR_SDIOn_IF(n)   (1 << ((n) + 10))
 #define SDISR_RITO_IF       (1<<12)
 #define SDISR_DITO_IF       (1<<13)
 #define SDISR_CDPS0         (1<<16)
 #define SDISR_CDPS1         (1<<17)
 #define SDISR_SD0DAT1       (1<<18)
 #define SDISR_SD1DAT1       (1<<19)
+#define SDISR_SDnDAT1(n)    (1 << ((n) + 18))
 
 /* DMAC Control and Status Register (DMACCSR) */
 #define DMACCSR_DMACEN      (1)

@@ -395,15 +395,33 @@ config MMC_SPI
 	  If unsure, or if your system has no SPI master driver, say N.
 
 config MMC_NUC970_SD
-        tristate "Nuvoton NUC970/N9H30 SD Card support"
-        depends on MACH_NUC970
+	tristate "Nuvoton NUC970/N9H30 SD Card support"
+	depends on MACH_NUC970
 
 config NUC970_SD0_EN
-        tristate "SD0 support"
-        depends on MMC_NUC970_SD
+	tristate "SD0 support"
+	depends on MMC_NUC970_SD
 config NUC970_SD1_EN
-        tristate "SD1 support"
-        depends on MMC_NUC970_SD
+	tristate "SD1 support"
+	depends on MMC_NUC970_SD
+
+config NUC970_SDH_CD0SRC_DAT3
+	bool "Select SD0_DAT3 as card detection pin"
+	depends on NUC970_SD0_EN
+	help
+	  The default pin for card detected is SD0_nCD.
+	  Say Y here if you want to switch card detection pin to SD0_DAT3.
+
+	  If unsure, say N.
+
+config NUC970_SDH_CD1SRC_DAT3
+	bool "Select SD1_DAT3 as card detection pin"
+	depends on NUC970_SD1_EN
+	help
+	  The default pin for card detected is SD1_nCD.
+	  Say Y here if you want to switch card detection pin to SD1_DAT3.
+
+	  If unsure, say N.
 
 choice
     prompt "NUC970/N9H30 SD1 pin selection"

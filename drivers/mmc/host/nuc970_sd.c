@@ -121,8 +121,7 @@ static int nuc970_sd1_event_thread(struct nuc970_sd_host *sd1_host);
 //--- Define semaphore for SDH controller
 struct semaphore sdh_fmi_sem;
 
-#if 0
-static void dump_sdh_regs()
+static void dump_sdh_regs(void)
 {
 	printk("    REG_CLK_HCLKEN = 0x%x\n", nuc970_sd_read(REG_CLK_HCLKEN));
 	printk("    REG_CLKDIV9 = 0x%x\n", nuc970_sd_read(REG_CLK_DIV9));
@@ -138,7 +137,141 @@ static void dump_sdh_regs()
 	printk("    REG_SDTMOUT = 0x%x\n", nuc970_sd_read(REG_SDTMOUT));
 	printk("    REG_SDECR   = 0x%x\n", nuc970_sd_read(REG_SDECR));
 }
-#endif
+
+static void nuc970_sd_enable_interrupt(u32 mask)
+{
+	u32 ier = nuc970_sd_read(REG_SDIER) | mask;
+
+	nuc970_sd_write(REG_SDIER, ier);
+}
+
+static void nuc970_sd_disable_interrupt(u32 mask)
+{
+	u32 ier = nuc970_sd_read(REG_SDIER) & (~mask);
+
+	nuc970_sd_write(REG_SDIER, ier);
+}
+
+static void nuc970_sd_clear_interrupt(u32 mask)
+{
+	u32 isr = nuc970_sd_read(REG_SDISR) | mask;
+
+	nuc970_sd_write(REG_SDISR, isr);
+}
+
+static int nuc970_sd_card_is_present(int port)
+{
+	u32 sr = nuc970_sd_read(REG_SDISR);
+	u32 present_mask;
+
+	switch (port) {
+	case 0:
+	#ifdef CONFIG_NUC970_SDH_CD0SRC_DAT3
+		/* if CD0SRC = 0 to select SD0_DAT3 for card detect:
+		 * CDPS0 = 1 when card inserted */
+		present_mask = SDISR_CDPS0;
+	#else
+		/* if CD0SRC = 1 to select SD0_nCD for card detect:
+		 * CDPS0 = 0 when card inserted */
+		present_mask = 0;
+	#endif
+		sr &= SDISR_CDPS0;
+		break;
+	case 1:
+	#ifdef CONFIG_NUC970_SDH_CD1SRC_DAT3
+		present_mask = SDISR_CDPS1;
+	#else
+		present_mask = 0;
+	#endif
+		sr &= SDISR_CDPS1;
+		break;
+
+	default:
+		return 0;
+	}
+
+	return sr == present_mask;
+}
+
+static void nuc970_sd_set_card_detection_source(int port)
+{
+	switch (port) {
+	case 0:
+	#ifdef CONFIG_NUC970_SDH_CD0SRC_DAT3
+		nuc970_sd_disable_interrupt(SDIER_CD0SRC);
+	#else
+		nuc970_sd_enable_interrupt(SDIER_CD0SRC);
+	#endif
+		break;
+	case 1:
+	#ifdef CONFIG_NUC970_SDH_CD1SRC_DAT3
+		nuc970_sd_disable_interrupt(SDIER_CD1SRC);
+	#else
+		nuc970_sd_enable_interrupt(SDIER_CD1SRC);
+	#endif
+		break;
+	}
+}
+
+static u32 nuc970_sdcsr_enable_clk_keep(int port, u32 sdcsr)
+{
+	u32 mask = 0;
+
+	switch (port) {
+	case 0:
+		mask = SDCSR_CLK_KEEP0;
+		break;
+	case 1:
+		mask = SDCSR_CLK_KEEP1;
+		break;
+	}
+
+	return sdcsr | mask;
+}
+
+static int nuc970_sdcsr_clk_keep_is_enabled(int port, u32 sdcsr)
+{
+	u32 mask = nuc970_sdcsr_enable_clk_keep(port, 0);
+
+	return sdcsr & mask;
+}
+
+static u32 nuc970_sdcsr_try_disable_clk_keep(int port, u32 sdcsr)
+{
+	u32 mask = 0;
+
+	switch (port) {
+	case 0:
+	#ifdef CONFIG_NUC970_SDH_CD0SRC_DAT3
+		/* host need clock to got data on pin DAT3, mask sure CLK_KEEP0
+		 * is 1 to generate free running clock for DAT3 pin.
+		 */
+		sdcsr |= SDCSR_CLK_KEEP0;
+	#else
+		mask = SDCSR_CLK_KEEP0;
+	#endif
+		break;
+	case 1:
+	#ifdef CONFIG_NUC970_SDH_CD1SRC_DAT3
+		sdcsr |= SDCSR_CLK_KEEP1;
+	#else
+		mask = SDCSR_CLK_KEEP1;
+	#endif
+		break;
+	}
+
+	return sdcsr & ~mask;
+}
+
+static u32 nuc970_sd_do_disable_clk_keep(int port, u32 sdcsr)
+{
+	u32 enable_mask = nuc970_sdcsr_enable_clk_keep(port, 0);
+
+	/* really disable clk keep regardless of what CD0SRC_DAT3 defined. */
+	sdcsr &= ~ enable_mask;
+
+	return sdcsr;
+}
 
 /*
  * Reset the controller and restore most of the state
@@ -282,20 +415,17 @@ static void nuc970_sd_post_dma_read(struct nuc970_sd_host *host)
  */
 static void nuc970_sd_handle_transmitted(struct nuc970_sd_host *host)
 {
+	u32 csr = nuc970_sd_read(REG_SDCSR);
+
 	ENTRY();
 
-	if (nuc970_sd_read(REG_SDISR) & SDISR_CRC_IF)
-		nuc970_sd_write(REG_SDISR, SDISR_CRC_IF);
+	nuc970_sd_clear_interrupt(SDISR_CRC_IF);
 
-	/* check read/busy */
-	if (host->port == 0)
-		nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_CLK_KEEP0);
-	else if (host->port == 1)
-		nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | SDCSR_CLK_KEEP1);
+	csr = nuc970_sdcsr_enable_clk_keep(host->port, csr);
+	nuc970_sd_write(REG_SDCSR, csr);
 
 	LEAVE();
 }
-
 
 /*
  * Update bytes tranfered count during a write operation
@@ -360,21 +490,21 @@ static int nuc970_sd_select_port(u32 port)
  */
 static void nuc970_sd_enable(struct nuc970_sd_host *host)
 {
-	ENTRY();
+	u32 csr;
 
+	ENTRY();
 	nuc970_sd_write(REG_DMACCSR, DMACCSR_DMACEN);   // enable DMAC for FMI
 	nuc970_sd_write(REG_FMICSR, FMICSR_SD_EN);  /* Enable SD functionality of FMI */
 	nuc970_sd_write(REG_SDISR, 0xffffffff);
 
-	if (host->port == 0) {
-		nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | SDIER_CD0SRC);   // select GPIO detect
-		nuc970_sd_write(REG_SDCSR, (nuc970_sd_read(REG_SDCSR) & 0x9fffffff)); //SD Port 0 is selected
-	} else if (host->port == 1) {
-		nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | SDIER_CD1SRC);   // select GPIO detect
-		nuc970_sd_write(REG_SDCSR, (nuc970_sd_read(REG_SDCSR) & 0x9fffffff)|0x20000000); //SD Port 1 is selected
-	}
+	nuc970_sd_set_card_detection_source(host->port);
+	nuc970_sd_select_port(host->port);
 
-	nuc970_sd_write(REG_SDCSR, (nuc970_sd_read(REG_SDCSR) & ~0xfff0000)|0x09010000);
+	csr = nuc970_sd_read(REG_SDCSR);
+	csr &= ~ (SDCSR_SDNWR(0xf) | SDCSR_BLK_CNT(0xff));
+	csr |= (SDCSR_SDNWR(9) | SDCSR_BLK_CNT(1));
+	csr = nuc970_sdcsr_try_disable_clk_keep(host->port, csr);
+	nuc970_sd_write(REG_SDCSR, csr);
 
 	LEAVE();
 }
@@ -404,6 +534,7 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
 	unsigned int blocks;
 
 	ENTRY();
+
 	host->cmd = cmd;
 
 	if (host->port == 0)
@@ -417,13 +548,17 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
 	nuc970_sd_select_port(host->port);
 	csr = (nuc970_sd_read(REG_SDCSR) & 0xff00c080) | 0x09010000; //schung20170811
 
-	if (host->port == 0) {
-		clock_free_run_status = csr | 0x80; /* clock keep */
-		csr = csr & ~0x80;
-	}else if (host->port == 1){
-		clock_free_run_status = csr | 0x80000000; /* clock keep */
-		csr = csr & ~0x80000000;
+	clock_free_run_status = nuc970_sdcsr_clk_keep_is_enabled(host->port, csr);
+	csr = nuc970_sd_do_disable_clk_keep(host->port, csr);
+
+	if ((IS_ENABLED(CONFIG_NUC970_SDH_CD0SRC_DAT3) && host->port == 0) ||
+	    (IS_ENABLED(CONFIG_NUC970_SDH_CD1SRC_DAT3) && host->port == 1)) {
+		/* should disable SD card detection interrupt due to
+		 * clk_keep is not available.
+		 */
+		nuc970_sd_disable_interrupt(SDIER_CDn_IE(host->port));
 	}
+
 	csr = csr | (cmd->opcode << 8) | SDCSR_CO_EN;   // set command code and enable command out
 	if (host->port == 0)
 		sd_event |= SD_EVENT_CMD_OUT;
@@ -454,7 +589,6 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
 			sd_ri_timeout = 0;
 		else if (host->port == 1)
 			sd1_ri_timeout = 0;
-
 		nuc970_sd_write(REG_SDTMOUT, 0xffff);
 	}
 
@@ -504,7 +638,6 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
 			csr = csr | SDCSR_DO_EN;
 		}
 	}
-
 	/*
 	 * Send the command and then enable the PDC - not the other way round as
 	 * the data sheet says
@@ -526,12 +659,14 @@ static void nuc970_sd_send_command(struct nuc970_sd_host *host, struct mmc_comma
 			nuc970_sd_update_bytes_xfered(host);
 		}
 	}
-
 	if (clock_free_run_status) {
-		if (host->port == 0)
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | 0x80);   /* clock keep */
-		else if (host->port == 1)
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | 0x80000000); /* clock keep */
+		csr = nuc970_sdcsr_enable_clk_keep(host->port, nuc970_sd_read(REG_SDCSR));
+		nuc970_sd_write(REG_SDCSR, csr);
+
+		if ((IS_ENABLED(CONFIG_NUC970_SDH_CD0SRC_DAT3) && host->port == 0) ||
+		    (IS_ENABLED(CONFIG_NUC970_SDH_CD1SRC_DAT3) && host->port == 1)) {
+			nuc970_sd_enable_interrupt(SDIER_CDn_IE(host->port));
+		}
 	}
 
 	mmc_request_done(host->mmc, host->request);
@@ -709,10 +844,8 @@ static void nuc970_sd_completed_command(struct nuc970_sd_host *host, unsigned in
 static int nuc970_sd_card_detect(struct mmc_host *mmc)
 {
 	struct nuc970_sd_host *host = mmc_priv(mmc);
-	int ret;
 
 	ENTRY();
-
 	if (down_interruptible(&sdh_fmi_sem))
 		return -ERESTARTSYS;
 
@@ -720,16 +853,12 @@ static int nuc970_sd_card_detect(struct mmc_host *mmc)
 		nuc970_sd_write(REG_FMICSR, FMICSR_SD_EN);
 
 	nuc970_sd_select_port(host->port);
-	if (host->port == 0)
-		host->present = nuc970_sd_read(REG_SDISR) & SDISR_CDPS0;
-	else if (host->port == 1)
-		host->present = nuc970_sd_read(REG_SDISR) & SDISR_CDPS1;
+	host->present = nuc970_sd_card_is_present(host->port);
 
-	ret = host->present ? 0 : 1;
 	up(&sdh_fmi_sem);
 	LEAVE();
 
-	return ret;
+	return host->present ? 1 : 0;
 }
 
 static void nuc970_sd_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -765,17 +894,18 @@ static void nuc970_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct nuc970_sd_host *host = mmc_priv(mmc);
 	host->bus_mode = ios->bus_width;
-
 	ENTRY();
+
 	if (down_interruptible(&sdh_fmi_sem))
 		return;
-
 	/* maybe switch power to the card */
 	switch (ios->power_mode) {
 	case MMC_POWER_OFF:
 		//dump_sdh_regs();
+	#if defined(CONFIG_NUC970_SDH_CD0SRC_DAT3) || defined(CONFIG_NUC970_SDH_CD1SRC_DAT3)
 		nuc970_sd_write(REG_FMICSR, 0);
-		__raw_writel(0x1, REG_SDECR);
+		nuc970_sd_write(REG_SDECR, 1);
+	#endif
 		break;
 	case MMC_POWER_UP:
 	case MMC_POWER_ON: // enable 74 clocks
@@ -786,7 +916,6 @@ static void nuc970_sd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			up(&sdh_fmi_sem);
 			return;
 		}
-
 		printk("ios->clock=%d\n",ios->clock);
 		if (ios->clock <= 400000) {
 			clk_set_rate(host->upll_clk, 100000000);
@@ -943,25 +1072,24 @@ static int nuc970_sd1_event_thread(struct nuc970_sd_host *sd1_host)
 static irqreturn_t nuc970_sd_irq(int irq, void *devid)
 {
 	struct nuc970_sd_host *host = devid;
-	unsigned int int_status, present;
+	unsigned int int_status;
 	unsigned int reg_port_select;
 
 	ENTRY();
-
 	int_status = nuc970_sd_read(REG_SDISR);
 	reg_port_select = (nuc970_sd_read(REG_SDCSR) & 0x60000000) >> 29;
 
 	//nuc970_sd_debug("FMI irq: status = %08X <0x%x, csr 0x%x>\n", int_status, nuc970_sd_read(REG_MFP_GPD_L), nuc970_sd_read(REG_SDCSR));
 	if (host->port == 0) {
 		if (int_status & 0x400) { /* sdio 0 interrupt */
-			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x400);
-			nuc970_sd_write(REG_SDISR, 0x400);
+			nuc970_sd_disable_interrupt(SDIER_SDIO0_IE);
+			nuc970_sd_clear_interrupt(SDISR_SDIO0_IF);
 			mmc_signal_sdio_irq(host->mmc);
 		}
-	} else if (host->port == 1){
+	} else if (host->port == 1) {
 		if (int_status & 0x800) { /* sdio 1 interrupt */
-			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x800);
-			nuc970_sd_write(REG_SDISR, 0x800);
+			nuc970_sd_disable_interrupt(SDIER_SDIO1_IE);
+			nuc970_sd_clear_interrupt(SDISR_SDIO1_IF);
 			mmc_signal_sdio_irq(host->mmc);
 		}
 	}
@@ -970,12 +1098,21 @@ static irqreturn_t nuc970_sd_irq(int irq, void *devid)
 		nuc970_sd_debug("SDH xfer done.\n");
 		if (host->port != reg_port_select) {
 			// This shared interrupt is not come from this device host. Ignore it.
-			//nvt_sd_debug("SDIO %d irq: return IRQ_NONE.\n", host->port);
+			printk("SDIO %d irq: return IRQ_NONE.\n", host->port);
 			return IRQ_NONE;    // interrupt was not from this device
 		}
 
 		if ((host->cmd == 0) || (host->cmd->data == 0)) {
-			//nuc970_sd_debug("SD %d irq: port select = %d, found NULL pointer!!\n", host->port, reg_port_select);
+			printk("SD %d irq: port select = %d, found NULL pointer!!\n",
+				host->port, reg_port_select);
+			if (host->cmd && host->cmd->data == 0) {
+				printk("opcode: %08x, retries: %ud\n",
+					host->cmd->opcode,
+					host->cmd->retries);
+			}
+
+			dump_sdh_regs();
+			nuc970_sd_clear_interrupt(SDISR_BLKD_IF);
 			return IRQ_NONE;
 		}
 
@@ -984,8 +1121,7 @@ static irqreturn_t nuc970_sd_irq(int irq, void *devid)
 		else if (host->cmd->data->flags & MMC_DATA_READ)
 			nuc970_sd_post_dma_read(host);
 
-		nuc970_sd_write(REG_SDISR, SDISR_BLKD_IF);
-
+		nuc970_sd_clear_interrupt(SDISR_BLKD_IF);
 		if (host->port == 0) {
 			sd_state_xfer = 1;
 			wake_up_interruptible(&sd_wq_xfer);
@@ -1002,24 +1138,26 @@ static irqreturn_t nuc970_sd_irq(int irq, void *devid)
 	if (host->port == 0) {
 		/* SD card port 0 detect */
 		if (int_status & SDISR_CD0_IF) {
-			present = int_status & SDISR_CDPS0;
-			host->present = present;
-			nuc970_sd_debug("%s: card %s\n", mmc_hostname(host->mmc), present ? "remove" : "insert");
-			if (!present) {
+			host->present = nuc970_sd_card_is_present(host->port);
+			nuc970_sd_debug("%s: card %s\n", mmc_hostname(host->mmc),
+			host->present ? "insert" : "remove");
+
+			if (host->present) {
 				nuc970_sd_debug("****** Resetting SD-card bus width ******\n");
 				nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) & ~SDCSR_DBW);
 			}
+
 			/* 0.5s needed because of early card detect switch firing */
 			mmc_detect_change(host->mmc, msecs_to_jiffies(500));
 			nuc970_sd_write(REG_SDISR, SDISR_CD0_IF);
 		}
-	}else if (host->port == 1) {
+	} else if (host->port == 1) {
 		/* SD card port 1 detect */
 		if (int_status & SDISR_CD1_IF) {
-			present = int_status & SDISR_CDPS1;
-			host->present = present;
-			nuc970_sd_debug("%s: card %s\n", mmc_hostname(host->mmc), present ? "remove" : "insert");
-			if (!present) {
+			host->present = nuc970_sd_card_is_present(host->port);
+			nuc970_sd_debug("%s: card %s\n", mmc_hostname(host->mmc),
+			host->present ? "insert" : "remove");
+			if (host->present) {
 				nuc970_sd_debug("****** Resetting SD-card bus width ******\n");
 				nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) & ~SDCSR_DBW);
 			}
@@ -1045,33 +1183,35 @@ static int nuc970_sd_get_ro(struct mmc_host *mmc)
 static void nuc900_sd_enable_sdio_irq(struct mmc_host *mmc, int enable)
 {
 	struct nuc970_sd_host *host = mmc_priv(mmc);
+	u32 csr;
 
 	ENTRY();
-
 	nuc970_sd_write(REG_DMACIER, DMACIER_TABORT_IE);    //Enable target abort interrupt generation during DMA transfer
 	nuc970_sd_write(REG_FMIIER, FMIIER_DTA_IE); //Enable DMAC READ/WRITE target abort interrupt generation
 
 	if (host->port == 0) {
 		nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x400);
 		nuc970_sd_write(REG_SDISR, 0x400);
-		if (enable) {
+		if (enable)
 			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | 0x4400); /* sdio interrupt */
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | 0x80);   /* clock keep */
-		} else {
+		else
 			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x4400);/* sdio interrupt */
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) & ~0x80);  /* clock keep */
-		}
 	} else if (host->port == 1) {
 		nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x800);
 		nuc970_sd_write(REG_SDISR, 0x800);
-		if (enable) {
+		if (enable)
 			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | 0x4800); /* sdio interrupt */
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) | 0x80000000); /* clock keep */
-		} else {
+		else
 			nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) & ~0x4800);/* sdio interrupt */
-			nuc970_sd_write(REG_SDCSR, nuc970_sd_read(REG_SDCSR) & ~0x80000000);    /* clock keep */
-		}
 	}
+
+	csr = nuc970_sd_read(REG_SDCSR);
+	if (enable)
+		nuc970_sdcsr_enable_clk_keep(host->port, csr);
+	else
+		nuc970_sdcsr_try_disable_clk_keep(host->port, csr);
+	nuc970_sd_write(REG_SDCSR, csr);
+
 	LEAVE();
 }
 
@@ -1095,6 +1235,7 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 	struct clk *clkmux;
 	struct pinctrl *p;
 	struct clk *sd_clk,*upll_clk;
+	int is_version_c = 0;
 
 	ENTRY();
 
@@ -1171,6 +1312,16 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 	//clk_set_rate(upll_clk, 33000000);
 	clk_set_rate(upll_clk, 10000000);
 
+	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) { /* unlock reg */
+		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
+		__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
+	}
+
+	if ((__raw_readl(REG_PDID) & 0x0f000000) == 0x02000000) {
+		printk("This is Version C 0x%x\n", __raw_readl(REG_PDID));
+		is_version_c = 1;
+	}
 
 #if defined (CONFIG_NUC970_SD0_EN)
 	/* SD Port 0 initial */
@@ -1207,28 +1358,14 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 
 	host->sd_clk = sd_clk;
 	host->upll_clk = upll_clk;
+	host->IsVersionC = is_version_c;
 
 	nuc970_sd_disable(host);
 	nuc970_sd_enable(host);
 
-
-	//UnlockReg
-	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) {
-		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
-		__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
-		__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
-	}
-	if ((__raw_readl(REG_PDID) & 0x0f000000) == 0x02000000) {
-		//printk("This is Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
-		host->IsVersionC = 1;
-	} else {
-		//printk("This is not Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
-		host->IsVersionC = 0;
-	}
-
 	/*
-	* Allocate the MCI interrupt
-	*/
+	 * Allocate the MCI interrupt
+	 */
 	host->irq = platform_get_irq(pdev, 0);
 	ret = request_irq(host->irq, nuc970_sd_irq, IRQF_SHARED, mmc_hostname(mmc), host);
 	if (ret) {
@@ -1242,10 +1379,10 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mmc);
 
 	/*
-	* Add host to MMC layer
-	*/
-	host->present = nuc970_sd_read(REG_SDISR) & SDISR_CDPS0;
-	nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | SDIER_CD0_IE | SDIER_CD0SRC);    //Enable SD interrupt & select GPIO detect
+	 * Add host to MMC layer
+	 */
+	host->present = nuc970_sd_card_is_present(host->port);
+	nuc970_sd_enable_interrupt(SDIER_CD0_IE);
 
 	mmc_add_host(mmc);
 	nuc970_sd_debug("Added NUC970 SD0 driver\n");
@@ -1286,23 +1423,10 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 
 	host1->sd_clk = sd_clk;
 	host1->upll_clk = upll_clk;
+	host1->IsVersionC = is_version_c;
 
 	nuc970_sd_disable(host1);
 	nuc970_sd_enable(host1);
-
-	//UnlockReg
-	while(__raw_readl(NUC970_VA_GCR + 0x1fc) != 1) {
-		__raw_writel(0x59, NUC970_VA_GCR + 0x1fc);
-		__raw_writel(0x16, NUC970_VA_GCR + 0x1fc);
-		__raw_writel(0x88, NUC970_VA_GCR + 0x1fc);
-	}
-	if ((__raw_readl(REG_PDID) & 0x0f000000) == 0x02000000) {
-		//printk("This is Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
-		host1->IsVersionC = 1;
-	} else {
-		//printk("This is not Version C 0x%x, 0x%x\n", __raw_readl(REG_PDID));
-		host1->IsVersionC = 0;
-	}
 
 	/*
 	 * Allocate the MCI interrupt
@@ -1323,7 +1447,7 @@ static int nuc970_sd_probe(struct platform_device *pdev)
 	 * Add host to MMC layer
 	 */
 	host1->present = nuc970_sd_read(REG_SDISR) & SDISR_CDPS1;
-	nuc970_sd_write(REG_SDIER, nuc970_sd_read(REG_SDIER) | SDIER_CD1_IE | SDIER_CD1SRC);    //Enable SD interrupt & select GPIO detect
+	nuc970_sd_enable_interrupt(SDIER_CD1_IE);
 
 	mmc_add_host(mmc1);
 	nuc970_sd_debug("Added NUC970 SD1 driver\n");
