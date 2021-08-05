@@ -1017,6 +1017,9 @@ static const struct spi_device_id m25p_ids[] = {
 	{ "w25q256", INFO(0xef4019, 0, 64 * 1024, 512, SECT_4K) },
 	{ "w25q256jvim", INFO(0xef7019, 0, 64 * 1024, 512, SECT_4K) },
 
+	/* XTX -- XT25x "blocks" are 64K, "sectors" are 4KiB */
+	{ "XT25F32", INFO(0x0b4016, 0, 64 * 1024,  64, SECT_4K) },
+
 	/* Catalyst / On Semiconductor -- non-JEDEC */
 	{ "cat25c11", CAT25_INFO(  16, 8, 16, 1) },
 	{ "cat25c03", CAT25_INFO(  32, 8, 16, 2) },
