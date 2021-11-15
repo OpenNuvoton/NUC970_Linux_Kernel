@@ -408,10 +408,18 @@ static int nuc970_spi1_update_state(struct spi_device *spi,
 		hw->pdata->divider = div;
 	}
 
-	if(hw->pdata->quad)
+#if defined(CONFIG_OF)
+	if (hw->pdata->quad)
 		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
 	else
 		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+#else
+#if defined(CONFIG_SPI_NUC970_P1_QUAD_MODE)
+                spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+#elif defined(CONFIG_SPI_NUC970_P1_NORMAL_MODE)
+                spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+#endif
+#endif
 
 	//Mode 0: CPOL=0, CPHA=0; active high
 	//Mode 1: CPOL=0, CPHA=1 ;active low
@@ -621,10 +629,17 @@ static int nuc970_spi1_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, hw);
 	init_completion(&hw->done);
-#if defined(CONFIG_SPI_NUC970_P1_PB) || defined(CONFIG_SPI_NUC970_P1_PI)
+#if defined(CONFIG_OF)
+        if (hw->pdata->quad)
+                master->mode_bits = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+        else
+                master->mode_bits = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+#else
+#if defined(CONFIG_SPI_NUC970_P1_NORMAL_MODE)
 	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
-#elif defined(CONFIG_SPI_NUC970_P1_QUAD_PB) || defined(CONFIG_SPI_NUC970_P1_QUAD_PI)
+#elif defined(CONFIG_SPI_NUC970_P1_QUAD_MODE)
 	master->mode_bits          = (SPI_MODE_0 | SPI_TX_DUAL | SPI_RX_DUAL | SPI_TX_QUAD | SPI_RX_QUAD | SPI_CS_HIGH | SPI_LSB_FIRST | SPI_CPHA | SPI_CPOL);
+#endif
 #endif
 	master->dev.of_node        = pdev->dev.of_node;
 	master->num_chipselect     = hw->pdata->num_cs;

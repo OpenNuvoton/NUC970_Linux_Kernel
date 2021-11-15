@@ -549,57 +549,9 @@
 						<1 6 0xb 0
 						 1 7 0xb 0
 						 1 8 0xb 0
-						 1 9 0xb 0 >;
-				};
-
-				pinctrl_spi0_quad: spi0-quad {
-					nuvoton,pins =
-						<1 6 0xb 0
-						 1 7 0xb 0
-						 1 8 0xb 0
 						 1 9 0xb 0
 						 1 0xa 0xb 0
 						 1 0xb 0xb 0 >;
-				};
-
-				pinctrl_spi0_ss1_PB: spi0-ss1-PB {
-					nuvoton,pins =
-						<1 6 0xb 0
-						 1 7 0xb 0
-						 1 8 0xb 0
-						 1 9 0xb 0
-						 1 0 0xb 0 >;
-				};
-
-				pinctrl_spi0_ss1_PH: spi0-ss1-PH {
-					nuvoton,pins =
-						<1 6 0xb 0
-						 1 7 0xb 0
-						 1 8 0xb 0
-						 1 9 0xb 0
-						 7 0xc 0xb 0 >;
-				};
-
-				pinctrl_spi0_quad_ss1_PB: spi0-quad-ss1-PB {
-					nuvoton,pins =
-						<1 6 0xb 0
-						 1 7 0xb 0
-						 1 8 0xb 0
-						 1 9 0xb 0
-						 1 0xa 0xb 0
-						 1 0xb 0xb 0
-						 1 0 0xb 0 >;
-				};
-
-				pinctrl_spi0_quad_ss1_PH: spi0-quad-ss1-PH {
-					nuvoton,pins =
-						<1 6 0xb 0
-						 1 7 0xb 0
-						 1 8 0xb 0
-						 1 9 0xb 0
-						 1 0xa 0xb 0
-						 1 0xb 0xb 0
-						 7 0xc 0xb 0 >;
 				};
 			};
 
@@ -609,75 +561,10 @@
 						<1 0xc 0xb 0
 						 1 0xd 0xb 0
 						 1 0xe 0xb 0
-						 1 0xf 0xb 0 >;
-				};
-
-				pinctrl_spi1_ss1_PB: spi1-ss1-PB {
-					nuvoton,pins =
-						<1 0xc 0xb 0
-						 1 0xd 0xb 0
-						 1 0xe 0xb 0
-						 1 0xf 0xb 0
-						 1 1 0xb 0 >;
-				};
-
-				pinctrl_spi1_quad_PB: spi1-quad-PB {
-					nuvoton,pins =
-						<1 0xc 0xb 0
-						 1 0xd 0xb 0
-						 1 0xe 0xb 0
-						 1 0xf 0xb 0
-						 6 4 0xb 0
-						 6 5 0xb 0 >;
-				};
-
-				pinctrl_spi1_quad_ss1_PB: spi1-quad-ss1-PB {
-					nuvoton,pins =
-						<1 0xc 0xb 0
-						 1 0xd 0xb 0
-						 1 0xe 0xb 0
 						 1 0xf 0xb 0
 						 6 4 0xb 0
 						 6 5 0xb 0
 						 1 1 0xb 0 >;
-				};
-
-				pinctrl_spi1_PI: spi1-PI {
-					nuvoton,pins =
-						<8 5 0xb 0
-						 8 6 0xb 0
-						 8 7 0xb 0
-						 8 8 0xb 0 >;
-				};
-
-				pinctrl_spi1_ss1_PI: spi1-ss1-PI {
-					nuvoton,pins =
-						<8 5 0xb 0
-						 8 6 0xb 0
-						 8 7 0xb 0
-						 8 8 0xb 0
-						 7 0xd 0xb 0 >;
-				};
-
-				pinctrl_spi1_quad_PI: spi1-quad-PI {
-					nuvoton,pins =
-						<8 5 0xb 0
-						 8 6 0xb 0
-						 8 7 0xb 0
-						 8 8 0xb 0
-						 6 4 0xb 0
-						 6 5 0xb 0 >;
-				};
-
-				pinctrl_spi1_quad_ss1_PI: spi1-quad-ss1-PI {
-					nuvoton,pins =
-						<8 5 0xb 0
-						 8 6 0xb 0
-						 8 7 0xb 0
-						 8 8 0xb 0
-						 6 4 0xb 0
-						 6 5 0xb 0
-						 7 0xd 0xb 0 >;
 				};
 			};
 

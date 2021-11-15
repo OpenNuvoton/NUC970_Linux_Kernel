@@ -110,6 +110,7 @@
 			txnum   = <0>;
 			txbitlen = <8>;
 			bus_num	= <0>;
+			quad = <0>;
 
 			flash: m25p80@0 {
 				compatible = "w25q128";
@@ -143,6 +144,7 @@
 			txnum   = <0>;
 			txbitlen = <8>;
 			bus_num	= <1>;
+			quad = <0>;
 
 			spidev@0x01 {
 				compatible = "spidev";
