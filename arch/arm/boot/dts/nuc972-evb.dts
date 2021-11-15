@@ -111,6 +111,7 @@
 			txnum   = <0>;
 			txbitlen = <8>;
 			bus_num	= <0>;
+			quad = <1>;
 
 			flash: m25p80@0 {
 				compatible = "w25q128";

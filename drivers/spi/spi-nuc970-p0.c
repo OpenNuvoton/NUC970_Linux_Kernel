@@ -409,6 +409,11 @@ static int nuc970_spi0_update_state(struct spi_device *spi,
 		hw->pdata->divider = div;
 	}
 
+	if(hw->pdata->quad)
+		spi->mode = (SPI_MODE_0 | SPI_TX_QUAD | SPI_RX_QUAD);
+	else
+		spi->mode = (SPI_MODE_0 | SPI_RX_DUAL | SPI_TX_DUAL);
+
 	//Mode 0: CPOL=0, CPHA=0; active high
 	//Mode 1: CPOL=0, CPHA=1 ;active low
 	//Mode 2: CPOL=1, CPHA=0 ;active low
@@ -575,6 +580,12 @@ static struct nuc970_spi_info *nuc970_spi0_parse_dt(struct device *dev)
 		sci->bus_num = temp;
 	}
 
+	if (of_property_read_u32(dev->of_node, "quad", &temp)) {
+		dev_warn(dev, "can't get quad from dt\n");
+		sci->quad = 0;
+	} else {
+		sci->quad = temp;
+	}
 	return sci;
 }
 #else

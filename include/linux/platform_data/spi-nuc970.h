@@ -23,9 +23,10 @@ struct nuc970_spi_info {
 	unsigned int sleep;
 	unsigned int txnum;
 	unsigned int txbitlen;
-    unsigned int clkpol;
+	unsigned int clkpol;
 	int bus_num;
-    unsigned int hz;
+	unsigned int hz;
+	unsigned int quad;
 };
 
 #endif 
