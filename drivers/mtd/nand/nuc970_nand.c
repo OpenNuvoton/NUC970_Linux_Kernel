@@ -643,6 +643,7 @@ static inline int _nuc970_nand_dma_transfer(struct mtd_info *mtd, const u_char *
 {
 	struct nuc970_nand_info *nand = container_of(mtd, struct nuc970_nand_info, mtd);
 	dma_addr_t dma_addr = (dma_addr_t)nand->pnand_phyaddr;
+	int stat = 0;
 
 	ENTER() ;
 
@@ -703,13 +704,13 @@ static inline int _nuc970_nand_dma_transfer(struct mtd_info *mtd, const u_char *
 		writel ( readl(REG_SMCSR) | 0x2, REG_SMCSR);
 		if ( readl(REG_SMCSR) & 0x80 ) {
 			do {
-				int stat=0;
 				if ( (stat=fmiSMCorrectData ( mtd,  (unsigned long)nand->pnand_vaddr)) < 0 )
 				{
 					mtd->ecc_stats.failed++;
 					writel ( 0x4, REG_SMISR );
 					writel ( 0x3, REG_NAND_DMACCSR);          // reset DMAC
 					writel ( readl(REG_SMCSR)|0x1, REG_SMCSR);    // reset SM controller
+					stat = -EIO;
 					break;
 				}
 				else if ( stat > 0 ) {
@@ -727,7 +728,7 @@ static inline int _nuc970_nand_dma_transfer(struct mtd_info *mtd, const u_char *
 
 	nuc970_nand_dmac_fini();
 	LEAVE();
-	return 0;
+	return stat;
 }
 
 /**
@@ -986,6 +987,7 @@ static int nuc970_nand_read_page_hwecc_oob_first(struct mtd_info *mtd, struct na
 	int eccsize = chip->ecc.size;
 	uint8_t *p = buf;
 	char * ptr=REG_SMRA0;
+	int stat = 0;
 
 	ENTER();
 
@@ -1004,7 +1006,7 @@ static int nuc970_nand_read_page_hwecc_oob_first(struct mtd_info *mtd, struct na
 	{
 		// Third, read data from nand
 		nuc970_nand_command_lp(mtd, NAND_CMD_READ0, 0, page);
-		_nuc970_nand_dma_transfer(mtd, p, eccsize, 0x0);
+		stat = _nuc970_nand_dma_transfer(mtd, p, eccsize, 0x0);
 
 		// Fouth, restore OOB data from SMRA
 		memcpy ( (void*)chip->oob_poi, (void*)ptr, mtd->oobsize );
@@ -1012,7 +1014,7 @@ static int nuc970_nand_read_page_hwecc_oob_first(struct mtd_info *mtd, struct na
 
 	LEAVE();
 
-	return 0;
+	return stat;
 }
 
 static void nuc970_layout_oob_table ( struct nand_ecclayout* pNandOOBTbl, int oobsize , int eccbytes )
