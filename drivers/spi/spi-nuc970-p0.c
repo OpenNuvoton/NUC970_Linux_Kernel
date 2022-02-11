@@ -712,7 +712,7 @@ static int nuc970_spi0_probe(struct platform_device *pdev)
  #elif defined(CONFIG_SPI_NUC970_P0_QUAD) && defined(CONFIG_SPI_NUC970_P0_SS1_PB0)
 	p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad-ss1-PB");
  #elif defined(CONFIG_SPI_NUC970_P0_QUAD) && defined(CONFIG_SPI_NUC970_P0_SS1_PH12)
-	p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad-ss1-PB");
+	p = devm_pinctrl_get_select(&pdev->dev, "spi0-quad-ss1-PH");
  #endif
 #endif
 	if(IS_ERR(p)) {
