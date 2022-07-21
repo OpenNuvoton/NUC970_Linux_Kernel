@@ -56,6 +56,8 @@
 
 /* mac controller bit */
 #define MCMDR_RXON		0x01
+#define MCMDR_ALP		(0x01 << 1)
+#define MCMDR_ARP		(0x01 << 2)
 #define MCMDR_ACP		(0x01 << 3)
 #define MCMDR_SPCRC		(0x01 << 5)
 #define MCMDR_MGPWAKE		(0x01 << 6)
@@ -488,7 +490,7 @@ static void nuc970_set_global_maccmd(struct net_device *dev)
 	unsigned int val;
 
 	val = __raw_readl( REG_MCMDR);
-	val |= MCMDR_SPCRC | /*MCMDR_ENMDC |*/ MCMDR_ACP /*| ENMDC*/;
+	val |= MCMDR_ALP | MCMDR_SPCRC | /*MCMDR_ENMDC |*/ MCMDR_ACP /*| ENMDC*/;
 	__raw_writel(val,  REG_MCMDR);
 }
 
@@ -520,6 +522,24 @@ static void nuc970_set_curdest(struct net_device *dev)
 	__raw_writel(ether->start_tx_ptr,  REG_TXDLSA);
 }
 
+static void nuc970_enable_alp(struct net_device *dev)
+{
+	unsigned int val;
+
+	val = __raw_readl(REG_MCMDR);
+	val |= MCMDR_ALP;
+	__raw_writel(val, REG_MCMDR);
+}
+#if 0
+static void nuc970_enable_arp(struct net_device *dev)
+{
+	unsigned int val;
+
+	val = __raw_readl(REG_MCMDR);
+	val |= MCMDR_ARP;
+	__raw_writel(val, REG_MCMDR);
+}
+#endif
 static void nuc970_reset_mac(struct net_device *dev, int need_free)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
@@ -652,7 +672,7 @@ static int nuc970_ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 					skb->len, DMA_TO_DEVICE);
 
 	tx_skb[ether->cur_tx]  = skb;
-	txbd->sl = skb->len > 1514 ? 1514 : skb->len;
+	txbd->sl = skb->len;
 	wmb();	// This is dummy function for ARM9
 	txbd->mode |= TX_OWEN_DMA;
 	wmb();	// This is dummy function for ARM9
@@ -740,7 +760,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (likely((status & RXDS_RXGD) && (length <= 1514))) {
+		if (likely(status & RXDS_RXGD)) {
 
 			skb = dev_alloc_skb(2048);
 			if (!skb) {
@@ -995,6 +1015,27 @@ static int nuc970_get_ts_info(struct net_device *dev, struct ethtool_ts_info *in
 	return 0;
 }
 
+static int nuc970_change_mtu(struct net_device *dev, int new_mtu)
+{
+	unsigned int val;
+
+	if(new_mtu < 64 || new_mtu > 2048)
+		return -EINVAL;
+
+	if(new_mtu < 1500)
+	{
+		val = __raw_readl(REG_MCMDR);
+		val &= ~(MCMDR_ALP | MCMDR_ARP);
+		__raw_writel(val, REG_MCMDR);
+	}
+	else
+		nuc970_enable_alp(dev);
+
+	dev->mtu = new_mtu;
+
+	return 0;
+}
+
 static const struct ethtool_ops nuc970_ether_ethtool_ops = {
 	.get_settings	= nuc970_get_settings,
 	.set_settings	= nuc970_set_settings,
@@ -1022,7 +1063,7 @@ static const struct net_device_ops nuc970_ether_netdev_ops = {
 	.ndo_set_mac_address	= nuc970_set_mac_address,
 	.ndo_do_ioctl		= nuc970_ether_ioctl,
 	.ndo_validate_addr	= eth_validate_addr,
-	.ndo_change_mtu		= eth_change_mtu,
+	.ndo_change_mtu		= nuc970_change_mtu,
 };
 
 static void __init get_mac_address(struct net_device *dev)
