@@ -926,6 +926,7 @@ static const struct spi_device_id m25p_ids[] = {
 	{ "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
 	{ "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
 	{ "mx66l51235l", INFO(0xc2201a, 0, 64 * 1024, 1024, 0) },
+	{ "mx66l1g45gmi", INFO(0xc2201b, 0, 64 * 1024, 2048, 0) },
 
 	/* Micron */
 	{ "n25q064",  INFO(0x20ba17, 0, 64 * 1024, 128, 0) },
@@ -1016,6 +1017,7 @@ static const struct spi_device_id m25p_ids[] = {
 	{ "w25q128", INFO(0xef4018, 0, 64 * 1024, 256, SECT_4K | M25P80_DUAL_READ | M25P80_QUAD_READ | M25P80_QUAD_WRITE) },
 	{ "w25q256", INFO(0xef4019, 0, 64 * 1024, 512, SECT_4K) },
 	{ "w25q256jvim", INFO(0xef7019, 0, 64 * 1024, 512, SECT_4K) },
+	{ "w25q512jvf", INFO(0xef4020, 0, 64 * 1024, 1024, SECT_4K) },
 
 	/* XTX -- XT25x "blocks" are 64K, "sectors" are 4KiB */
 	{ "XT25F32", INFO(0x0b4016, 0, 64 * 1024,  64, SECT_4K) },
