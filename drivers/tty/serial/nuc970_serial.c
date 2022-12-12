@@ -1206,7 +1206,6 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_enable(clk);
 	}
 
-	#ifdef CONFIG_NUC970_UART1
 	if(up->port.line == 1){
 		clk = clk_get(NULL, "uart1");
 		clk_prepare(clk);
@@ -1216,9 +1215,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART2
 	if(up->port.line == 2){
 		clk = clk_get(NULL, "uart2");
 		clk_prepare(clk);
@@ -1228,9 +1225,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART3
 	if(up->port.line == 3){
 		clk = clk_get(NULL, "uart3");
 		clk_prepare(clk);
@@ -1240,9 +1235,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART4
 	if(up->port.line == 4){
 		clk = clk_get(NULL, "uart4");
 		clk_prepare(clk);
@@ -1252,9 +1245,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART5
 	if(up->port.line == 5){
 		clk = clk_get(NULL, "uart5");
 		clk_prepare(clk);
@@ -1264,9 +1255,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART6
 	if(up->port.line == 6){
 		clk = clk_get(NULL, "uart6");
 		clk_prepare(clk);
@@ -1276,9 +1265,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART7
 	if(up->port.line == 7){
 		clk = clk_get(NULL, "uart7");
 		clk_prepare(clk);
@@ -1288,9 +1275,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART8
 	if(up->port.line == 8){
 		clk = clk_get(NULL, "uart8");
 		clk_prepare(clk);
@@ -1300,9 +1285,7 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART9
 	if(up->port.line == 9){
 		clk = clk_get(NULL, "uart9");
 		clk_prepare(clk);
@@ -1312,10 +1295,8 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
-	#ifdef CONFIG_NUC970_UART10
-		if(up->port.line == 10){
+	if(up->port.line == 10){
 		clk = clk_get(NULL, "uart10");
 		clk_prepare(clk);
 		clk_enable(clk);
@@ -1324,7 +1305,6 @@ void nuc970serial_set_clock(struct uart_nuc970_port *up)
 		clk_prepare(clk);
 		clk_enable(clk);
 	}
-	#endif
 
 }
 
