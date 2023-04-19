@@ -45,7 +45,6 @@
 
 #include "nuc970fb.h"
 
-
 #ifdef CONFIG_ILI9431_MPU80_240x320
 void nuc970_mpu_write_cmd(struct fb_info *info, unsigned short uscmd)
 {
@@ -283,6 +282,9 @@ static int nuc970fb_check_var(struct fb_var_screeninfo *var,
 	var->transp.length	= 0;
 
 	fbi->regs.lcd_dccs = display->dccs;
+#ifdef CONFIG_NUC970_DUAL_FB
+	fbi->regs.lcd_dccs |= LCM_DCCS_DISP_INT_EN;
+#endif
 	fbi->regs.lcd_device_ctrl = display->devctl;
 	fbi->regs.lcd_va_fbctrl = display->fbctrl;
 	fbi->regs.lcd_va_scale = display->scale;
@@ -482,7 +484,8 @@ static int nuc970fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *i
 	
 	spin_unlock_irqrestore(&fbi->lock, flags);
 
-	// printk("pan_display: [0x%x],  %d, %d - %d, %d\n", fbi->dual_fb_base, var->xoffset, var->yoffset, info->var.xoffset, info->var.yoffset);
+	//printk("pan_display: [0x%x],  %d, %d - %d, %d\n", fbi->dual_fb_base, var->xoffset, var->yoffset, info->var.xoffset, info->var.yoffset);
+	//printk("[0x%x, 0x%x]\n", readl(fbi->io + REG_LCM_DCCS), readl(fbi->io +  REG_LCM_INT_CS));
 	return 0;
 }
 #endif  /* CONFIG_NUC970_DUAL_FB */
@@ -490,7 +493,7 @@ static int nuc970fb_pan_display(struct fb_var_screeninfo *var, struct fb_info *i
 
 static struct fb_ops nuc970fb_ops = {
 	.owner			= THIS_MODULE,
-	.fb_check_var	= nuc970fb_check_var,
+	.fb_check_var	        = nuc970fb_check_var,
 	.fb_set_par		= nuc970fb_set_par,
 	.fb_blank		= nuc970fb_blank,
 #ifdef CONFIG_NUC970_DUAL_FB
@@ -586,6 +589,7 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 	void __iomem *irq_base = fbi->irq_base;
 	unsigned long lcdirq = readl(regs + REG_LCM_INT_CS);
 
+//	printk("[0x%x, 0x%x] lcdirq = 0x%x\n", readl(fbi->io + REG_LCM_DCCS), readl(fbi->io +  REG_LCM_INT_CS), lcdirq);
 	if (lcdirq & LCM_INT_CS_DISP_F_STATUS) 
 	{
 		writel(readl(irq_base) | 1<<30, irq_base);
@@ -611,13 +615,13 @@ static irqreturn_t nuc970fb_irqhandler(int irq, void *dev_id)
 		if (fbi->dual_fb_base == 0) 
 		{
 			/* Starting fetch data from VA_BADDR0 */
-			writel(readl(regs + REG_LCM_VA_FBCTRL) & ~LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);		
+			writel(readl(regs + REG_LCM_VA_FBCTRL) & ~LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);
 		}
 		else
 		{
 			/* Starting fetch data from VA_BADDR1 */
 			writel(readl(regs + REG_LCM_VA_BADDR0) + fbi->dual_fb_base, regs + REG_LCM_VA_BADDR1);
-			writel(readl(regs + REG_LCM_VA_FBCTRL) | LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);		
+			writel(readl(regs + REG_LCM_VA_FBCTRL) | LCM_VA_FBCTRL_START_BUF, regs + REG_LCM_VA_FBCTRL);
 		}
 #endif
 
@@ -706,13 +710,10 @@ static struct nuc970fb_mach_info *nuc970fb_parse_dt(struct device *dev)
 		return ERR_PTR(-ENOMEM);
 	}
 
-	printk("\t[%s]-->1\n", __func__);
-
 	mach_info->displays = display;
 	mach_info->num_displays = 1;		//fixed to only 1 display
 	mach_info->default_display = 0;
 
-	printk("\t[%s]-->2\n", __func__);
 	if (of_property_read_u32(dev->of_node, "type", &temp)) {
 		dev_warn(dev, "can't get type from dt\n");
 		goto read_error;
@@ -883,7 +884,7 @@ static int nuc970fb_probe(struct platform_device *pdev)
 			"no platform data for lcd, cannot attach\n");
 		return -EINVAL;
 	}
-	printk("[%s] %x\n", __func__, mach_info->displays[0].bpp);
+	//printk("[%s] %x\n", __func__, mach_info->displays[0].bpp);
 
 	if (mach_info->default_display > mach_info->num_displays) {
 		dev_err(&pdev->dev,
@@ -1081,11 +1082,10 @@ static int nuc970fb_probe(struct platform_device *pdev)
 	init_ili9341(fbinfo);
 #endif
 
-#ifdef CONFIG_PM
+#if defined(CONFIG_PM) || defined(CONFIG_NUC970_DUAL_FB)
 	writel(readl(fbi->io + REG_LCM_DCCS) | LCM_DCCS_DISP_INT_EN, fbi->io + REG_LCM_DCCS);
 	writel(readl(fbi->io +  REG_LCM_INT_CS) | LCM_INT_CS_DISP_F_EN, fbi->io + REG_LCM_INT_CS);
 #endif
-
 	return 0;
 
 free_cpufreq:
