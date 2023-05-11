@@ -127,9 +127,13 @@ static int nuc970wwdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+#ifdef CONFIG_NUC970_WWDT_PCLKDIV4096
+	clklxt = clk_get(NULL, "pclk4096_div");
+#else 
 	clklxt = clk_get(NULL, "xin32k");
+#endif
 	if (IS_ERR(clklxt)) {
-		dev_err(&pdev->dev, "failed to get 32k clk\n");
+		dev_err(&pdev->dev, "failed to get pclk clk\n");
 		ret = PTR_ERR(clklxt);
 		return ret;
 	}

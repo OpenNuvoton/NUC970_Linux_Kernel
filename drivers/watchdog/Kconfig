@@ -346,6 +346,19 @@ config NUC970_WDT
 	  for the Nuvoton NUC970/N9H30 series microprocessor
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_wdt.
+choice
+	prompt "Nuvoton NUC970/N9H30 Watchdog Timer clock source selection"
+	default NUC970_XIN32K
+	depends on NUC970_WDT
+	help
+	  Select watchdog clock source.
+
+	config NUC970_WDT_XIN32K
+		bool "XIN 32K"
+	config NUC970_WDT_PCLKDIV4096
+		bool "PCLK/4096"
+endchoice
+
 
 config NUC970_WDT_WKUP
         tristate "NUC970/N9H30 WDT wake-up support"
@@ -360,6 +373,19 @@ config NUC970_WWDT
 	  for the Nuvoton NUC970/N9H30 series microprocessor
 	  To compile this driver as a module, choose M here: the
 	  module will be called nuc970_wwdt.
+choice
+	prompt "Nuvoton NUC970/N9H30 Watchdog Timer clock source selection"
+	default NUC970_XIN32K
+	depends on NUC970_WWDT
+	help
+	  Select window watchdog clock source.
+
+	config NUC970_WWDT_XIN32K
+		bool "XIN 32K"
+	config NUC970_WWDT_PCLKDIV4096
+		bool "PCLK/4096"
+endchoice
+
 
 config TS72XX_WATCHDOG
 	tristate "TS-72XX SBC Watchdog"
