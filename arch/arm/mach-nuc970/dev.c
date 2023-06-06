@@ -433,6 +433,40 @@ static struct nuc970fb_display nuc970fb_lcd_info[] = {
 		.scale		= 0x04000400,
 	},
 #endif
+
+#ifdef CONFIG_FW043TFT_480X272
+	/* FW043TFT 480X272 TFT Panel , 24bits*/
+	[0] = {
+#ifdef CONFIG_FB_SRCFMT_RGB888
+		.type		= LCM_DCCS_VA_SRC_RGB888,
+		.bpp		= 32,
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
+		.type		= LCM_DCCS_VA_SRC_RGB565,
+		.bpp		= 16,
+#endif
+		.width		= 480,
+		.height		= 272,
+		.xres		= 480,
+		.yres		= 272,
+		.pixclock	= 10000000,
+		.left_margin	= 38,
+		.right_margin   = 7,
+		.hsync_len	= 2,
+		.upper_margin	= 7,
+		.lower_margin	= 7,
+		.vsync_len	= 2,
+#ifdef CONFIG_FB_SRCFMT_RGB888
+		.dccs		= 0x0000020A,
+                .fbctrl		= 0x01E001E0,
+#elif defined(CONFIG_FB_SRCFMT_RGB565)
+		.dccs		= 0x0000040A,
+		.fbctrl		= 0x00F000F0,
+#endif
+                .devctl		= 0x070000C0,
+		.scale		= 0x04000400,
+	},
+#endif
+
 };
 
 static struct nuc970fb_mach_info nuc970fb_fb_info = {

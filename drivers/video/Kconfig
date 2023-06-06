@@ -2143,13 +2143,18 @@ choice
         select FB_NUC970_16BIT_PIN
         select GPIOLIB
         select GPIO_NUC970
+
+	config FW043TFT_480X272
+        bool "FW043TFT 480X272 Color TFT LCD"
+        depends on FB_NUC970
+        select FB_NUC970_18BIT_PIN
 endchoice
 
 choice
 	prompt "Framebuffer bitmap source format"
 	default FB_SRCFMT_RGB565
 	depends on FB_NUC970
-	depends on (E50A2V1_800X480 || FW070TFT_800X480)
+	depends on (E50A2V1_800X480 || FW070TFT_800X480 || FW043TFT_480X272)
 
     config FB_SRCFMT_RGB565
         bool "RGB565 support"
