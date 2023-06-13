@@ -30,20 +30,21 @@ struct nuc970fb_info {
 	void __iomem        *irq_base;
 	int                 drv_type;
 	unsigned long       clk_rate;
-#ifdef CONFIG_PM    
+#ifdef CONFIG_PM
 	struct completion   completion;
 	int                 powerdown;
 #endif
 #ifdef CONFIG_CPU_FREQ
 	struct notifier_block   freq_transition;
 #endif
-
 	struct nuc970fb_hw          regs;
 	struct nuc970fb_mach_info   *mach_info;
-	
+
 	spinlock_t  lock;
 	u32         dual_fb_base;
-	
+	wait_queue_head_t   wait;
+	u32         vsync_count;
+
 	/* keep these registers in case we need to re-write palette */
 	u32         palette_buffer[PALETTE_BUFFER_SIZE];
 	u32         pseudo_pal[16];
