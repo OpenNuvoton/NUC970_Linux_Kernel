@@ -78,6 +78,8 @@ struct uart_nuc970_port {
 	unsigned char		mcr_force;	/* mask of forced bits */
 
 	struct serial_rs485     rs485;          /* rs485 settings */
+	int max_count;
+
 	/*
 	 * We provide a per-port pm hook.
 	 */
@@ -302,7 +304,6 @@ static enum hrtimer_restart nuc970_serial_hr_callback(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 #endif
-static int max_count = 0;
 
 static void
 receive_chars(struct uart_nuc970_port *up)
@@ -358,14 +359,14 @@ receive_chars(struct uart_nuc970_port *up)
 			continue;
 
 		uart_insert_char(&up->port, fsr, RX_OVER_IF, ch, flag);
-		max_count++;
+		up->max_count++;
 		dcnt=(serial_in(up, UART_REG_FSR) >> 8) & 0x3f;
-		if(max_count > 1023)
+		if(up->max_count > 1023)
 		{
 			spin_lock(&up->port.lock);
 			tty_flip_buffer_push(&up->port.state->port);
 			spin_unlock(&up->port.lock);
-			max_count=0;
+			up->max_count=0;
 			if((isr & TOUT_IF) && (dcnt == 0))
 				goto tout_end;
 		}
@@ -381,14 +382,14 @@ receive_chars(struct uart_nuc970_port *up)
 	tty_flip_buffer_push(&up->port.state->port);
 	spin_unlock(&up->port.lock);
 tout_end:
-	max_count=0;
+	up->max_count=0;
 	return;
 }
 
 static void transmit_chars(struct uart_nuc970_port *up)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
-	int count = 12;
+	int count = 16 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
 
 	if (up->port.x_char) {
 		while(serial_in(up, UART_REG_FSR) & TX_FULL);
@@ -1364,6 +1365,8 @@ static int nuc970serial_probe(struct platform_device *pdev)
 	up = &nuc970serial_ports[i];
 	up->port.line 			= i;
 	nuc970serial_set_clock(up);
+
+	up->max_count = 0x0;
 
 #ifdef CONFIG_OF
 	if (of_property_read_u32_array(pdev->dev.of_node, "map-addr", val32, 1) != 0) 
