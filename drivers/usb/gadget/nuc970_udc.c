@@ -538,7 +538,11 @@ void paser_irq_nep(int irq, struct nuc970_ep *ep, u32 IrqSt)
 	}
 	else
 	{
-		__raw_writel(__raw_readl(controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1)),
+		if (ep->index == 5)
+			__raw_writel(__raw_readl(controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1))|0x800,
+					 controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1));
+		else
+			__raw_writel(__raw_readl(controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1)),
 					 controller.reg + REG_USBD_EPA_IRQ_STAT + 0x28*(ep->index-1));
 		req = list_entry(ep->queue.next, struct nuc970_request, queue);
 	}
@@ -859,57 +863,37 @@ static irqreturn_t nuc970_udc_irq(int irq, void *_dev)
 }
 
 
-static s32 sram_data[13][2] = {{0,0x40}};
-
+static s32 sram[13][2] = {0};
 //0-3F for Ctrl pipe
-s32 get_sram_base(struct nuc970_udc *dev, u32 max)
+s32 get_sram_base(u32 idx, u32 max)
 {
-	int i, cnt = 1, j;
-	s32 start, end;
+	u32 i;
+	s32 sram_addr;
 
-	for (i = 1; i < NUC970_ENDPOINTS; i++)
+	if (max >= 512)
 	{
-		struct nuc970_ep *ep = &dev->ep[i];
-
-		start = __raw_readl(controller.reg + REG_USBD_EPA_START_ADDR+0x28*(ep->index-1));
-		end = __raw_readl(controller.reg + REG_USBD_EPA_END_ADDR+0x28*(ep->index-1));
-		if (end - start > 0)
+		for (i=1; i<7; i++)
 		{
-				sram_data[cnt][0] = start;
-				sram_data[cnt][1] = end + 1;
-				cnt++;
+			if (sram[i][0] == 1)
+				continue;
+			sram[i][0] = 1;
+			sram[i][1] = idx;
+			sram_addr = 0x400 + (i - 1) * 0x200;
+			return sram_addr;
 		}
 	}
-	if (cnt == 1)
-			return 0x40;
-	//sorting from small to big
-	j= 1;
-	while ((j<cnt))
+	else
 	{
-		for (i=0; i<cnt -j; i++)
+		for (i=7; i<13; i++)
 		{
-			if (sram_data[i][0]>sram_data[i+1][0])
-			{
-				start = sram_data[i][0];
-				end = sram_data[i][1];
-				sram_data[i][0] = sram_data[i+1][0];
-				sram_data[i][1] = sram_data[i+1][1];
-				sram_data[i+1][0] = start;
-				sram_data[i+1][1] = end;
-			}
+			if (sram[i][0] == 1)
+				continue;
+			sram[i][0] = 1;
+			sram[i][1] = idx;
+			sram_addr = 0x40 + (i - 7) * 0x40;
+			return sram_addr;
 		}
-		j++;
 	}
-
-	for (i = 0; i< cnt-1; i++)
-	{
-		if (sram_data[i+1][0] - sram_data[i][1] >= max)
-			return sram_data[i][1];
-	}
-
-	if (0x1000 - sram_data[cnt-1][1] >= max)
-		return sram_data[cnt-1][1];
-
 	return -ENOBUFS;
 }
 
@@ -1032,12 +1016,22 @@ static int nuc970_ep_disable (struct usb_ep *_ep)
 {
 	struct nuc970_ep *ep = container_of(_ep, struct nuc970_ep, ep);
 	unsigned long flags;
+	s32 i = 1;
 
 	if (!_ep || !ep->ep.desc)
 		return -EINVAL;
 
 	spin_lock_irqsave(&ep->dev->lock, flags);
 	ep->ep.desc = 0;
+
+	while(1) {
+		if (sram[i][1] == ep->index) {
+			sram[i][0] = 0;
+			sram[i][1] = 0;
+			break;
+		}
+		i++;
+	}
 
 	__raw_writel(0, controller.reg + REG_USBD_EPA_CFG+0x28*(ep->index-1));
 	__raw_writel(0, controller.reg + REG_USBD_EPA_IRQ_ENB + 0x28*(ep->index-1));
