@@ -208,7 +208,7 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 
 		if (len == 0)
 		{
-			if (req->req.zero&&!req->req.length)
+			//if (req->req.zero&&!req->req.length)
 				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
 		}
 		else
@@ -274,7 +274,7 @@ static int write_fifo(struct nuc970_ep *ep, struct nuc970_request *req)
 
 	/* last packet is often short (sometimes a zlp) */
 
-	if (req->req.length == req->req.actual/* && !req->req.zero*/)
+	if (((req->req.length == req->req.actual) && (len % ep->ep.maxpacket)) || (len == 0))
 	{
 		done(ep, req, 0);
 		return 1;
@@ -931,7 +931,7 @@ static int nuc970_ep_enable (struct usb_ep *_ep, const struct usb_endpoint_descr
 		__raw_writel(max, controller.reg + REG_USBD_EPA_MPS + 0x28*(ep->index-1));
 		ep->ep.maxpacket = max;
 
-		sram_addr = get_sram_base(dev, max);
+		sram_addr = get_sram_base(ep->index, max);
 
 		if (sram_addr < 0)
 			return sram_addr;

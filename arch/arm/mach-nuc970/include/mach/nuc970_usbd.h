@@ -138,7 +138,7 @@
 //Bit Definitions of IRQ_ENB/STAT register
 #define	IRQ_USB_STAT		    0x01
 #define IRQ_CEP					0x02
-#define IRQ_NCEP				0xfc   
+#define IRQ_NCEP				0x3ffc
 
 //Definition of Bits in USB_IRQ_STS register
 #define USB_SOF					0x01	
