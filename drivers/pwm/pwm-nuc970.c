@@ -119,10 +119,45 @@ static void nuc970_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 #endif
 }
 
+static int nuc970_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm, enum pwm_polarity polarity)
+{
+	//struct nuc980_chip *nuc980 = to_nuc980_chip(chip);
+	int ch = pwm->hwpwm + chip->base;
+	unsigned long flags;
 
+	local_irq_save(flags);
+
+	if(ch == 0) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4), REG_PWM_PCR);
+	} else if(ch == 1) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 8), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 8), REG_PWM_PCR);
+	} else if (ch == 2) {
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 12), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 12), REG_PWM_PCR);
+	} else {        /* ch 3 */
+		if (polarity == PWM_POLARITY_NORMAL)
+			__raw_writel(__raw_readl(REG_PWM_PCR) & ~(4 << 16), REG_PWM_PCR);
+		else
+			__raw_writel(__raw_readl(REG_PWM_PCR) | (4 << 16), REG_PWM_PCR);
+	}
+
+	local_irq_restore(flags);
+#ifdef DEBUG_PWM
+	pwm_dbg();
+#endif
+	return 0;
+}
 
 static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-		int duty_ns, int period_ns)
+                             int duty_ns, int period_ns)
 {
 	struct nuc970_chip *nuc970 = to_nuc970_chip(chip);
 	unsigned long period, duty, prescale;
@@ -135,7 +170,7 @@ static int nuc970_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	// now pwm time unit is 1000ns.
 	period = (period_ns + 500) / 1000;
 	duty = (duty_ns + 500) / 1000;
-	
+
 	// don't want the minus 1 below change the value to -1 (0xFFFF)
 	if(period == 0)
 		period = 1;
@@ -173,6 +208,7 @@ static struct pwm_ops nuc970_pwm_ops = {
 	.enable = nuc970_pwm_enable,
 	.disable = nuc970_pwm_disable,
 	.config = nuc970_pwm_config,
+	.set_polarity = nuc970_pwm_set_polarity,
 	.owner = THIS_MODULE,
 };
 
@@ -219,7 +255,7 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 
 	if(pdev->id == 0) {
 #if defined(CONFIG_OF)
-	p = devm_pinctrl_get_select_default(&pdev->dev);
+		p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
 #if defined (CONFIG_NUC970_PWM0_PA12)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm0-PA");
@@ -241,7 +277,7 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	}
 	if(pdev->id == 1) {
 #if defined(CONFIG_OF)
-	p = devm_pinctrl_get_select_default(&pdev->dev);
+		p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
 #if defined (CONFIG_NUC970_PWM1_PA13)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm1-PA");
@@ -260,7 +296,7 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	}
 	if(pdev->id == 2) {
 #if defined(CONFIG_OF)
-	p = devm_pinctrl_get_select_default(&pdev->dev);
+		p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
 #if defined (CONFIG_NUC970_PWM2_PA14)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm2-PA");
@@ -279,7 +315,7 @@ static int nuc970_pwm_probe(struct platform_device *pdev)
 	}
 	if(pdev->id == 3) {
 #if defined(CONFIG_OF)
-	p = devm_pinctrl_get_select_default(&pdev->dev);
+		p = devm_pinctrl_get_select_default(&pdev->dev);
 #else
 #if defined (CONFIG_NUC970_PWM3_PA15)
 		p = devm_pinctrl_get_select(&pdev->dev, "pwm3-PA");
@@ -332,13 +368,11 @@ static int nuc970_pwm_suspend(struct platform_device *pdev, pm_message_t state)
 		cnr3_save = __raw_readl(REG_PWM_CNR3);
 		__raw_writel(0, REG_PWM_CNR3);
 		while(__raw_readl(REG_PWM_PDR3));
-	}
-	else if (pdev->id == 2) {
+	} else if (pdev->id == 2) {
 		cnr2_save = __raw_readl(REG_PWM_CNR2);
 		__raw_writel(0, REG_PWM_CNR2);
 		while(__raw_readl(REG_PWM_PDR2));
-	}
-	else if (pdev->id == 1) {
+	} else if (pdev->id == 1) {
 		cnr1_save = __raw_readl(REG_PWM_CNR1);
 		__raw_writel(0, REG_PWM_CNR1);
 		while(__raw_readl(REG_PWM_PDR1));
@@ -361,14 +395,11 @@ static int nuc970_pwm_resume(struct platform_device *pdev)
 
 	if (pdev->id == 0) {
 		__raw_writel(cnr0_save, REG_PWM_CNR0);
-	}
-	else if (pdev->id == 1) {
+	} else if (pdev->id == 1) {
 		__raw_writel(cnr1_save, REG_PWM_CNR1);
-	}
-	else if (pdev->id == 2) {
+	} else if (pdev->id == 2) {
 		__raw_writel(cnr2_save, REG_PWM_CNR2);
-	}
-	else if (pdev->id == 3) {
+	} else if (pdev->id == 3) {
 		__raw_writel(cnr3_save, REG_PWM_CNR3);
 
 		__raw_writel(pcr_save, REG_PWM_PCR);
@@ -386,7 +417,7 @@ static int nuc970_pwm_resume(struct platform_device *pdev)
 
 #if defined(CONFIG_OF)
 static const struct of_device_id nuc970_pwm0_of_match[] = {
-	{   .compatible = "nuvoton,nuc970-pwm" } ,
+	{   .compatible = "nuvoton,nuc970-pwm" },
 	{	},
 };
 MODULE_DEVICE_TABLE(of, nuc970_pwm0_of_match);
@@ -406,7 +437,7 @@ static struct platform_driver nuc970_pwm_driver = {
 	.probe		= nuc970_pwm_probe,
 	.remove		= nuc970_pwm_remove,
 	.suspend        = nuc970_pwm_suspend,
-        .resume         = nuc970_pwm_resume,
+	.resume         = nuc970_pwm_resume,
 };
 
 
