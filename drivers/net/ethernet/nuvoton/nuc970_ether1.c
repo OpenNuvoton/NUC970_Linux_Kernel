@@ -142,10 +142,18 @@
 
 #define MII_TIMEOUT	100
 
+#ifdef CONFIG_VLAN_8021Q
+#define IS_VLAN 1
+#else
+#define IS_VLAN 0
+#endif
+
 #define ETH_SET_REG(reg, val)   __raw_writel((val), (reg))
 #define ETH_SETB_REG(reg, bits)	__raw_writel(__raw_readl(reg) |  (bits), (reg))
 #define ETH_CLRB_REG(reg, bits)	__raw_writel(__raw_readl(reg) & ~(bits), (reg))
 
+// (ETH_FRAME_LEN + (IS_VLAN * VLAN_HLEN) + ETH_FCS_LEN + Align Size) < 0x600
+#define MAX_PACKET_SIZE           1536
 #define ETH_TRIGGER_TX    do { ETH_SET_REG(REG_TSDR, ENSTART); } while (0)
 #define ETH_TRIGGER_RX    do { ETH_SET_REG(REG_RSDR, ENSTART); } while (0)
 #define ETH_ENABLE_TX     do { ETH_SETB_REG(REG_MCMDR, MCMDR_TXON); } while (0)
@@ -323,7 +331,7 @@ static void nuc970_write_cam(struct net_device *dev,
 
 static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	struct nuc970_ether *ether = netdev_priv(dev);
-	struct sk_buff *skb = dev_alloc_skb(2048);
+	struct sk_buff *skb = dev_alloc_skb(MAX_PACKET_SIZE);
 
 	if (skb == NULL)
 		return NULL;
@@ -331,7 +339,7 @@ static struct sk_buff * get_new_skb(struct net_device *dev, u32 i) {
 	skb->dev = dev;
 
 	(ether->rdesc + i)->buffer = dma_map_single(&dev->dev, skb->data,
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 	rx_skb[i] = skb;
 
 	return skb;
@@ -407,7 +415,7 @@ static int nuc970_init_desc(struct net_device *dev)
 
 			for(; i != 0; i--) {
 				dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer),
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 				dev_kfree_skb_any(rx_skb[i]);
 			}
 			return -ENOMEM;
@@ -438,7 +446,7 @@ static void nuc970_free_desc(struct net_device *dev)
 	for (i = 0; i < RX_DESC_SIZE; i++) {
 		skb = rx_skb[i];
 		if(skb != NULL) {
-			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), 2048, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)((ether->rdesc + i)->buffer), MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 			dev_kfree_skb_any(skb);
 		}
 	}
@@ -489,8 +497,15 @@ static void nuc970_set_global_maccmd(struct net_device *dev)
 {
 	unsigned int val;
 
-	val = __raw_readl( REG_MCMDR);
-	val |= MCMDR_ALP | MCMDR_SPCRC | /*MCMDR_ENMDC |*/ MCMDR_ACP /*| ENMDC*/;
+	val = __raw_readl( REG_MCMDR) |
+		MCMDR_SPCRC |
+		MCMDR_ACP;
+	if (IS_VLAN)
+        {
+		val |= MCMDR_ALP;
+	}
+        /* limit receive length to MAX_PACKET_SIZE bytes due to crazy RX-DMA. */
+	__raw_writel(MAX_PACKET_SIZE,  REG_DMARFC);
 	__raw_writel(val,  REG_MCMDR);
 }
 
@@ -522,24 +537,22 @@ static void nuc970_set_curdest(struct net_device *dev)
 	__raw_writel(ether->start_tx_ptr,  REG_TXDLSA);
 }
 
-static void nuc970_enable_alp(struct net_device *dev)
+static void nuc970_set_alp(struct net_device *dev, int bOn)
 {
 	unsigned int val;
 
 	val = __raw_readl(REG_MCMDR);
-	val |= MCMDR_ALP;
+	if (bOn)
+	{
+		val |= MCMDR_ALP;
+	}
+	else
+	{
+		val &= ~(MCMDR_ALP | MCMDR_ARP);
+	}
 	__raw_writel(val, REG_MCMDR);
 }
-#if 0
-static void nuc970_enable_arp(struct net_device *dev)
-{
-	unsigned int val;
 
-	val = __raw_readl(REG_MCMDR);
-	val |= MCMDR_ARP;
-	__raw_writel(val, REG_MCMDR);
-}
-#endif
 static void nuc970_reset_mac(struct net_device *dev, int need_free)
 {
 	struct nuc970_ether *ether = netdev_priv(dev);
@@ -760,16 +773,20 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 		status = rxbd->sl;
 		length = status & 0xFFFF;
 
-		if (likely(status & RXDS_RXGD)) {
-
-			skb = dev_alloc_skb(2048);
+		if (likely((status & RXDS_RXGD) &&
+#if (IS_VLAN == 1)
+		(length <= MAX_PACKET_SIZE))) {
+#else
+		(length <= 1514))) {
+#endif
+			skb = dev_alloc_skb(MAX_PACKET_SIZE);
 			if (!skb) {
 				struct platform_device *pdev = ether->pdev;
 				dev_err(&pdev->dev, "get skb buffer error\n");
 				ether->stats.rx_dropped++;
 				goto rx_out;
 			}
-			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, 2048, DMA_FROM_DEVICE);
+			dma_unmap_single(&dev->dev, (dma_addr_t)rxbd->buffer, MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 
 			skb_put(s, length);
 			s->protocol = eth_type_trans(s, dev);
@@ -780,7 +797,7 @@ static int nuc970_poll(struct napi_struct *napi, int budget)
 			skb->dev = dev;
 
 			rxbd->buffer = dma_map_single(&dev->dev, skb->data,
-							2048, DMA_FROM_DEVICE);
+							MAX_PACKET_SIZE, DMA_FROM_DEVICE);
 
 			rx_skb[ether->cur_rx] = skb;
 			rx_cnt++;
@@ -1017,21 +1034,16 @@ static int nuc970_get_ts_info(struct net_device *dev, struct ethtool_ts_info *in
 
 static int nuc970_change_mtu(struct net_device *dev, int new_mtu)
 {
-	unsigned int val;
-
-	if(new_mtu < 64 || new_mtu > 2048)
+#if (IS_VLAN == 0)
+	if(new_mtu < 64 || new_mtu > MAX_PACKET_SIZE)
 		return -EINVAL;
-
-	if(new_mtu < 1500)
-	{
-		val = __raw_readl(REG_MCMDR);
-		val &= ~(MCMDR_ALP | MCMDR_ARP);
-		__raw_writel(val, REG_MCMDR);
-	}
-	else
-		nuc970_enable_alp(dev);
-
+#endif
 	dev->mtu = new_mtu;
+
+	if(new_mtu < 1518)
+		nuc970_set_alp(dev, false);
+	else
+		nuc970_set_alp(dev, true);
 
 	return 0;
 }
