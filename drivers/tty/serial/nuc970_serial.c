@@ -53,6 +53,8 @@
 #define UART_NR 11
 //#define DISABLE_AUTO_DIRECTION
 
+#define RDA_TOUT_IF (RDA_IF | TOUT_IF)
+
 #ifdef DISABLE_AUTO_DIRECTION
 #include <linux/hrtimer.h>
 #endif
@@ -371,7 +373,7 @@ receive_chars(struct uart_nuc970_port *up)
 				goto tout_end;
 		}
 
-		if(isr & RDA_IF) {
+		if ((isr & RDA_TOUT_IF) == RDA_IF) {
 			if(dcnt == 1)
 				return; // have remaining data, don't reset max_count
 		}
@@ -389,7 +391,7 @@ tout_end:
 static void transmit_chars(struct uart_nuc970_port *up)
 {
 	struct circ_buf *xmit = &up->port.state->xmit;
-	int count = 16 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
+	int count = 15 -((serial_in(up, UART_REG_FSR)>>16)&0xF);
 
 	if (up->port.x_char) {
 		while(serial_in(up, UART_REG_FSR) & TX_FULL);
