@@ -139,6 +139,11 @@ static int nuc970_i2s_set_sysclk(struct snd_soc_dai *cpu_dai,
 					clk_set_rate(clkaudio, 16950000);
 				}
 		}
+		/* free clk structure */
+		clk_put(clkmux);
+		clk_put(clkaplldiv);
+		clk_put(clkapll);
+		clk_put(clkaudio);
 
 		return 0;
 }
