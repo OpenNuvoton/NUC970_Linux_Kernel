@@ -208,20 +208,10 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 
 		if (len == 0)
 		{
-			//if (req->req.zero&&!req->req.length)
-				__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
+			__raw_writel(CEP_ZEROLEN, controller.reg + REG_USBD_CEP_CTRL_STAT);
 		}
 		else
 		{
-			while ((__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000) != 0x1000)
-			{
-				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
-				{
-					printk("unplug!\n");
-					return 0;
-				}
-				//msleep(1);
-			}
 			tmp = len / 4;
 			for (i=0; i<tmp; i++)
 			{
@@ -238,6 +228,15 @@ write_packet(struct nuc970_ep *ep, struct nuc970_request *req)
 				__raw_writeb( *buf++ & 0xff, controller.reg + REG_USBD_CEP_DATA_BUF);
 			}
 			__raw_writel(len, controller.reg + REG_USBD_IN_TRNSFR_CNT);
+
+			while ((__raw_readl(controller.reg + REG_USBD_CEP_IRQ_STAT) & 0x1000) != 0x1000)
+			{
+				if (!(__raw_readl(controller.reg + REG_USBD_PHY_CTL) & 0x80000000))
+				{
+					printk("unplug!\n");
+					return 0;
+				}
+			}
 		}
 		req->req.actual += len;
 	}
