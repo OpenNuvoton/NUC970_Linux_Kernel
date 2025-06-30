@@ -1301,8 +1301,6 @@ static int nuc970_ether_remove(struct platform_device *pdev)
 	clk_disable(ether->eclk);
 	clk_put(ether->eclk);
 
-	free_irq(ether->txirq, dev);
-	free_irq(ether->rxirq, dev);
 	phy_disconnect(ether->phy_dev);
 
 	mdiobus_unregister(ether->mii_bus);
