@@ -13,7 +13,7 @@
  * General Public License for more details.
  *
  */
- 
+
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/io.h>
@@ -24,7 +24,7 @@
 #include "clk-ccf.h"
 
 /**
- * upll 
+ * upll
  *
  * @clk_hw	clock source
  * @parent	the parent clock name
@@ -39,28 +39,31 @@ struct clk_upll {
 #define to_clk_upll(clk) (container_of(clk, struct clk_upll, clk))
 
 static unsigned long clk_upll_recalc_rate(struct clk_hw *hw,
-		unsigned long parent_rate)
+        unsigned long parent_rate)
 {
 	struct clk_upll *pll = to_clk_upll(hw);
 	long long ll;
 	u32 reg = readl(pll->base) & 0x0FFFFFFF;
-	
+
 	if(parent_rate != 12000000)
 		return 0;
-	
-	switch(reg)
-	{
-		case 0x15:
-			ll = 264000000;
-			break;
-		
-		case 0x18:
-			ll = 300000000;
-			break;
-		
-		default:
-			ll = 264000000;
-			break;
+
+	switch(reg) {
+	case 0x15:
+		ll = 264000000;
+		break;
+
+	case 0x18:
+		ll = 300000000;
+		break;
+
+	case 0x1D:
+		ll = 360000000;
+		break;
+
+	default:
+		ll = 264000000;
+		break;
 	}
 
 	return ll;
@@ -71,7 +74,7 @@ static struct clk_ops clk_upll_ops = {
 };
 
 struct clk *nuc970_clk_upll(const char *name, const char *parent,
-		void __iomem *base)
+                            void __iomem *base)
 {
 	struct clk_upll *pll;
 	struct clk *clk;
